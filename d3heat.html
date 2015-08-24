@@ -1,0 +1,284 @@
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  position: relative;
+}
+
+#plot1 {
+    width: 600px;
+    height: 600px;
+}
+
+svg,
+canvas {
+  position: absolute;
+  //image-rendering: optimizeSpeed;
+  //image-rendering: crisp-edges;
+  //image-rendering: -moz-crisp-edges;
+  //image-rendering: -webkit-optimize-contrast;
+  //image-rendering: optimize-contrast;
+  //-ms-interpolation-mode: nearest-neighbor;
+}
+
+.axis text {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.axis path {
+  /* display: none; */
+}
+
+</style>
+<body>
+<script src="d3.v3.min.js"></script>
+<script>
+
+  
+
+d3.json("sample_data/sans.json", function(error, heatmap) {
+  var target_id = "plot1"
+  var target = d3.select("#" + target_id);
+  var container = target.node();
+  var backing_canvas = document.createElement('canvas');
+  var _redraw_backing = true;
+    
+  var margin = {top: 10, right: 10, bottom: 50, left: 50},
+        width = container.clientWidth - margin.left - margin.right,
+        height = container.clientHeight - margin.top - margin.bottom;
+  
+  var dims = {
+    xmin: 0,
+    xmax: 128,
+    ymin: 0, 
+    ymax: 128,
+    xdim: 128,
+    ydim: 128,
+    zmin: 1.0,
+    zmax: 2500.0
+  }
+  
+  var dx = heatmap[0].length,
+      dy = heatmap.length;
+      
+
+  // Fix the aspect ratio.
+  // var ka = dy / dx, kb = height / width;
+  // if (ka < kb) height = width * ka;
+  // else width = height / ka;
+
+  x = d3.scale.linear()
+      .domain([0, 150])
+      .range([0, width]);
+
+  var y = d3.scale.linear()
+      .domain([0, 150])
+      .range([height, 0]);
+
+  var color = d3.scale.linear()
+      .domain([750, 1150, 1350, 1550, 1750, 1950, 2150, 2950])
+      //.range(["#0a0", "#6c0", "#ee0", "#eb4", "#eb9", "#fff"]);
+      /*#00007F: dark blue
+        #0000FF: blue
+        #007FFF: azure
+        #00FFFF: cyan
+        #7FFF7F: light green
+        #FFFF00: yellow
+        #FF7F00: orange
+        #FF0000: red
+        #7F0000: dark red*/
+      .range(["#00007F", "#0000FF","#007FFF", "#00FFFF","#7FFF7F","#FFFF00","#FF7F00","#FF0000","#7F0000"]);
+
+  var xAxis = d3.svg.axis()
+      .scale(x)
+        //.tickSize(-height)
+	    .ticks(5)
+	    .tickPadding(10)	
+	    .tickSubdivide(true)	
+      .orient("bottom");
+
+  var yAxis = d3.svg.axis()
+      .scale(y)
+        //.tickSize(-width)
+        .ticks(5)
+	    .tickPadding(10)	
+	    .tickSubdivide(true)	
+      .orient("left");
+
+  target.append("canvas")
+      .attr("width", width)
+      .attr("height", height)
+      .style("width", width + "px")
+      .style("height", height + "px")
+      .style("padding-left", margin.left + "px")
+      .style("padding-right", margin.right + "px")
+      .call(drawImage);
+      
+  var zoom = d3.behavior.zoom().x(x).y(y).on("zoom", zoomed);
+  
+  svg = target.append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .call(zoom);
+      //.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+      //.attr("width", width)
+      //.attr("height", height);
+      
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(" + margin.left + "," + height + ")")
+      .call(xAxis);
+      //.call(removeZero);
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .attr("transform", "translate(" + margin.left + ",0)")
+      .call(yAxis);
+      //.call(removeZero);
+      
+  svg.append("defs").append("clipPath")
+    .attr("id", target_id + "_clip") // local def
+    .append("rect")
+    .attr("width", width)
+    .attr("height", height);
+
+  // Compute the pixel colors; scaled by CSS.
+  function drawImage(canvas) {
+    console.log(canvas);
+    myc = canvas;
+    var maxColorIndex = 255,
+        overflowIndex = 256,
+        context = canvas.node().getContext("2d"),
+        ctx = backing_canvas.getContext("2d");
+        
+    if (_redraw_backing) {
+        _redraw_backing = false;        
+        backing_canvas.width = dims.xdim;
+        backing_canvas.height = dims.ydim;
+                
+        image = ctx.createImageData(dx, dy);
+
+        for (var yp = 0, p = -1; yp < dims.ydim; ++yp) {
+          for (var xp = 0; xp < dims.xdim; ++xp) {
+            var c = d3.rgb(color(heatmap[yp][xp]));
+            image.data[++p] = c.r;
+            image.data[++p] = c.g;
+            image.data[++p] = c.b;
+            image.data[++p] = 255;
+          }
+        }
+        ctx.putImageData(image, 0, 0);
+    }
+    
+	//context.mozImageSmoothingEnabled = false;
+	//context.webkitImageSmoothingEnabled = false;
+	//context.msImageSmoothingEnabled = false;
+	//context.imageSmoothingEnabled = false;
+	var x0=x(dims.xmin),
+	    y0=y(dims.ymin),
+	    x1=x(dims.xmax),
+	    y1=y(dims.ymax);
+	   
+    context.clearRect(0,0, context.canvas.width, context.canvas.height);
+    if (context.mozImageSmoothingEnabled) context.mozImageSmoothingEnabled = false;
+    if (context.imageSmoothingEnabled) context.imageSmoothingEnabled = false;
+    context.drawImage(ctx.canvas, 0, 0, dims.xdim, dims.ydim, x0, y0, (x1-x0), (y1-y0));
+  }
+
+  function removeZero(axis) {
+    axis.selectAll("g").filter(function(d) { return !d; }).remove();
+  }
+  
+  var jet_array = [
+    [0, 0, 127, 255], [0, 0, 132, 255], [0, 0, 136, 255], [0, 0, 141, 255], 
+    [0, 0, 145, 255], [0, 0, 150, 255], [0, 0, 154, 255], [0, 0, 159, 255], 
+    [0, 0, 163, 255], [0, 0, 168, 255], [0, 0, 172, 255], [0, 0, 177, 255], 
+    [0, 0, 181, 255], [0, 0, 186, 255], [0, 0, 190, 255], [0, 0, 195, 255], 
+    [0, 0, 199, 255], [0, 0, 204, 255], [0, 0, 208, 255], [0, 0, 213, 255], 
+    [0, 0, 218, 255], [0, 0, 222, 255], [0, 0, 227, 255], [0, 0, 231, 255], 
+    [0, 0, 236, 255], [0, 0, 240, 255], [0, 0, 245, 255], [0, 0, 249, 255], 
+    [0, 0, 254, 255], [0, 0, 255, 255], [0, 0, 255, 255], [0, 0, 255, 255], 
+    [0, 0, 255, 255], [0, 3, 255, 255], [0, 7, 255, 255], [0, 11, 255, 255], 
+    [0, 15, 255, 255], [0, 19, 255, 255], [0, 23, 255, 255], [0, 27, 255, 255], 
+    [0, 31, 255, 255], [0, 35, 255, 255], [0, 39, 255, 255], [0, 43, 255, 255], 
+    [0, 47, 255, 255], [0, 51, 255, 255], [0, 55, 255, 255], [0, 59, 255, 255],
+    [0, 63, 255, 255], [0, 67, 255, 255], [0, 71, 255, 255], [0, 75, 255, 255], 
+    [0, 79, 255, 255], [0, 83, 255, 255], [0, 87, 255, 255], [0, 91, 255, 255], 
+    [0, 95, 255, 255], [0, 99, 255, 255], [0, 103, 255, 255], [0, 107, 255, 255], 
+    [0, 111, 255, 255], [0, 115, 255, 255], [0, 119, 255, 255], [0, 123, 255, 255], 
+    [0, 127, 255, 255], [0, 131, 255, 255], [0, 135, 255, 255], [0, 139, 255, 255], 
+    [0, 143, 255, 255], [0, 147, 255, 255], [0, 151, 255, 255], [0, 155, 255, 255], 
+    [0, 159, 255, 255], [0, 163, 255, 255], [0, 167, 255, 255], [0, 171, 255, 255], 
+    [0, 175, 255, 255], [0, 179, 255, 255], [0, 183, 255, 255], [0, 187, 255, 255], 
+    [0, 191, 255, 255], [0, 195, 255, 255], [0, 199, 255, 255], [0, 203, 255, 255], 
+    [0, 207, 255, 255], [0, 211, 255, 255], [0, 215, 255, 255], [0, 219, 255, 255], 
+    [0, 223, 251, 255], [0, 227, 248, 255], [1, 231, 245, 255], [4, 235, 242, 255], 
+    [7, 239, 239, 255], [10, 243, 235, 255], [14, 247, 232, 255], [17, 251, 229, 255], 
+    [20, 255, 226, 255], [23, 255, 222, 255], [26, 255, 219, 255], [30, 255, 216, 255], 
+    [33, 255, 213, 255], [36, 255, 210, 255], [39, 255, 206, 255], [43, 255, 203, 255], 
+    [46, 255, 200, 255], [49, 255, 197, 255], [52, 255, 194, 255], [55, 255, 190, 255], 
+    [59, 255, 187, 255], [62, 255, 184, 255], [65, 255, 181, 255], [68, 255, 178, 255], 
+    [71, 255, 174, 255], [75, 255, 171, 255], [78, 255, 168, 255], [81, 255, 165, 255], 
+    [84, 255, 161, 255], [88, 255, 158, 255], [91, 255, 155, 255], [94, 255, 152, 255], 
+    [97, 255, 149, 255], [100, 255, 145, 255], [104, 255, 142, 255], [107, 255, 139, 255], 
+    [110, 255, 136, 255], [113, 255, 133, 255], [116, 255, 129, 255], [120, 255, 126, 255], 
+    [123, 255, 123, 255], [126, 255, 120, 255], [129, 255, 116, 255], [133, 255, 113, 255], 
+    [136, 255, 110, 255], [139, 255, 107, 255], [142, 255, 104, 255], [145, 255, 100, 255], 
+    [149, 255, 97, 255], [152, 255, 94, 255], [155, 255, 91, 255], [158, 255, 88, 255], 
+    [161, 255, 84, 255], [165, 255, 81, 255], [168, 255, 78, 255], [171, 255, 75, 255], 
+    [174, 255, 71, 255], [178, 255, 68, 255], [181, 255, 65, 255], [184, 255, 62, 255], 
+    [187, 255, 59, 255], [190, 255, 55, 255], [194, 255, 52, 255], [197, 255, 49, 255], 
+    [200, 255, 46, 255], [203, 255, 43, 255], [206, 255, 39, 255], [210, 255, 36, 255], 
+    [213, 255, 33, 255], [216, 255, 30, 255], [219, 255, 26, 255], [222, 255, 23, 255], 
+    [226, 255, 20, 255], [229, 255, 17, 255], [232, 255, 14, 255], [235, 255, 10, 255], 
+    [239, 254, 7, 255], [242, 250, 4, 255], [245, 247, 1, 255], [248, 243, 0, 255], 
+    [251, 239, 0, 255], [255, 235, 0, 255], [255, 232, 0, 255], [255, 228, 0, 255], 
+    [255, 224, 0, 255], [255, 221, 0, 255], [255, 217, 0, 255], [255, 213, 0, 255], 
+    [255, 210, 0, 255], [255, 206, 0, 255], [255, 202, 0, 255], [255, 199, 0, 255], 
+    [255, 195, 0, 255], [255, 191, 0, 255], [255, 188, 0, 255], [255, 184, 0, 255], 
+    [255, 180, 0, 255], [255, 176, 0, 255], [255, 173, 0, 255], [255, 169, 0, 255], 
+    [255, 165, 0, 255], [255, 162, 0, 255], [255, 158, 0, 255], [255, 154, 0, 255], 
+    [255, 151, 0, 255], [255, 147, 0, 255], [255, 143, 0, 255], [255, 140, 0, 255], 
+    [255, 136, 0, 255], [255, 132, 0, 255], [255, 128, 0, 255], [255, 125, 0, 255], 
+    [255, 121, 0, 255], [255, 117, 0, 255], [255, 114, 0, 255], [255, 110, 0, 255], 
+    [255, 106, 0, 255], [255, 103, 0, 255], [255, 99, 0, 255], [255, 95, 0, 255], 
+    [255, 92, 0, 255], [255, 88, 0, 255], [255, 84, 0, 255], [255, 81, 0, 255], 
+    [255, 77, 0, 255], [255, 73, 0, 255], [255, 69, 0, 255], [255, 66, 0, 255], 
+    [255, 62, 0, 255], [255, 58, 0, 255], [255, 55, 0, 255], [255, 51, 0, 255], 
+    [255, 47, 0, 255], [255, 44, 0, 255], [255, 40, 0, 255], [255, 36, 0, 255], 
+    [255, 33, 0, 255], [255, 29, 0, 255], [255, 25, 0, 255], [255, 21, 0, 255], 
+    [254, 18, 0, 255], [249, 14, 0, 255], [245, 10, 0, 255], [240, 7, 0, 255], 
+    [236, 3, 0, 255], [231, 0, 0, 255], [227, 0, 0, 255], [222, 0, 0, 255], 
+    [218, 0, 0, 255], [213, 0, 0, 255], [208, 0, 0, 255], [204, 0, 0, 255], 
+    [199, 0, 0, 255], [195, 0, 0, 255], [190, 0, 0, 255], [186, 0, 0, 255], 
+    [181, 0, 0, 255], [177, 0, 0, 255], [172, 0, 0, 255], [168, 0, 0, 255], 
+    [163, 0, 0, 255], [159, 0, 0, 255], [154, 0, 0, 255], [150, 0, 0, 255], 
+    [145, 0, 0, 255], [141, 0, 0, 255], [136, 0, 0, 255], [132, 0, 0, 255]
+  ];
+  
+  function zoomed() {
+	    svg.select(".x.axis").call(xAxis);
+	    svg.select(".y.axis").call(yAxis);   
+	    //if (line) svg.selectAll('path.line').attr('d', line);  
+     
+	    //if (points) points.selectAll('circle').attr("transform", function(d) { 
+		//    return "translate(" + x(d.point.x) + "," + y(d.point.y) + ")"; }
+	    //);
+	    target.select('canvas').call(drawImage);
+    }
+});
+
+</script>
+<div id="plot1">
+</div>
+</body>
+
