@@ -38,6 +38,14 @@ canvas {
   /* display: none; */
 }
 
+.grid .tick {
+    stroke: lightgrey;
+    opacity: 0.7;
+}
+.grid path {
+      stroke-width: 0;
+}
+
 </style>
 <body>
 <script src="d3.v3.min.js"></script>
@@ -51,6 +59,8 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
   var container = target.node();
   var backing_canvas = document.createElement('canvas');
   var _redraw_backing = true;
+  var numberOfTicks = 6;
+  var show_grid = true;
     
   var margin = {top: 10, right: 10, bottom: 50, left: 50},
         width = container.clientWidth - margin.left - margin.right,
@@ -101,7 +111,7 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
   var xAxis = d3.svg.axis()
       .scale(x)
         //.tickSize(-height)
-	    .ticks(5)
+	    .ticks(numberOfTicks)
 	    .tickPadding(10)	
 	    .tickSubdivide(true)	
       .orient("bottom");
@@ -109,11 +119,11 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
   var yAxis = d3.svg.axis()
       .scale(y)
         //.tickSize(-width)
-        .ticks(5)
+        .ticks(numberOfTicks)
 	    .tickPadding(10)	
 	    .tickSubdivide(true)	
       .orient("left");
-
+  
   target.append("canvas")
       .attr("width", width)
       .attr("height", height)
@@ -144,6 +154,49 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
       .attr("transform", "translate(" + margin.left + ",0)")
       .call(yAxis);
       //.call(removeZero);
+      
+  if (show_grid) {
+    //var yAxisGrid = yAxis.ticks(numberOfTicks)
+    //    .tickSize(width, 0)
+    //    .tickFormat("")
+    //    .orient("right");
+
+    //var xAxisGrid = xAxis.ticks(numberOfTicks)
+    //    .tickSize(height, 0)
+    //    .tickFormat("")
+    //    .orient("top");
+
+    var xAxisGrid = d3.svg.axis()
+        .scale(x)
+        .orient("bottom")
+        .ticks(numberOfTicks)
+        .tickPadding(10)
+    
+    var yAxisGrid = d3.svg.axis()
+      .scale(y)
+        //.tickSize(-width)
+        .ticks(numberOfTicks)
+	    .tickPadding(10)	
+	    .tickSubdivide(true)	
+        .orient("left");
+        
+    svg.append("g")         
+        .attr("class", "grid x")
+        .attr("transform", "translate(" + margin.left + "," + height + ")")
+        .call(xAxisGrid
+            .tickSize(-height, 0, 0)
+            .tickFormat("")
+        )
+
+    svg.append("g")         
+        .attr("class", "grid y")
+        .attr("transform", "translate(" + margin.left + ",0)")
+        .call(yAxisGrid
+            .tickSize(-width, 0, 0)
+            .tickFormat("")
+        )
+  }
+
       
   svg.append("defs").append("clipPath")
     .attr("id", target_id + "_clip") // local def
@@ -267,7 +320,9 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
   
   function zoomed() {
 	    svg.select(".x.axis").call(xAxis);
-	    svg.select(".y.axis").call(yAxis);   
+	    svg.select(".y.axis").call(yAxis);
+	    svg.select(".grid.x").call(xAxisGrid);
+	    svg.select(".grid.y").call(yAxisGrid);
 	    //if (line) svg.selectAll('path.line').attr('d', line);  
      
 	    //if (points) points.selectAll('circle').attr("transform", function(d) { 
