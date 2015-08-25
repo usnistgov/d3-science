@@ -194,7 +194,7 @@ var draw_colorbar = function(target_id, shared_dims, colormap) {
             backing_canvas.height = 256;
             var image = ctx.createImageData(1, 256);
             var data = image.data;
-            for (var yp = 0, p = -1; yp < 256; ++yp) {
+            for (var yp = 255, p = -1; yp >= 0; --yp) {
                 var c = colormap[yp];
                 data[++p] = c[0];
                 data[++p] = c[1];
