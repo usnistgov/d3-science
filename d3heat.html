@@ -122,14 +122,122 @@ jet_array = [
     [145, 0, 0, 255], [141, 0, 0, 255], [136, 0, 0, 255], [132, 0, 0, 255]
   ];
 
+var dispatch = d3.dispatch("update");
+
+var draw_colorbar = function(target_id, shared_dims, colormap) {
+    var outer = d3.select("#" + target_id);
+    var target = outer.append("div");
+    var offset_right = 0;
+    target.attr("width", 105)
+    .attr("height", outer.node().clientHeight)
+    //.style("position", "absolute")
+    //.style("right", "0px") 
+    .style("display", "inline-block")
+    .style("width", 105 + "px")
+    .style("height", outer.node().clientHeight + "px");
+    var container = target.node();
+    var numberOfTicks = 4;
+    var backing_canvas = document.createElement('canvas');
+    var _redraw_backing = true;
+    var margin_left = container.clientWidth - 105;
+    var margin = {top: 10, right: 50, bottom: 50, left: margin_left},
+        width = container.clientWidth - margin.left - margin.right,
+        height = container.clientHeight - margin.top - margin.bottom;
+        
+    var x = d3.scale.linear()
+        .domain([0, 10])
+        .range([0, width]);
+
+    var y = d3.scale.linear()
+        .domain([shared_dims.zmin, shared_dims.zmax])
+        .range([height, 0]);
+    
+    var yAxis = d3.svg.axis()
+      .scale(y)
+        //.tickSize(-width)
+        .ticks(numberOfTicks)
+	    .tickPadding(10)	
+	    .tickSubdivide(true)	
+      .orient("right");
+    
+    target.append("canvas")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("class", "colorbar")
+      .style("width", width + "px")
+      .style("height", height + "px")
+      .style("padding-left", margin.left + "px")
+      .style("padding-right", margin.right + "px")
+      .call(drawImage);
+      
+  var zoom = d3.behavior.zoom().x(x).y(y).on("zoom.colorbar", zoomed);
+  
+  svg = target.append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .call(zoom); 
+         
+    svg.append("g")
+      .attr("class", "y axis")
+      .attr("transform", "translate(" + margin.left + width + ",0)")
+      .call(yAxis);
+      
+    function drawImage(canvas) {
+        var maxColorIndex = 255,
+            overflowIndex = 256,
+            context = canvas.node().getContext("2d"),
+            ctx = backing_canvas.getContext("2d");
+            
+        if (_redraw_backing) {
+            _redraw_backing = false;        
+            backing_canvas.width = 1;
+            backing_canvas.height = 256;
+            var image = ctx.createImageData(1, 256);
+            var data = image.data;
+            for (var yp = 0, p = -1; yp < 256; ++yp) {
+                var c = colormap[yp];
+                data[++p] = c[0];
+                data[++p] = c[1];
+                data[++p] = c[2];
+                data[++p] = c[3];
+            }
+            ctx.putImageData(image, 0, 0);
+        }
+	       
+        context.clearRect(0,0, context.canvas.width, context.canvas.height);
+        if (context.mozImageSmoothingEnabled) context.mozImageSmoothingEnabled = false;
+        if (context.imageSmoothingEnabled) context.imageSmoothingEnabled = false;
+        context.drawImage(ctx.canvas, 0, 0, 1, 256, 0, 0, context.canvas.width, context.canvas.height);
+    }
+  
+    function zoomed() {
+        console.log("colorbar zoom");
+	    svg.select(".y.axis").call(yAxis);
+	    shared_dims.zmax = Math.max.apply(Math, y.domain());
+	    shared_dims.zmin = Math.min.apply(Math, y.domain());
+	    dispatch.update();
+	    //target.select('canvas.mainplot').call(drawImage, plotdata);
+    }
+}
+
 d3.json("sample_data/sans.json", function(error, heatmap) {
+  var show_grid = true;
+  var show_colorbar = true;
   var target_id = "plot1"
-  var target = d3.select("#" + target_id);
+  var outer = d3.select("#" + target_id);
+  var target = outer.append("div");
+  var offset_right = (show_colorbar) ? 120 : 0;
+  target.attr("width", outer.node().clientWidth - offset_right)
+    .attr("height", outer.node().clientHeight)
+    .style("display", "inline-block")
+    .style("width", outer.node().clientWidth - offset_right + "px")
+    .style("height", outer.node().clientHeight + "px");
   var container = target.node();
   var backing_canvas = document.createElement('canvas');
   var _redraw_backing = true;
   var numberOfTicks = 4;
-  show_grid = true;
+  
+  
   var get_sxdx; 
   var transforms = {
     "lin": function(x) {return x},
@@ -143,7 +251,7 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
     "log": function(x) {return Math.pow(10, x)}
   }
   
-  var transform = 'lin',
+  var transform = 'log',
     t = transforms[transform],
     tinv = inverse_transforms[transform];
   
@@ -161,6 +269,10 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
     zmin: 1.0,
     zmax: 2500.0
   }
+  
+  dims.zmin = get_minimum(heatmap, transforms['lin'], Infinity);
+  dims.zmax = get_maximum(heatmap, transforms['lin'], -Infinity);
+  console.log(dims);
   
   get_sxdx = function(){
         if (!dims.dx){ dims.dx = (dims.xmax - dims.xmin)/(dims.xdim); }
@@ -205,7 +317,7 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
   // if (ka < kb) height = width * ka;
   // else width = height / ka;
 
-  x = d3.scale.linear()
+  var x = d3.scale.linear()
       .domain([0, 150])
       .range([0, width]);
 
@@ -246,15 +358,16 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
   target.append("canvas")
       .attr("width", width)
       .attr("height", height)
+      .attr("class", "mainplot")
       .style("width", width + "px")
       .style("height", height + "px")
       .style("padding-left", margin.left + "px")
       .style("padding-right", margin.right + "px")
       .call(drawImage, plotdata);
       
-  var zoom = d3.behavior.zoom().x(x).y(y).on("zoom", zoomed);
+  var zoom = d3.behavior.zoom().x(x).y(y).on("zoom.main", zoomed);
   
-  svg = target.append("svg")
+  var svg = target.append("svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
       .call(zoom);
@@ -453,8 +566,9 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
         return existing_max
     };
   
-  
+ 
   function zoomed() {
+    console.log("main zoom");
 	    svg.select(".x.axis").call(xAxis);
 	    svg.select(".y.axis").call(yAxis);
 	    if (show_grid) {
@@ -466,8 +580,16 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
 	    //if (points) points.selectAll('circle').attr("transform", function(d) { 
 		//    return "translate(" + x(d.point.x) + "," + y(d.point.y) + ")"; }
 	    //);
-	    target.select('canvas').call(drawImage, plotdata);
+	    target.select('canvas.mainplot').call(drawImage, plotdata);
     }
+    
+    dispatch.on("update", function() {
+        plotdata = make_plotdata(heatmap, dims, t, tinv);
+        console.log(plotdata[0][0], dims);
+        _redraw_backing = true;
+        zoomed();
+    });
+    draw_colorbar(target_id, dims, jet_array);
 });
 
 </script>
