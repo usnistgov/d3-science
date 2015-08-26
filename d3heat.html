@@ -122,16 +122,14 @@ jet_array = [
     [145, 0, 0, 255], [141, 0, 0, 255], [136, 0, 0, 255], [132, 0, 0, 255]
   ];
 
-var dispatch = d3.dispatch("update");
+var dispatch = d3.dispatch("update_main", "update_colorbar");
 
-var draw_colorbar = function(target_id, shared_dims, colormap) {
+var draw_colorbar = function(target_id, transform, shared_dims, colormap) {
     var outer = d3.select("#" + target_id);
     var target = outer.append("div");
     var offset_right = 0;
     target.attr("width", 105)
     .attr("height", outer.node().clientHeight)
-    //.style("position", "absolute")
-    //.style("right", "0px") 
     .style("display", "inline-block")
     .style("width", 105 + "px")
     .style("height", outer.node().clientHeight + "px");
@@ -148,7 +146,7 @@ var draw_colorbar = function(target_id, shared_dims, colormap) {
         .domain([0, 10])
         .range([0, width]);
 
-    var y = d3.scale.linear()
+    var y = ((transform == 'log') ? d3.scale.log() : d3.scale.linear())
         .domain([shared_dims.zmin, shared_dims.zmax])
         .range([height, 0]);
     
@@ -171,11 +169,17 @@ var draw_colorbar = function(target_id, shared_dims, colormap) {
       .call(drawImage);
       
   var zoom = d3.behavior.zoom().x(x).y(y).on("zoom.colorbar", zoomed);
+  var resetzoom = function() {
+    zoom.translate([0,0]).scale(1);
+    zoomed()
+  }
   
-  svg = target.append("svg")
+  var svg = target.append("svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
-      .call(zoom); 
+      .call(zoom)
+      .on("dblclick.zoom", null)
+      .on("dblclick.resetzoom", resetzoom);
          
     svg.append("g")
       .attr("class", "y axis")
@@ -211,11 +215,10 @@ var draw_colorbar = function(target_id, shared_dims, colormap) {
     }
   
     function zoomed() {
-        console.log("colorbar zoom");
 	    svg.select(".y.axis").call(yAxis);
 	    shared_dims.zmax = Math.max.apply(Math, y.domain());
 	    shared_dims.zmin = Math.min.apply(Math, y.domain());
-	    dispatch.update();
+	    dispatch.update_main();
 	    //target.select('canvas.mainplot').call(drawImage, plotdata);
     }
 }
@@ -236,8 +239,7 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
   var backing_canvas = document.createElement('canvas');
   var _redraw_backing = true;
   var numberOfTicks = 4;
-  
-  
+ 
   var get_sxdx; 
   var transforms = {
     "lin": function(x) {return x},
@@ -251,7 +253,7 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
     "log": function(x) {return Math.pow(10, x)}
   }
   
-  var transform = 'log',
+  var transform = 'lin',
     t = transforms[transform],
     tinv = inverse_transforms[transform];
   
@@ -270,9 +272,14 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
     zmax: 2500.0
   }
   
-  dims.zmin = get_minimum(heatmap, transforms['lin'], Infinity);
-  dims.zmax = get_maximum(heatmap, transforms['lin'], -Infinity);
-  console.log(dims);
+  // create working copy of zmax and zmin, for zooming colorbar
+  var zdims = {
+    zmin: dims.zmin,
+    zmax: dims.zmax
+  }
+  
+  zdims.zmin = get_minimum(heatmap, transforms['lin'], Infinity);
+  zdims.zmax = get_maximum(heatmap, transforms['lin'], -Infinity);
   
   get_sxdx = function(){
         if (!dims.dx){ dims.dx = (dims.xmax - dims.xmin)/(dims.xdim); }
@@ -306,7 +313,7 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
     };
     
   
-  plotdata = make_plotdata(heatmap, dims, t, tinv);
+  plotdata = make_plotdata(heatmap, dims, zdims, t, tinv);
 
   var dx = heatmap[0].length,
       dy = heatmap.length;
@@ -363,14 +370,25 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
       .style("height", height + "px")
       .style("padding-left", margin.left + "px")
       .style("padding-right", margin.right + "px")
-      .call(drawImage, plotdata);
+      .call(drawImage, plotdata);      
       
   var zoom = d3.behavior.zoom().x(x).y(y).on("zoom.main", zoomed);
+  var resetzoom = function() {
+    //zdims.zmax = dims.zmax;
+    //zdims.zmin = dims.zmin;
+    //x.domain([xaxis_min, xaxis_max]);
+    //y.domain([yaxis_min, yaxis_max]);
+    zoom.translate([0,0]).scale(1);
+    zoomed();
+    dispatch.update_main();
+  }
   
   var svg = target.append("svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
-      .call(zoom);
+      .call(zoom)
+      .on("dblclick.zoom", null)
+      .on("dblclick.resetzoom", resetzoom);
       //.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
       //.attr("width", width)
       //.attr("height", height);
@@ -436,9 +454,6 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
     .attr("width", width)
     .attr("height", height);
 
-   
-    console.log(dims, get_sxdx());
-
   // Compute the pixel colors; scaled by CSS.
   function drawImage(canvas, plotdata) {
     var maxColorIndex = 255,
@@ -490,7 +505,7 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
   }
   
     // call after setting transform
-    function make_plotdata(source_data, dims, t, tinv) {
+    function make_plotdata(source_data, dims, clim, t, tinv) {
         // source_data is 2d array
         // dims is object with dim, max and min for x,y,z
         // t is transform (is function(x) {return x} for linear)
@@ -499,14 +514,16 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
         var overflowIndex = 256;
         var width = dims.xdim;
         var height = dims.ydim;
-        var tzmax = t(dims.zmax);
-        var tzmin = t(dims.zmin);
+        var tzmax = t(clim.zmax);
+        var tzmin = t(clim.zmin);
         //var tzmax = get_maximum(this.source_data, this.t);
         //var tzmin = get_minimum(this.source_data, this.t);
         //if (isNaN(tzmin)) tzmin = 0;
         
-        if (!(isFinite(tzmin))) tzmin = get_minimum(source_data, t);
-        dims.zmin = tinv(tzmin);
+        if (!(isFinite(tzmin))) {
+            tzmin = get_minimum(source_data, t);
+            clim.zmin = tinv(tzmin);
+        }
         var data = source_data; 
         var plotdata = [], rowdata;
         
@@ -567,29 +584,27 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
     };
   
  
-  function zoomed() {
-    console.log("main zoom");
-	    svg.select(".x.axis").call(xAxis);
-	    svg.select(".y.axis").call(yAxis);
-	    if (show_grid) {
-	        svg.select(".grid.x").call(xAxisGrid);
-	        svg.select(".grid.y").call(yAxisGrid);
-	    }
-	    //if (line) svg.selectAll('path.line').attr('d', line);  
-     
-	    //if (points) points.selectAll('circle').attr("transform", function(d) { 
-		//    return "translate(" + x(d.point.x) + "," + y(d.point.y) + ")"; }
-	    //);
-	    target.select('canvas.mainplot').call(drawImage, plotdata);
+    function zoomed() {
+        svg.select(".x.axis").call(xAxis);
+        svg.select(".y.axis").call(yAxis);
+        if (show_grid) {
+            svg.select(".grid.x").call(xAxisGrid);
+            svg.select(".grid.y").call(yAxisGrid);
+        }
+        //if (line) svg.selectAll('path.line').attr('d', line);  
+
+        //if (points) points.selectAll('circle').attr("transform", function(d) { 
+        //    return "translate(" + x(d.point.x) + "," + y(d.point.y) + ")"; }
+        //);
+        target.select('canvas.mainplot').call(drawImage, plotdata);
     }
     
-    dispatch.on("update", function() {
-        plotdata = make_plotdata(heatmap, dims, t, tinv);
-        console.log(plotdata[0][0], dims);
+    dispatch.on("update_main", function() {
+        plotdata = make_plotdata(heatmap, dims, zdims, t, tinv);
         _redraw_backing = true;
         zoomed();
     });
-    draw_colorbar(target_id, dims, jet_array);
+    draw_colorbar(target_id, transform, zdims, jet_array);
 });
 
 </script>
