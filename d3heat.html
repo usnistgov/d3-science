@@ -5,13 +5,14 @@
 <head>
 <style>
 
-body {
+html, body {
   position: relative;
+  height: 100%;
 }
 
 #plot1 {
-    width: 600px;
-    height: 600px;
+    width: 100%;
+    height: 100%;;
 }
 
 svg,
@@ -55,6 +56,31 @@ canvas {
 <!--<script src="d3.v3.min.js"></script>-->
 <script>
 debug = false;
+var fixAspect = function(target_ratio, xmin, xmax, ymin, ymax, width, height) {
+    var yrange = (ymax - ymin);
+    var ycenter = (ymax + ymin) / 2.0;
+    var xrange = (xmax - xmin);
+    var xcenter = (xmax + xmin) / 2.0;
+    var graph_ratio = width / height;
+    var ratio = yrange/xrange * graph_ratio;
+    //console.log('ratios:', ratio, target_ratio);
+    if (isNaN(ratio) || ratio == target_ratio) { return };
+    if (ratio < target_ratio) { // y-range is too small
+        yrange = target_ratio * xrange / graph_ratio;
+    }
+    if (ratio > target_ratio) {
+        xrange = yrange / target_ratio * graph_ratio;
+    }
+            
+    //console.log('ranges:', yrange, xrange);
+    output = {
+        'xmin': xcenter - xrange/2.0, 
+        'xmax': xcenter + xrange/2.0,
+        'ymin': ycenter - yrange/2.0, 
+        'ymax': ycenter + yrange/2.0
+    }
+    return output;
+}
 jet_array = [
     [0, 0, 127, 255], [0, 0, 132, 255], [0, 0, 136, 255], [0, 0, 141, 255], 
     [0, 0, 145, 255], [0, 0, 150, 255], [0, 0, 154, 255], [0, 0, 159, 255], 
@@ -223,7 +249,7 @@ var draw_colorbar = function(target_id, transform, shared_dims, colormap) {
     }
 }
 
-d3.json("sample_data/sans.json", function(error, heatmap) {
+d3.json("sample_data/512.json", function(error, heatmap) {
   var show_grid = true;
   var show_colorbar = true;
   var target_id = "plot1"
@@ -239,6 +265,7 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
   var backing_canvas = document.createElement('canvas');
   var _redraw_backing = true;
   var numberOfTicks = 4;
+  var target_ratio = 1.0;
  
   var get_sxdx; 
   var transforms = {
@@ -261,6 +288,7 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
         width = container.clientWidth - margin.left - margin.right,
         height = container.clientHeight - margin.top - margin.bottom;
   
+  /*
   var dims = {
     xmin: 0,
     xmax: 128,
@@ -271,7 +299,17 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
     zmin: 1.0,
     zmax: 2500.0
   }
-  
+  */
+  var dims = {
+    xmin: 0,
+    xmax: 128,
+    ymin: 0, 
+    ymax: 128,
+    xdim: 512,
+    ydim: 512,
+    zmin: 1.0,
+    zmax: 2500.0
+  }
   // create working copy of zmax and zmin, for zooming colorbar
   var zdims = {
     zmin: dims.zmin,
@@ -320,16 +358,18 @@ d3.json("sample_data/sans.json", function(error, heatmap) {
       
 
   // Fix the aspect ratio.
-  // var ka = dy / dx, kb = height / width;
-  // if (ka < kb) height = width * ka;
-  // else width = height / ka;
+  var limits = fixAspect(target_ratio, dims.xmin, dims.xmax, dims.ymin, dims.ymax, width, height);
+  console.log(limits);
+  //var ka = dy / dx, kb = height / width;
+  //if (ka < kb) height = width * ka;
+  //else width = height / ka;
 
   var x = d3.scale.linear()
-      .domain([0, 150])
+      .domain([limits.xmin, limits.xmax])
       .range([0, width]);
 
   var y = d3.scale.linear()
-      .domain([0, 150])
+      .domain([limits.ymin, limits.ymax])
       .range([height, 0]);
 
   var color = d3.scale.linear()
