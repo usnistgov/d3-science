@@ -148,6 +148,9 @@ jet_array = [
     [145, 0, 0, 255], [141, 0, 0, 255], [136, 0, 0, 255], [132, 0, 0, 255]
   ];
 
+var _colormap_array = jet_array;
+_colormap_array.push([0,0,0,0]); // overflow color
+
 var dispatch = d3.dispatch("update_main", "update_colorbar");
 
 var draw_colorbar = function(target_id, transform, shared_dims, colormap) {
@@ -280,7 +283,7 @@ d3.json("sample_data/512.json", function(error, heatmap) {
     "log": function(x) {return Math.pow(10, x)}
   }
   
-  var transform = 'lin',
+  var transform = 'log',
     t = transforms[transform],
     tinv = inverse_transforms[transform];
   
@@ -509,7 +512,7 @@ d3.json("sample_data/512.json", function(error, heatmap) {
         var data = image.data;
         for (var yp = 0, p = -1; yp < dims.ydim; ++yp) {
           for (var xp = 0; xp < dims.xdim; ++xp) {
-            var c = jet_array[plotdata[yp][xp]];
+            var c = _colormap_array[plotdata[yp][xp]];
             //var c = d3.rgb(color(heatmap[yp][xp]));
             data[++p] = c[0];
             data[++p] = c[1];

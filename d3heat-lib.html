@@ -59,15 +59,33 @@ canvas {
 
 var dispatch = d3.dispatch("update_main", "update_colorbar");
 
-chart = heatChart();
+chart = heatChart()
+  .transform("log")
+  .autoscale(true);
 
 d3.json("sample_data/512.json", function(error, heatmap) {    
     c = d3.select("#plot1")
-      .datum(heatmap)
+      .data([heatmap])
       .call(chart);
 });
+
+// chart.target_ratio(1).update(); // changes aspect ratio!
+// var new_dims = chart.dims();
+// new_dims.xmax = 256;
+// chart.dims(new_dims).update(); // new dimensions for 2d plot object
+// chart.show_grid(false); // grid off
+
 </script>
 <div id="plot1">
+</div>
+<div id="demos">
+<pre>
+chart.target_ratio(1).update(); // changes aspect ratio!
+var new_dims = chart.dims();
+new_dims.xmax = 256;
+chart.dims(new_dims).update(); // new dimensions for 2d plot object
+chart.show_grid(false); // grid off
+</pre>
 </div>
 </body>
 </html>

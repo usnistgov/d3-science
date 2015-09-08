@@ -1,18 +1,14 @@
 function heatChart() {
   var debug=false;
   var margin = {top: 10, right: 10, bottom: 50, left: 50},
-    width = 800,
-    height = 600,
     xValue = function(d) { return d[0]; },
     yValue = function(d) { return d[1]; };
-    
-        //width = container.clientWidth - margin.left - margin.right,
-        //height = container.clientHeight - margin.top - margin.bottom;
 
   var show_grid = true;
   var show_colorbar = true;
   var numberOfTicks = 4;
   var target_ratio = null;
+  var autoscale = false;
   var transforms = {
     "lin": function(x) {return x},
     "log": function(x) {
@@ -31,23 +27,38 @@ function heatChart() {
     
   var dims = {
     xmin: 0,
-    xmax: 128,
+    xmax: 1,
     ymin: 0, 
-    ymax: 128,
+    ymax: 1,
     xdim: 512,
     ydim: 512,
     zmin: 1.0,
-    zmax: 2500.0
+    zmax: 100.0
   }
   // create working copy of zmax and zmin, for zooming colorbar
-  var zdims = {
-    zmin: dims.zmin,
-    zmax: dims.zmax
-  }
+  var zdims = {}
+  
   var x = d3.scale.linear();
   var y = d3.scale.linear();
   var xAxis = d3.svg.axis();
   var yAxis = d3.svg.axis();
+  var xAxisGrid = d3.svg.axis();
+  var yAxisGrid = d3.svg.axis();
+  var colormap = d3.scale.linear()
+    .domain([0, 31, 63, 95, 127, 159, 191, 223, 255])
+    /* Jet:
+      #00007F: dark blue
+      #0000FF: blue
+      #007FFF: azure
+      #00FFFF: cyan
+      #7FFF7F: light green
+      #FFFF00: yellow
+      #FF7F00: orange
+      #FF0000: red
+      #7F0000: dark red
+      #00000000: transparent for overflow
+    */
+    .range(["#00007F", "#0000FF","#007FFF", "#00FFFF","#7FFF7F","#FFFF00","#FF7F00","#FF0000","#7F0000"]);
   
   //var zoom = d3.behavior.zoom().x(x).y(y).on("zoom.main", zoomed);
   //var resetzoom = d3.behavior.zoom().on("dblclick.zoom", function() {console.log("reset!")});
@@ -56,45 +67,59 @@ function heatChart() {
   // some private working variables
   var backing_canvas = document.createElement('canvas');
   var _redraw_backing = true;
+  var _colormap_array = [];
+  
+  
 
   function chart(selection) {
     selection.each(function(data) {
-      var target = selection.append("div");
       var offset_right = (show_colorbar) ? 120 : 0;
-      target.attr("width", width - offset_right)
-        .attr("height", height)
-        .style("display", "inline-block")
-        .style("width", width - offset_right + "px")
-        .style("height", height + "px");
+      var outercontainer = d3.select(this),
+        innerwidth = outercontainer.node().clientWidth - offset_right,
+        innerheight = outercontainer.node().clientHeight,
+        width = innerwidth - margin.right - margin.left,
+        height = innerheight - margin.top - margin.bottom;
+      chart.outercontainer = outercontainer;
+      chart.update = function() { outercontainer.transition().call(chart); };    
       
-      data = make_plotdata(data, dims, zdims, t, tinv);
+      if (autoscale) {
+        var new_min_max = get_min_max(data, t);
+        zdims.zmin = new_min_max.min;
+        zdims.zmax = new_min_max.max;
+      } else {
+        zdims.zmin = dims.zmin;
+        zdims.zmax = dims.zmax;
+      }
+      var plotdata = make_plotdata(data, dims, zdims, t, tinv);
       var limits = fixAspect(target_ratio, dims.xmin, dims.xmax, dims.ymin, dims.ymax, width, height);
       // Update the x-scale.
       x
         .domain([limits.xmin, limits.xmax])
         .range([0, width]);
-
+        
       // Update the y-scale.
       y
         .domain([limits.ymin, limits.ymax])
         .range([height, 0]);
       
-      if (show_grid) {
-        var xAxisGrid = d3.svg.axis()
-          .scale(x)
-          .orient("bottom")
-          .ticks(numberOfTicks)
-          .tickPadding(10);
+      xAxisGrid
+        .scale(x)
+        .orient("bottom")
+        .ticks(numberOfTicks)
+        .tickPadding(10)
+        .tickSize(-height, 0, 0)
+        .tickFormat("");
         
-        var yAxisGrid = d3.svg.axis()
-          .scale(y)
-          .ticks(numberOfTicks)
-	        .tickPadding(10)	
-	        .tickSubdivide(true)	
-          .orient("left");
-      }
+      yAxisGrid
+        .scale(y)
+        .ticks(numberOfTicks)
+        .tickPadding(10)	
+        .tickSubdivide(true)	
+        .orient("left")
+        .tickSize(-width, 0, 0)
+        .tickFormat("")
       
-      xAxis   
+      xAxis
         .scale(x)
         .ticks(numberOfTicks)
         .tickPadding(10)	
@@ -108,32 +133,19 @@ function heatChart() {
         .tickSubdivide(true)	
         .orient("left");
         
-      var color = d3.scale.linear()
-        .domain([0, 31, 63, 95, 127, 159, 191, 223, 255])
-        /* Jet:
-          #00007F: dark blue
-          #0000FF: blue
-          #007FFF: azure
-          #00FFFF: cyan
-          #7FFF7F: light green
-          #FFFF00: yellow
-          #FF7F00: orange
-          #FF0000: red
-          #7F0000: dark red
-        */
-        .range(["#00007F", "#0000FF","#007FFF", "#00FFFF","#7FFF7F","#FFFF00","#FF7F00","#FF0000","#7F0000"]);
         
       // we will bind data to the container div, a slightly non-standard
       // arrangement.
-      var container = d3.select(this).selectAll("div.heatmap-container").data([data]);
+      var container = d3.select(this).selectAll("div.heatmap-container").data([plotdata]);
       var zoomed = function() {
         var svg = d3.select(this);
+        var container = d3.select(svg.node().parentNode);
+        var data = container.data();
+        //console.log(container);
         svg.select(".x.axis").call(xAxis);
         svg.select(".y.axis").call(yAxis);
-        if (show_grid) {
-          svg.select(".grid.x").call(xAxisGrid);
-          svg.select(".grid.y").call(yAxisGrid);
-        }
+        svg.select(".grid.x").call(xAxisGrid);
+        svg.select(".grid.y").call(yAxisGrid);
         container.select('canvas.mainplot').call(drawImage, data);
       }
       var resetzoom = function() {
@@ -142,66 +154,76 @@ function heatChart() {
         zoomed.call(this);
         //dispatch.update_main();
       }
-      var zoom = d3.behavior.zoom().x(x).y(y).on("zoom.main", zoomed);
-      var cEnter = container.enter().append("div")
-        .attr("width", width - offset_right)
-        .attr("height", height)
+      var zoom = d3.behavior.zoom().x(x).y(y).on("zoom.main", null).on("zoom.main", zoomed);
+      chart.zoom = zoom;
+      
+      // if inner container doesn't exist, build it.
+      container.enter().append("div")
+        .attr("class", "heatmap-container")
+        .attr("width", innerwidth)
+        .attr("height", innerheight)
         .style("display", "inline-block")
-        .style("width", width - offset_right + "px")
-        .style("height", height + "px");
+        .style("width", innerwidth + "px")
+        .style("height", innerheight + "px");
         
-      var mainCanvas = cEnter.append("canvas")
-        .attr("width", width)
-        .attr("height", height)
-        .attr("class", "mainplot")
-        .style("width", width + "px")
-        .style("height", height + "px")
-        .style("padding-left", margin.left + "px")
-        .style("padding-right", margin.right + "px")
-        .call(drawImage, data);
-        
+      var mainCanvas = container.selectAll("canvas.mainplot").data([plotdata]);
+      mainCanvas.enter().append("canvas");
+      mainCanvas
+          .attr("width", width)
+          .attr("height", height)
+          .attr("class", "mainplot")
+          .style("width", width + "px")
+          .style("height", height + "px")
+          .style("padding-left", margin.left + "px")
+          .style("padding-right", margin.right + "px")
+          .call(drawImage, plotdata);      
       
+      var svg = container.selectAll("svg.mainplot").data([plotdata]);
+      var esvg = svg.enter()
+        .append("svg")
+          .attr("class", "mainplot");
+      esvg.append("g")
+          .attr("class", "x axis");
+      esvg.append("g")
+          .attr("class", "y axis");
+      esvg.append("g")
+          .attr("class", "x grid");           
+      esvg.append("g")
+          .attr("class", "y grid");
       
-      var svg = cEnter.append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .call(zoom)
-        //.on(".zoom", function() {console.log("zoom!")})
+      svg.select(".x.axis").call(xAxis);
+      svg.select(".y.axis").call(yAxis);
+      svg.select(".x.grid").call(xAxisGrid);
+      svg.select(".y.grid").call(yAxisGrid);
+      svg.call(zoom)
         .on("dblclick.zoom", null)
         .on("dblclick.resetzoom", resetzoom);
       
-      svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(" + margin.left + "," + height + ")")
-        .call(xAxis);
-
-      svg.append("g")
-        .attr("class", "y axis")
-        .attr("transform", "translate(" + margin.left + ",0)")
-        .call(yAxis);
-      
-      if (show_grid) {
-        svg.append("g")         
-          .attr("class", "grid x")
-          .attr("transform", "translate(" + margin.left + "," + height + ")")
-          .call(xAxisGrid
-            .tickSize(-height, 0, 0)
-            .tickFormat("")
-          );
-
-        svg.append("g")         
-          .attr("class", "grid y")
-          .attr("transform", "translate(" + margin.left + ",0)")
-          .call(yAxisGrid
-            .tickSize(-width, 0, 0)
-            .tickFormat("")
-          );
-      }
-      
-      
-            
+      svg.attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom);
+                
+      svg.selectAll("g.x")
+        .attr("transform", "translate(" + margin.left + "," + height + ")");
+      svg.selectAll("g.y")
+        .attr("transform", "translate(" + margin.left + ",0)");
     });
   }
+
+  chart.colormap=function(_) {
+    if (!arguments.length) return colormap;
+    colormap = _;
+    _colormap_array = [];
+    for (var i=0; i<256; i++) {
+        _colormap_array[i] = d3.rgb(colormap(i));
+        _colormap_array[i].a = 255;
+    }
+    _colormap_array[256] = d3.rgb(0,0,0);
+    _colormap_array[256].a = 0;
+    return chart;
+  };
+  
+  // cache the colormap:
+  chart.colormap(colormap);
 
   chart.margin = function(_) {
     if (!arguments.length) return margin;
@@ -212,6 +234,9 @@ function heatChart() {
   chart.show_grid = function(_) {
     if (!arguments.length) return show_grid;
     show_grid = _;
+    chart.outercontainer.selectAll(".grid").style(
+      "display", (show_grid) ? "inline" : "none"
+    );
     return chart;
   };
   
@@ -220,12 +245,25 @@ function heatChart() {
     transform = _;
     t = transforms[transform];
     tinv = inverse_transforms[transform];
+    _redraw_backing = true;
+    return chart;
+  };
+  
+  chart.target_ratio = function(_) {
+    if (!arguments.length) return target_ratio;
+    target_ratio = _;
     return chart;
   };
   
   chart.dims = function(_) {
     if (!arguments.length) return dims;
     dims = _;
+    return chart;
+  };
+  
+  chart.autoscale = function(_) {
+    if (!arguments.length) return autoscale;
+    autoscale = _;
     return chart;
   };
   
@@ -242,14 +280,14 @@ function heatChart() {
   };
 
   chart.x = function(_) {
-    if (!arguments.length) return xValue;
-    xValue = _;
+    if (!arguments.length) return x;
+    x = _;
     return chart;
   };
 
   chart.y = function(_) {
-    if (!arguments.length) return yValue;
-    yValue = _;
+    if (!arguments.length) return y;
+    y = _;
     return chart;
   };
 
@@ -328,16 +366,17 @@ function heatChart() {
       var data = image.data;
       for (var yp = 0, p = -1; yp < dims.ydim; ++yp) {
         for (var xp = 0; xp < dims.xdim; ++xp) {
-          var c = jet_array[plotdata[yp][xp]];
-          //var c = d3.rgb(color(heatmap[yp][xp]));
+          var c = _colormap_array[plotdata[yp][xp]];
+          /*
           data[++p] = c[0];
           data[++p] = c[1];
           data[++p] = c[2];
           data[++p] = c[3];
-          //image.data[++p] = c.r;
-          //image.data[++p] = c.g;
-          //image.data[++p] = c.b;
-          //image.data[++p] = 255;
+          */
+          data[++p] = c.r;
+          data[++p] = c.g;
+          data[++p] = c.b;
+          data[++p] = c.a;
         }
       }
       ctx.putImageData(image, 0, 0);
@@ -399,6 +438,30 @@ function heatChart() {
     }
     _redraw_backing = true;
     return plotdata
+  };
+  
+  
+  function get_min_max(array, transform, existing_min, existing_max) {
+    var new_min_max = {min: existing_min, max: existing_max};
+    for (var i in array) {
+      var subarr = array[i];
+      if (subarr == null) { return {min: existing_min, max: existing_max} }
+      if (subarr.length == undefined) {
+        var t_el = transform(subarr);
+        if (isFinite(t_el)) {
+          new_min_max = {min: t_el, max: t_el};
+        }
+      } else {
+        new_min_max = get_min_max(subarr, transform, existing_min, existing_max);
+      }
+      if (existing_min == undefined || new_min_max.min < existing_min) {
+        var existing_min = new_min_max.min;
+      }
+      if (existing_max == undefined || new_min_max.max > existing_max) {
+        var existing_max = new_min_max.max;
+      }
+    }
+    return {min: existing_min, max: existing_max}
   };
     
   var jet_array = [
@@ -467,5 +530,7 @@ function heatChart() {
     [163, 0, 0, 255], [159, 0, 0, 255], [154, 0, 0, 255], [150, 0, 0, 255], 
     [145, 0, 0, 255], [141, 0, 0, 255], [136, 0, 0, 255], [132, 0, 0, 255]
   ];
-  return chart;
+  
+  return chart
+  
 }
