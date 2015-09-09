@@ -57,21 +57,28 @@ canvas {
 <body>
 <!--<script src="d3.v3.min.js"></script>-->
 <script>
+window.onload = function() {
 
-var dispatch = d3.dispatch("update_main", "update_colorbar");
+  var dispatch = d3.dispatch("update_main", "update_colorbar");
+  var colormap_selector = document.getElementById('colormap_selector');
+  for (var m in cm.colormap_data) {
+    var new_option = document.createElement("option");
+    new_option.value = m;
+    new_option.text = m;
+    colormap_selector.add(new_option);
+  }
+  chart = heatChart()
+    .transform("log")
+    .autoscale(true);
+    
 
-chart = heatChart()
-  .transform("log")
-  .autoscale(true);
-  
-
-d3.json("sample_data/512.json", function(error, heatmap) {
-    mydata = heatmap;
-    c = d3.select("#plot1")
-      .data([heatmap])
-      .call(chart);
-});
-
+  d3.json("sample_data/512.json", function(error, heatmap) {
+      mydata = heatmap;
+      c = d3.select("#plot1")
+        .data([heatmap])
+        .call(chart);
+  });
+}
 // chart.target_ratio(1).update(); // changes aspect ratio!
 // var new_dims = chart.dims();
 // new_dims.xmax = 256;
@@ -82,6 +89,7 @@ d3.json("sample_data/512.json", function(error, heatmap) {
 <div id="plot1">
 </div>
 <div id="demos">
+  <pre>chart.colormap(cm.get_colormap(<select id="colormap_selector" onchange="chart.colormap(cm.get_colormap(this.value)).update()"><option value="jet">jet</option></select>)).update();</pre>
   <pre>chart.aspect_ratio(<input type="text" value="null" name="aspect_ratio" onchange="chart.aspect_ratio(this.value).update()" />).update();</pre>
   <pre>var new_dims = chart.dims();
 new_dims.xmax = <input type="number" value="1" name="xmax" onchange="var new_dims = chart.dims(); new_dims.xmax=parseFloat(this.value); chart.dims(new_dims).update()" />;
