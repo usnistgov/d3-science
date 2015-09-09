@@ -230,7 +230,7 @@ function heatChart() {
     if (!arguments.length) return show_grid;
     show_grid = _;
     chart.outercontainer.selectAll(".grid").style(
-      "display", (show_grid) ? "inline" : "none"
+      "display", (show_grid == true || show_grid == "true") ? "inline" : "none"
     );
     return chart;
   };

@@ -62,6 +62,7 @@ var dispatch = d3.dispatch("update_main", "update_colorbar");
 chart = heatChart()
   .transform("log")
   .autoscale(true);
+  
 
 d3.json("sample_data/512.json", function(error, heatmap) {
     mydata = heatmap;
@@ -80,13 +81,12 @@ d3.json("sample_data/512.json", function(error, heatmap) {
 <div id="plot1">
 </div>
 <div id="demos">
-<pre>
-chart.aspect_ratio(1).update(); // changes aspect ratio!
-var new_dims = chart.dims();
-new_dims.xmax = 256;
-chart.dims(new_dims).update(); // new dimensions for 2d plot object
-chart.show_grid(false); // grid off
-</pre>
+  <pre>chart.aspect_ratio(<input type="text" value="null" name="aspect_ratio" onchange="chart.aspect_ratio(this.value).update()" />).update();</pre>
+  <pre>var new_dims = chart.dims();
+new_dims.xmax = <input type="number" value="1" name="xmax" onchange="var new_dims = chart.dims(); new_dims.xmax=this.value; chart.dims(new_dims).update()" />;
+chart.dims(new_dims).update(); // new xmax for 2d plot object</pre>
+  <pre>chart.show_grid(<input type="text" value="true" name="show_grid" onchange="chart.show_grid(this.value)" />); // grid off/on</pre>
+  <pre>chart.transform(<input type="text" value="log" name="transform" onchange="chart.transform(this.value).update()" />).update(); // do we like linear color scale better?</pre>
 </div>
 </body>
 </html>
