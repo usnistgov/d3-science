@@ -71,7 +71,12 @@ function heatChart() {
     svg.select(".grid.y").call(yAxisGrid);
     container.select('canvas.mainplot').call(drawImage, data);
   }
-
+  var zoom = d3.behavior.zoom().on("zoom.main", zoomed);
+  var resetzoom = function() {
+    zoom.translate([0,0]).scale(1);
+    zoomed.call(this);
+  }
+  
   // some private working variables
   var backing_canvas = document.createElement('canvas');
   var _redraw_backing = true;
@@ -99,6 +104,7 @@ function heatChart() {
         zdims.zmax = dims.zmax;
       }
       var plotdata = make_plotdata(data, dims, zdims, t, tinv);
+
       var limits = fixAspect(aspect_ratio, dims.xmin, dims.xmax, dims.ymin, dims.ymax, width, height);
       // Update the x-scale.
       x
@@ -145,11 +151,9 @@ function heatChart() {
       // we will bind data to the container div, a slightly non-standard
       // arrangement.
       var container = d3.select(this).selectAll("div.heatmap-container").data([plotdata]);
-      var resetzoom = function() {
-        zoom.translate([0,0]).scale(1);
-        zoomed.call(this);
-      }
-      var zoom = d3.behavior.zoom().x(x).y(y).on("zoom.main", null).on("zoom.main", zoomed);
+      
+      zoom.x(x).y(y);
+      chart.resetzoom = resetzoom;
       chart.zoom = zoom;
       
       // if inner container doesn't exist, build it.

@@ -52,6 +52,7 @@ canvas {
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
   <script src="heat-chart.js" charset="utf-8"></script>
+  <script src="get_colormap.js" charset="utf-8"></script>
 </head>
 <body>
 <!--<script src="d3.v3.min.js"></script>-->
@@ -83,7 +84,7 @@ d3.json("sample_data/512.json", function(error, heatmap) {
 <div id="demos">
   <pre>chart.aspect_ratio(<input type="text" value="null" name="aspect_ratio" onchange="chart.aspect_ratio(this.value).update()" />).update();</pre>
   <pre>var new_dims = chart.dims();
-new_dims.xmax = <input type="number" value="1" name="xmax" onchange="var new_dims = chart.dims(); new_dims.xmax=this.value; chart.dims(new_dims).update()" />;
+new_dims.xmax = <input type="number" value="1" name="xmax" onchange="var new_dims = chart.dims(); new_dims.xmax=parseFloat(this.value); chart.dims(new_dims).update()" />;
 chart.dims(new_dims).update(); // new xmax for 2d plot object</pre>
   <pre>chart.show_grid(<input type="text" value="true" name="show_grid" onchange="chart.show_grid(this.value)" />); // grid off/on</pre>
   <pre>chart.transform(<input type="text" value="log" name="transform" onchange="chart.transform(this.value).update()" />).update(); // do we like linear color scale better?</pre>
