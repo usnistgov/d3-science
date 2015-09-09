@@ -63,7 +63,8 @@ chart = heatChart()
   .transform("log")
   .autoscale(true);
 
-d3.json("sample_data/512.json", function(error, heatmap) {    
+d3.json("sample_data/512.json", function(error, heatmap) {
+    mydata = heatmap;
     c = d3.select("#plot1")
       .data([heatmap])
       .call(chart);
