@@ -81,7 +81,7 @@ d3.json("sample_data/512.json", function(error, heatmap) {
 </div>
 <div id="demos">
 <pre>
-chart.target_ratio(1).update(); // changes aspect ratio!
+chart.aspect_ratio(1).update(); // changes aspect ratio!
 var new_dims = chart.dims();
 new_dims.xmax = 256;
 chart.dims(new_dims).update(); // new dimensions for 2d plot object

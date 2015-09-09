@@ -7,7 +7,7 @@ function heatChart() {
   var show_grid = true;
   var show_colorbar = true;
   var numberOfTicks = 4;
-  var target_ratio = null;
+  var aspect_ratio = null;
   var autoscale = false;
   var transforms = {
     "lin": function(x) {return x},
@@ -99,7 +99,7 @@ function heatChart() {
         zdims.zmax = dims.zmax;
       }
       var plotdata = make_plotdata(data, dims, zdims, t, tinv);
-      var limits = fixAspect(target_ratio, dims.xmin, dims.xmax, dims.ymin, dims.ymax, width, height);
+      var limits = fixAspect(aspect_ratio, dims.xmin, dims.xmax, dims.ymin, dims.ymax, width, height);
       // Update the x-scale.
       x
         .domain([limits.xmin, limits.xmax])
@@ -244,9 +244,9 @@ function heatChart() {
     return chart;
   };
   
-  chart.target_ratio = function(_) {
-    if (!arguments.length) return target_ratio;
-    target_ratio = _;
+  chart.aspect_ratio = function(_) {
+    if (!arguments.length) return aspect_ratio;
+    aspect_ratio = _;
     return chart;
   };
   
@@ -317,8 +317,8 @@ function heatChart() {
     return {sx:sx, sy:sy, sw:sw, sh:sh, dx:dx, dy:dy, dw:dw, dh:dh}
   };
   
-  var fixAspect = function(target_ratio, xmin, xmax, ymin, ymax, width, height) {
-    if (target_ratio == null) {
+  var fixAspect = function(aspect_ratio, xmin, xmax, ymin, ymax, width, height) {
+    if (aspect_ratio == null) {
       return {'xmin': xmin, 'xmax': xmax, 'ymin': ymin, 'ymax': ymax}
     }
     var yrange = (ymax - ymin);
@@ -327,13 +327,13 @@ function heatChart() {
     var xcenter = (xmax + xmin) / 2.0;
     var graph_ratio = width / height;
     var ratio = yrange/xrange * graph_ratio;
-    //console.log('ratios:', ratio, target_ratio);
-    if (isNaN(ratio) || ratio == target_ratio) { return };
-    if (ratio < target_ratio) { // y-range is too small
-        yrange = target_ratio * xrange / graph_ratio;
+    //console.log('ratios:', ratio, aspect_ratio);
+    if (isNaN(ratio) || ratio == aspect_ratio) { return };
+    if (ratio < aspect_ratio) { // y-range is too small
+        yrange = aspect_ratio * xrange / graph_ratio;
     }
-    if (ratio > target_ratio) {
-        xrange = yrange / target_ratio * graph_ratio;
+    if (ratio > aspect_ratio) {
+        xrange = yrange / aspect_ratio * graph_ratio;
     }
             
     //console.log('ranges:', yrange, xrange);
