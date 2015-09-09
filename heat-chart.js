@@ -443,13 +443,13 @@ function heatChart() {
   
   function get_min_max(array, transform, existing_min, existing_max) {
     var new_min_max = {min: existing_min, max: existing_max};
-    for (var i in array) {
+    for (var i=0; i<array.length; i++) {
       var subarr = array[i];
       if (subarr == null) { return {min: existing_min, max: existing_max} }
-      if (subarr.length == undefined) {
+      if (!subarr.hasOwnProperty('length')) {
         var t_el = transform(subarr);
         if (isFinite(t_el)) {
-          new_min_max = {min: t_el, max: t_el};
+          new_min_max = {min: subarr, max: subarr};
         }
       } else {
         new_min_max = get_min_max(subarr, transform, existing_min, existing_max);
@@ -460,9 +460,28 @@ function heatChart() {
       if (existing_max == undefined || new_min_max.max > existing_max) {
         var existing_max = new_min_max.max;
       }
+      //console.log(i, existing_min);
     }
     return {min: existing_min, max: existing_max}
   };
+  
+  function get_minimum(array, transform, existing_min) {
+        var new_min;
+        for (var i in array) {
+            var subarr = array[i];
+            if (subarr == null) { return existing_min }
+            if (subarr.length == undefined) {
+                var t_el = transform(subarr);
+                if (isFinite(t_el)) new_min = t_el;
+            } else {
+                new_min = get_minimum(subarr, transform, existing_min);
+            }
+            if (existing_min == undefined || new_min < existing_min) {
+                var existing_min = new_min;
+            }
+        }
+        return existing_min
+    };
     
   var jet_array = [
     [0, 0, 127, 255], [0, 0, 132, 255], [0, 0, 136, 255], [0, 0, 141, 255], 
