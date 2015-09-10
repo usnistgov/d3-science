@@ -12,7 +12,7 @@ html, body {
 
 #plot1 {
     width: 100%;
-    height: 100%;;
+    height: 75%;;
 }
 
 svg,
@@ -51,7 +51,7 @@ canvas {
 
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
-  <script src="heat-chart.js" charset="utf-8"></script>
+  <script src="heat-chart-colorbar.js" charset="utf-8"></script>
   <script src="get_colormap.js" charset="utf-8"></script>
 </head>
 <body>
@@ -65,10 +65,13 @@ window.onload = function() {
     var new_option = document.createElement("option");
     new_option.value = m;
     new_option.text = m;
-    colormap_selector.add(new_option);
+    colormap_select.add(new_option);
   }
+  
+  colormap_select.value = "jet"; // default
+  
   chart = heatChart()
-    .transform("log")
+    .ztransform("log")
     .autoscale(true);
     
 
@@ -89,13 +92,13 @@ window.onload = function() {
 <div id="plot1">
 </div>
 <div id="demos">
-  <pre>chart.colormap(cm.get_colormap(<select id="colormap_selector" onchange="chart.colormap(cm.get_colormap(this.value)).update()"><option value="jet">jet</option></select>)).update();</pre>
+  <pre>chart.colormap(cm.get_colormap(<select id="colormap_select" onchange="chart.colormap(cm.get_colormap(this.value)).redrawImage()"></select>)).redrawImage();</pre>
   <pre>chart.aspect_ratio(<input type="text" value="null" name="aspect_ratio" onchange="chart.aspect_ratio(this.value).update()" />).update();</pre>
   <pre>var new_dims = chart.dims();
 new_dims.xmax = <input type="number" value="1" name="xmax" onchange="var new_dims = chart.dims(); new_dims.xmax=parseFloat(this.value); chart.dims(new_dims).update()" />;
 chart.dims(new_dims).update(); // new xmax for 2d plot object</pre>
   <pre>chart.show_grid(<input type="text" value="true" name="show_grid" onchange="chart.show_grid(this.value)" />); // grid off/on</pre>
-  <pre>chart.transform(<input type="text" value="log" name="transform" onchange="chart.transform(this.value).update()" />).update(); // do we like linear color scale better?</pre>
+  <pre>chart.ztransform(<input type="text" value="log" name="ztransform" onchange="chart.ztransform(this.value).update()" />).update(); // do we like linear or sqrt color scale better?</pre>
 </div>
 </body>
 </html>
