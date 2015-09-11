@@ -92,7 +92,7 @@ window.onload = function() {
 <div id="plot1">
 </div>
 <div id="demos">
-  <pre>chart.colormap(cm.get_colormap(<select id="colormap_select" onchange="chart.colormap(cm.get_colormap(this.value)).redrawImage()"></select>)).redrawImage();</pre>
+  <pre>chart.colormap(cm.get_colormap(<select id="colormap_select" onchange="chart.colormap(cm.get_colormap(this.value)).redrawImage(); chart.colorbar.update();"></select>)).redrawImage();</pre>
   <pre>chart.aspect_ratio(<input type="text" value="null" name="aspect_ratio" onchange="chart.aspect_ratio(this.value).update()" />).update();</pre>
   <pre>var new_dims = chart.dims();
 new_dims.xmax = <input type="number" value="1" name="xmax" onchange="var new_dims = chart.dims(); new_dims.xmax=parseFloat(this.value); chart.dims(new_dims).update()" />;

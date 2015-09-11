@@ -170,6 +170,7 @@ var draw_colorbar = function(target_id, transform, shared_dims, colormap) {
     var margin = {top: 10, right: 50, bottom: 50, left: margin_left},
         width = container.clientWidth - margin.left - margin.right,
         height = container.clientHeight - margin.top - margin.bottom;
+    console.log("colorbar width:", width);
         
     var x = d3.scale.linear()
         .domain([0, 10])
