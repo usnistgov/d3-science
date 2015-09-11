@@ -39,15 +39,16 @@ function heatChart() {
   var colormap = jet_colormap;  
   
   var zoomed = function() {
-    var svg = d3.select(this);
-    var container = d3.select(svg.node().parentNode);
-    var data = container.data();
-    //console.log(container);
-    svg.select(".x.axis").call(xAxis);
-    svg.select(".y.axis").call(yAxis);
-    svg.select(".grid.x").call(xAxisGrid);
-    svg.select(".grid.y").call(yAxisGrid);
-    container.select('canvas.mainplot').call(drawImage, data);
+    //var svg = d3.select(this);
+    //var container = d3.select(svg.node().parentNode);
+    //var data = container.data();
+    ////console.log(container);
+    //svg.select(".x.axis").call(xAxis);
+    //svg.select(".y.axis").call(yAxis);
+    //svg.select(".grid.x").call(xAxisGrid);
+    //svg.select(".grid.y").call(yAxisGrid);
+    //container.select('canvas.mainplot').call(drawImage, data);
+    _redraw_main = true;
   }
   var zoom = d3.behavior.zoom().on("zoom.heatmap_"+ id.toFixed(), zoomed);
   var resetzoom = function() {
@@ -60,7 +61,8 @@ function heatChart() {
     svg.select(".z.axis").call(zAxis);
 	  zdims.zmax = Math.max.apply(Math, z.domain());
 	  zdims.zmin = Math.min.apply(Math, z.domain());
-	  chart.redrawImage();
+	  _recalculate_main = true;
+	  //chart.redrawImage();
   }
   var cb_zoom = d3.behavior.zoom().on("zoom.colorbar_"+ id.toFixed(), cb_zoomed);
   var cb_resetzoom = function() {
@@ -77,6 +79,8 @@ function heatChart() {
   // some private working variables
   var backing_canvas = document.createElement('canvas');
   var colorbar_backing_canvas = document.createElement('canvas');
+  var _recalculate_main = false;
+  var _redraw_main = false;
   var _redraw_backing = true;
   var _redraw_colorbar = true;
   var _colormap_array = [];
@@ -102,6 +106,7 @@ function heatChart() {
         zdims.zmax = dims.zmax;
       }
       var plotdata = make_plotdata(data, dims, zdims, z);
+      chart.plotdata = plotdata;
 
       var limits = fixAspect(aspect_ratio, dims.xmin, dims.xmax, dims.ymin, dims.ymax, width, height);
       // Update the x-scale.
@@ -173,7 +178,7 @@ function heatChart() {
           .style("height", height + "px")
           .style("padding-left", margin.left + "px")
           .style("padding-right", margin.right + "px")
-          .call(drawImage, plotdata);
+          .call(drawImage);
                 
       chart.mainCanvas = mainCanvas;
       
@@ -204,7 +209,9 @@ function heatChart() {
       svg.selectAll("g.x")
         .attr("transform", "translate(" + margin.left + "," + height + ")");
       svg.selectAll("g.y")
-        .attr("transform", "translate(" + margin.left + ",0)");    
+        .attr("transform", "translate(" + margin.left + ",0)"); 
+        
+      chart.svg = svg;  
     });
     selection.call(chart.colorbar);
   }
@@ -315,6 +322,31 @@ function heatChart() {
     return chart;
   };
   
+  chart.redrawLoop = function() {
+    if (_recalculate_main == true) {
+      _recalculate_main = false;
+      var plotdata = make_plotdata(chart.source_data, dims, zdims, z);
+      chart.mainCanvas.data([plotdata]);
+      _redraw_backing = true;
+      _redraw_main = true;
+      //drawImage(chart.mainCanvas) //, plotdata);
+    }
+    if (_redraw_main == true) {
+      _redraw_main = false;
+      var svg = chart.svg;
+      var canvas = chart.mainCanvas;
+      var container = chart.outercontainer;
+      //console.log(container);
+      svg.select(".x.axis").call(xAxis);
+      svg.select(".y.axis").call(yAxis);
+      svg.select(".grid.x").call(xAxisGrid);
+      svg.select(".grid.y").call(yAxisGrid);
+      chart.mainCanvas.call(drawImage);
+    }
+    window.requestAnimationFrame(chart.redrawLoop);
+  };
+  
+  window.requestAnimationFrame(chart.redrawLoop);
   chart.margin = function(_) {
     if (!arguments.length) return margin;
     margin = _;
@@ -453,7 +485,10 @@ function heatChart() {
   };
   
   // Compute the pixel colors; scaled by CSS.
-  function drawImage(canvas, plotdata) {
+  function drawImage(canvas) {
+    // canvas is a d3 selection.
+    var plotdata = canvas.data()[0];
+    console.log(canvas, plotdata);
     var maxColorIndex = 255,
       overflowIndex = 256,
       context = canvas.node().getContext("2d"),
@@ -465,12 +500,11 @@ function heatChart() {
       backing_canvas.height = dims.ydim;
       var image = ctx.createImageData(dims.xdim, dims.ydim);
       var data = image.data;
-      var yp, pdy;
+      var yp, pp=0;
       for (var yt = 0, p = -1; yt < dims.ydim; ++yt) {
         yp = dims.ydim - 1 - yt; // y-axis starts at the top!
-        pdy = plotdata[yp];
-        for (var xp = 0; xp < dims.xdim; ++xp) {
-          var c = _colormap_array[pdy[xp]];
+        for (var xp = 0; xp < dims.xdim; ++xp, pp++) {
+          var c = _colormap_array[plotdata[pp]];
           /*
           data[++p] = c[0];
           data[++p] = c[1];
@@ -542,22 +576,17 @@ function heatChart() {
     var tzmax = t(clim.zmax);
     var tzmin = t(clim.zmin);
     var data = source_data; 
-    var plotdata = [], rowdata;
-    
+    var plotdata = new Uint8ClampedArray(width*height);
+    var d2c = maxColorIndex / (tzmax - tzmin);
+
     // plotdata is stored in row-major order ("C"), where row is "y"
-    var z, r, c, plotz;
-    for (r = 0; r < height; r++) {
-      plotdata[r] = [];
-      for (c = 0; c < width; c++) {
-        z = data[r][c];
-        plotz = Math.floor(((t(z) - tzmin) / (tzmax - tzmin)) * maxColorIndex);
-        
-        if (isNaN(plotz) || (z == null)) { plotz = overflowIndex }
-        else if (plotz > maxColorIndex) { plotz = maxColorIndex }
-        else if (plotz < 0) { plotz = 0 }
-        plotdata[r][c]=plotz;
+    var zz, r, c, dr, plotz, pp=0;
+    for (r = height - 1; r >=0; r--) {
+      dr = data[r];
+      for (c = 0; c < width; c++, pp++) {
+        zz = dr[c];        
+        plotdata[pp] = (t(zz) - tzmin) * d2c;
       }
-      //plotdata[r] = rowdata.slice();
     }
     _redraw_backing = true;
     return plotdata
