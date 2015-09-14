@@ -488,7 +488,6 @@ function heatChart() {
   function drawImage(canvas) {
     // canvas is a d3 selection.
     var plotdata = canvas.data()[0];
-    console.log(canvas, plotdata);
     var maxColorIndex = 255,
       overflowIndex = 256,
       context = canvas.node().getContext("2d"),
