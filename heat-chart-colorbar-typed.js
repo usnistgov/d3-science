@@ -493,7 +493,7 @@ function heatChart() {
     }
             
     //console.log('ranges:', yrange, xrange);
-    output = {
+    var output = {
         'xmin': xcenter - xrange/2.0, 
         'xmax': xcenter + xrange/2.0,
         'ymin': ycenter - yrange/2.0, 
