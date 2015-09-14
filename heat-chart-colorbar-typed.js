@@ -45,8 +45,8 @@ function heatChart() {
     _redraw_main = true;
   }
   var zoom = d3.behavior.zoom()
-    .on("zoom.heatmap_"+ id.toFixed(), null)
-    .on("zoom.heatmap_"+ id.toFixed(), zoomed);
+    .on("zoom.heatmap", null)
+    .on("zoom.heatmap", zoomed);
   var resetzoom = function() {
     zoom.translate([0,0]).scale(1);
     zoomed.call(this);
@@ -61,8 +61,8 @@ function heatChart() {
 	  //chart.redrawImage();
   }
   var cb_zoom = d3.behavior.zoom()
-    .on("zoom.colorbar_"+ id.toFixed(), null)
-    .on("zoom.colorbar_"+ id.toFixed(), cb_zoomed);
+    .on("zoom.colorbar", null)
+    .on("zoom.colorbar", cb_zoomed);
     
   var cb_resetzoom = function() {
     cb_zoom.translate([0,0]).scale(1);
@@ -187,6 +187,7 @@ function heatChart() {
           .attr("class", "mainplot")
           .call(zoom)
           .on("dblclick.zoom", null)
+          .on("dblclick.resetzoom", null)
           .on("dblclick.resetzoom", resetzoom);
       esvg.append("g")
           .attr("class", "x axis");
@@ -277,14 +278,16 @@ function heatChart() {
       var svg = container.selectAll("svg.colorbar").data([0]);
       var esvg = svg.enter()
         .append("svg")
-          .attr("class", "colorbar");
+          .attr("class", "colorbar")
+          .call(cb_zoom)
+          .on("dblclick.zoom", null)
+          .on("dblclick.resetzoom", null)
+          .on("dblclick.resetzoom", cb_resetzoom);
       esvg.append("g")
           .attr("class", "z axis");
     
       svg.select(".z.axis").call(zAxis);
-      svg.call(cb_zoom)
-        .on("dblclick.zoom", null)
-        .on("dblclick.resetzoom", cb_resetzoom);
+      svg
       
       svg.attr("width", width + cb_margin.left + cb_margin.right)
           .attr("height", height + cb_margin.top + cb_margin.bottom);
