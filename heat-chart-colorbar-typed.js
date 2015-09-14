@@ -152,7 +152,7 @@ function heatChart() {
         
       // we will bind data to the container div, a slightly non-standard
       // arrangement.
-      var container = d3.select(this).selectAll("div.heatmap-container").data([data]);
+      var container = d3.select(this).selectAll("div.heatmap-container").data([0]);
       
       zoom.x(x).y(y);
       chart.resetzoom = resetzoom;
@@ -167,7 +167,7 @@ function heatChart() {
         .style("width", innerwidth + "px")
         .style("height", innerheight + "px");
         
-      var mainCanvas = container.selectAll("canvas.mainplot").data([plotdata]);
+      var mainCanvas = container.selectAll("canvas.mainplot").data([0]);
       mainCanvas.enter().append("canvas");
       mainCanvas
           .attr("width", width)
@@ -181,10 +181,13 @@ function heatChart() {
                 
       chart.mainCanvas = mainCanvas;
       
-      var svg = container.selectAll("svg.mainplot").data([plotdata]);
+      var svg = container.selectAll("svg.mainplot").data([0]);
       var esvg = svg.enter()
         .append("svg")
-          .attr("class", "mainplot");
+          .attr("class", "mainplot")
+          .call(zoom)
+          .on("dblclick.zoom", null)
+          .on("dblclick.resetzoom", resetzoom);
       esvg.append("g")
           .attr("class", "x axis");
       esvg.append("g")
@@ -198,9 +201,6 @@ function heatChart() {
       svg.select(".y.axis").call(yAxis);
       svg.select(".x.grid").call(xAxisGrid);
       svg.select(".y.grid").call(yAxisGrid);
-      svg.call(zoom)
-        .on("dblclick.zoom", null)
-        .on("dblclick.resetzoom", resetzoom);
       
       svg.attr("width", width + margin.left + margin.right)
           .attr("height", height + margin.top + margin.bottom);

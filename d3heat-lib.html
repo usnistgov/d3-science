@@ -76,7 +76,7 @@ window.onload = function() {
     
 
   d3.json("sample_data/512.json", function(error, heatmap) {
-      mydata = heatmap;
+      //mydata = heatmap;
       c = d3.select("#plot1")
         .data([heatmap])
         .call(chart);
