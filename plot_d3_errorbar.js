@@ -283,7 +283,7 @@ function plotD3(target_id, data_obj, options) {
     if (options.show_line) {
         
         var line = d3.svg.line()
-            .defined(function(d) { return (d && isFinite(x(d[0])) && isFinite(y(d[1]))); })
+            .defined(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
             //.interpolate("linear")	
             .x(function(d) { return x(d[0]); })
             .y(function(d) { return y(d[1]); });
