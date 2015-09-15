@@ -8,7 +8,8 @@ function plotD3(target_id, data_obj, options) {
         vcursor: false,
         hcursor: false,
         xlabel: 'x-axis',
-        ylabel: 'y-axis'
+        ylabel: 'y-axis',
+        legend: true}
     }
     
     var options = options || {}, value = null;
@@ -17,6 +18,7 @@ function plotD3(target_id, data_obj, options) {
             options[key] = defaultOptions[key];
         }
     }
+    
     
     this.options = options;
     var max_y = -Infinity;
@@ -241,41 +243,43 @@ function plotD3(target_id, data_obj, options) {
 	
     //************************************************************
     // Create D3 legend
-    //************************************************************	
-	var legend = svg.append("g")
-	  .attr("class", "legend")
-	  .attr("x", width - 65)
-	  .attr("y", 25)
-	  .attr("height", 100)
-	  .attr("width", 100);
+    //************************************************************
+    if (options.legend) {
+	    var legend = svg.append("g")
+	      .attr("class", "legend")
+	      .attr("x", width - 65)
+	      .attr("y", 25)
+	      .attr("height", 100)
+	      .attr("width", 100);
 	
-	legend.selectAll('g').data(data)
-      .enter()
-      .append('g')
-      .each(function(d, i) {
-        var g = d3.select(this);
-        g.append("rect")
-          .attr("x", width - 65)
-          .attr("y", i*25)
-          .attr("width", 10)
-          .attr("height", 10)
-          .style("fill", colors[i%colors.length]);
-        
-        g.append("text")
-          .attr("x", width - 50)
-          .attr("y", i * 25 + 8)
-          .attr("height",30)
-          .attr("width",100)
-          .style("text-anchor", "start")
-          .style("fill", colors[i%colors.length])
-          .text(labels[i])
-          .on("mouseover", function() {
-            d3.selectAll('.line')[0][i].classList.add('highlight');
-          })
-          .on("mouseout", function() {
-            d3.selectAll('.line')[0][i].classList.remove('highlight');
+	    legend.selectAll('g').data(data)
+          .enter()
+          .append('g')
+          .each(function(d, i) {
+            var g = d3.select(this);
+            g.append("rect")
+              .attr("x", width - 65)
+              .attr("y", i*25)
+              .attr("width", 10)
+              .attr("height", 10)
+              .style("fill", colors[i%colors.length]);
+            
+            g.append("text")
+              .attr("x", width - 50)
+              .attr("y", i * 25 + 8)
+              .attr("height",30)
+              .attr("width",100)
+              .style("text-anchor", "start")
+              .style("fill", colors[i%colors.length])
+              .text(labels[i])
+              .on("mouseover", function() {
+                d3.selectAll('.line')[0][i].classList.add('highlight');
+              })
+              .on("mouseout", function() {
+                d3.selectAll('.line')[0][i].classList.remove('highlight');
+              });
           });
-      });
+    }
 	
     //************************************************************
     // Create D3 line object and draw data on our SVG object
