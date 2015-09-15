@@ -75,6 +75,16 @@ function plotD3(target_id, data_obj, options) {
     this.fullrange = fullrange;
     fullrange();
     
+    // make it possible to show single data points:
+    if (min_x == max_x) {
+      min_x -= 1;
+      max_x += 1;
+    }
+    if (min_y == max_y) {
+      min_y -= 1;
+      max_y += 1;
+    }
+    
     var old_colors = [
 	    'steelblue',
 	    'green',
