@@ -107,7 +107,7 @@ function plotD3(target_id, data_obj, options) {
     
     var container = d3.select("#" + target_id).node();
     
-    var margin = {top: 10, right: 10, bottom: 50, left: 50},
+    var margin = {top: 10, right: 10, bottom: 50, left: 100},
         width = container.clientWidth - margin.left - margin.right,
         height = container.clientHeight - margin.top - margin.bottom;
 	
