@@ -106,7 +106,7 @@ function heatChart() {
       }
       
       make_plotdata(data, dims, zdims, z);
-
+      
       var limits = fixAspect(aspect_ratio, dims.xmin, dims.xmax, dims.ymin, dims.ymax, width, height);
       // Update the x-scale.
       x
