@@ -9,7 +9,7 @@ function plotD3(target_id, data_obj, options) {
         hcursor: false,
         xlabel: 'x-axis',
         ylabel: 'y-axis',
-        legend: true}
+        legend: true
     }
     
     var options = options || {}, value = null;
