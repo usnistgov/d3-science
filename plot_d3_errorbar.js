@@ -321,7 +321,7 @@ function plotD3(target_id, data_obj, options) {
         .selectAll(".dot")
           .data(function(d) { return d; })
         .enter().append("circle")
-          .filter(function(d) { return (d && isFinite(x(d[0])) && isFinite(y(d[1]))); })
+          .filter(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
           .attr("class", "dot")
           .attr("r", 2.5)
           .attr("cx", function(d) { return x(d[0]); })
@@ -394,7 +394,7 @@ function plotD3(target_id, data_obj, options) {
           .data(function(d) { return d; })
         .enter().append("path")
           .filter(function(d) {
-            return (d && 
+            return (d && d[1] != null &&
               isFinite(x(d[2].xlower)) && 
               isFinite(x(d[2].xupper)) && 
               isFinite(y(d[2].ylower)) &&
@@ -418,7 +418,6 @@ function plotD3(target_id, data_obj, options) {
 	    if (line) svg.selectAll('path.line').attr('d', line);  
      
 	    if (points) {
-        console.log(points.selectAll('circle'));
         points.selectAll('.dot')
 	      .attr("cx", function(d) { return x(d[0]); })
         .attr("cy", function(d) { return y(d[1]); });
