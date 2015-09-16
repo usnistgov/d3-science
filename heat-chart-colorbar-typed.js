@@ -6,14 +6,16 @@ if (!d3.hasOwnProperty("id")) {
 
 function heatChart() {
   var debug=false;
-  var margin = {top: 10, right: 10, bottom: 50, left: 50};
+  var margin = {top: 10, right: 10, bottom: 50, left: 50}; 
   var cb_margin = {top: 10, right: 50, bottom: 50, left: 10};
-  var show_grid = true;
+  var show_grid = true; 
   var show_colorbar = true;
   var colorbar_width = 120;
   var numberOfTicks = 4;
   var aspect_ratio = null;
   var autoscale = false;
+  var xlabel = "x-axis";
+  var ylabel = "y-axis";
   var plotdata;
   var ztransform = 'linear',
     z = d3.scale[ztransform]();
@@ -190,18 +192,36 @@ function heatChart() {
           .on("dblclick.resetzoom", null)
           .on("dblclick.resetzoom", resetzoom);
       esvg.append("g")
-          .attr("class", "x axis");
+        .attr("class", "x axis");
       esvg.append("g")
-          .attr("class", "y axis");
+        .attr("class", "x axis")
+        .append("text")
+        .attr("class", "x axis-label")
+        .attr("x", width/2.0)
+        .attr("text-anchor", "middle")
+        .attr("y", 35)
       esvg.append("g")
-          .attr("class", "x grid");           
+	      .attr("class", "y axis")
+	      .append("text")
+	      .attr("class", "y axis-label")
+	      .attr("text-anchor", "middle")
+	      .attr("transform", "rotate(-90)")
+	      .attr("y", -35 )
+	      .attr("x", -height/2)
+	    
       esvg.append("g")
-          .attr("class", "y grid");
+        .attr("class", "y axis");
+      esvg.append("g")
+        .attr("class", "x grid");           
+      esvg.append("g")
+        .attr("class", "y grid");
       
       svg.select(".x.axis").call(xAxis);
       svg.select(".y.axis").call(yAxis);
       svg.select(".x.grid").call(xAxisGrid);
       svg.select(".y.grid").call(yAxisGrid);
+      svg.select(".x.axis-label").text(xlabel);
+      svg.select(".y.axis-label").text(ylabel);
       
       svg.attr("width", width + margin.left + margin.right)
           .attr("height", height + margin.top + margin.bottom);
@@ -287,7 +307,6 @@ function heatChart() {
           .attr("class", "z axis");
     
       svg.select(".z.axis").call(zAxis);
-      svg
       
       svg.attr("width", width + cb_margin.left + cb_margin.right)
           .attr("height", height + cb_margin.top + cb_margin.bottom);
@@ -404,15 +423,15 @@ function heatChart() {
     return chart;
   };
   
-  chart.width = function(_) {
-    if (!arguments.length) return width;
-    width = _;
+  chart.xlabel = function(_) {
+    if (!arguments.length) return xlabel;
+    xlabel = _;
     return chart;
   };
-
-  chart.height = function(_) {
-    if (!arguments.length) return height;
-    height = _;
+  
+  chart.ylabel = function(_) {
+    if (!arguments.length) return ylabel;
+    ylabel = _;
     return chart;
   };
 
