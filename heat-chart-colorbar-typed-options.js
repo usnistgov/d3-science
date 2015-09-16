@@ -399,6 +399,19 @@ function heatChart(options_override) {
     return chart;
   };
   
+  // drop all the other options into the chart namespace,
+  // making objects update rather than overwrite
+  for (var attr in options) {
+    // ignore the ones we've already defined accessors for.
+    if (!(attr in chart)) {
+      chart[attr] = function(_) {
+        if (!arguments.length) return options[attr];
+        if (jQuery.type(_) == "object") {
+        
+      }
+    }
+  }
+  
   chart.aspect_ratio = function(_) {
     if (!arguments.length) return options.aspect_ratio;
     options.aspect_ratio = _;
