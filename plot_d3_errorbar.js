@@ -1,4 +1,12 @@
-function plotD3(target_id, data_obj, options) {
+// requires: 
+//   - jquery-extend.js (or jQuery, to get jQuery.extend)
+//   - d3.js
+
+function plotD3(target_id, data_obj, options_overrides) {
+    // options are taken in this order:
+    // any option in options_overrides writes over data_obj.options,
+    // any option in data_obj.options then writes over defaultOptions
+    
     var defaultOptions = {
         log_x: false,
         log_y: false,
@@ -12,13 +20,9 @@ function plotD3(target_id, data_obj, options) {
         legend: true
     }
     
-    var options = options || {}, value = null;
-    for (var key in defaultOptions) {
-        if (!(key in options)) {
-            options[key] = defaultOptions[key];
-        }
-    }
-    
+    var options = jQuery.extend(true, {}, defaultOptions); // copy
+    jQuery.extend(true, options, data_obj.options); // overwrite from data_obj
+    jQuery.extend(true, options, options_overrides); // overwrite from options_overrides
     
     this.options = options;
     var max_y = -Infinity;
