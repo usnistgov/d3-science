@@ -27,7 +27,7 @@ canvas {
 }
 
 .axis text {
-  font: 10px sans-serif;
+  font: 14px sans-serif;
 }
 
 .axis path,
@@ -35,6 +35,12 @@ canvas {
   fill: none;
   stroke: #000;
   shape-rendering: crispEdges;
+}
+.axis .axis-label {
+    font-size: 14px;
+    user-select: none; 
+    -webkit-user-select: none; 
+    -moz-user-select: none;
 }
 
 .axis path {
@@ -51,8 +57,10 @@ canvas {
 
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
-  <script src="heat-chart-colorbar-typed.js" charset="utf-8"></script>
+  <script src="jquery-extend.js"></script>
+  <script src="heat-chart-colorbar-typed-options.js" charset="utf-8"></script>
   <script src="get_colormap.js" charset="utf-8"></script>
+  <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 </head>
 <body>
 <!--<script src="d3.v3.min.js"></script>-->
@@ -72,7 +80,9 @@ window.onload = function() {
   
   chart = heatChart()
     .ztransform("log")
-    .autoscale(true);
+    .autoscale(true)
+    .xlabel("Qx (\u212B\u207B\u00B9)")
+    .ylabel("Qz (\u212B\u207B\u00B9)");
     
 
   d3.json("sample_data/512.json", function(error, heatmap) {
@@ -94,9 +104,7 @@ window.onload = function() {
 <div id="demos">
   <pre>chart.colormap(cm.get_colormap(<select id="colormap_select" onchange="chart.colormap(cm.get_colormap(this.value)).redrawImage(); chart.colorbar.update();"></select>)).redrawImage();</pre>
   <pre>chart.aspect_ratio(<input type="text" value="null" name="aspect_ratio" onchange="chart.aspect_ratio(this.value).update()" />).update();</pre>
-  <pre>var new_dims = chart.dims();
-new_dims.xmax = <input type="number" value="1" name="xmax" onchange="var new_dims = chart.dims(); new_dims.xmax=parseFloat(this.value); chart.dims(new_dims).update()" />;
-chart.dims(new_dims).update(); // new xmax for 2d plot object</pre>
+  <pre>chart.dims({xmax: <input type="number" value="1" name="xmax" onchange="chart.dims({xmax: parseFloat(this.value)}).update()" />}).update(); // new xmax for 2d plot object</pre>
   <pre>chart.show_grid(<input type="text" value="true" name="show_grid" onchange="chart.show_grid(this.value)" />); // grid off/on</pre>
   <pre>chart.ztransform(<input type="text" value="log" name="ztransform" onchange="chart.ztransform(this.value).update()" />).update(); // do we like linear or sqrt color scale better?</pre>
 </div>
