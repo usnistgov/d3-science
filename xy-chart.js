@@ -296,7 +296,7 @@ function xyChart(options_override) {
       //************************************************************
       // Create D3 legend
       //************************************************************
-      if (options.legend) {
+      if (options.legend && options.legend.show) {
 	      var legend = svg.selectAll("g.legend").data([0]);
 	      var el = legend.enter().append("g")
 	        .attr("class", "legend")
