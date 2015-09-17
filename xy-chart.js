@@ -9,7 +9,7 @@ function xyChart(options_override) {
     autoscale: true,
     show_points: true,
     show_line: true,
-    show_errorbars: true,
+    show_errorbars: false,
     numberOfTicks: 4,
     position_cursor: true,
     vcursor: false,
