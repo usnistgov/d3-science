@@ -25,7 +25,7 @@ function xyChart(options_override) {
       xaxis: {label: "x-axis"},
       yaxis: {label: "y-axis"}
     },
-    series: []
+    series: new Array()
   }
     
   var options = jQuery.extend(true, {}, options_defaults); // copy
@@ -121,6 +121,15 @@ function xyChart(options_override) {
       chart.update = function() { outercontainer.transition().call(chart); };   
       if (options.autoscale) {
         fullrange();
+        // make it possible to show single data points:
+        if (min_x == max_x) {
+          min_x -= 1;
+          max_x += 1;
+        }
+        if (min_y == max_y) {
+          min_y -= 1;
+          max_y += 1;
+        }
       }
       
       //************************************************************
@@ -254,7 +263,7 @@ function xyChart(options_override) {
       gEnter.append("defs").append("clipPath")
         .attr("id", "myClip") // local def
         .append("rect")
-        .attr("x", x(min_x)) // options.margin.left)
+        .attr("x", 0) // x(min_x)) // options.margin.left)
         .attr("y", options.margin.top)
 	      .attr("width", width)
 	      .attr("height", height);
