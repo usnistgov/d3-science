@@ -263,8 +263,8 @@ function xyChart(options_override) {
       gEnter.append("defs").append("clipPath")
         .attr("id", "myClip") // local def
         .append("rect")
-        .attr("x", 0) // x(min_x)) // options.margin.left)
-        .attr("y", options.margin.top)
+        //.attr("x", 0) // x(min_x)) // options.margin.left)
+        //.attr("y", 0)
 	      .attr("width", width)
 	      .attr("height", height);
 	    
