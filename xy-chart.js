@@ -20,7 +20,7 @@ function xyChart(options_override) {
     errorbar_width: 12,
     xtransform: "linear",
     ytransform: "linear",
-    legend: {show: true},
+    legend: {show: false},
     axes: {
       xaxis: {label: "x-axis"},
       yaxis: {label: "y-axis"}
