@@ -12,7 +12,7 @@ function plotD3(target_id, data_obj, options_overrides) {
         log_y: false,
         show_line: true,
         show_points: true,
-        show_errorbars: true,
+        show_errorbars: false,
         vcursor: false,
         hcursor: false,
         xlabel: 'x-axis',
