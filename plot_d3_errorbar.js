@@ -5,9 +5,9 @@
 function plotD3(target_id, data_obj, options_overrides) {
     // options are taken in this order:
     // any option in options_overrides writes over data_obj.options,
-    // any option in data_obj.options then writes over defaultOptions
+    // any option in data_obj.options then writes over options_defaults
     
-    var defaultOptions = {
+    var options_defaults = {
         log_x: false,
         log_y: false,
         show_line: true,
@@ -17,10 +17,11 @@ function plotD3(target_id, data_obj, options_overrides) {
         hcursor: false,
         xlabel: 'x-axis',
         ylabel: 'y-axis',
-        legend: true
+        legend: true,
+        numTicks = 4
     }
     
-    var options = jQuery.extend(true, {}, defaultOptions); // copy
+    var options = jQuery.extend(true, {}, options_defaults); // copy
     jQuery.extend(true, options, data_obj.options); // overwrite from data_obj
     jQuery.extend(true, options, options_overrides); // overwrite from options_overrides
     
@@ -30,11 +31,19 @@ function plotD3(target_id, data_obj, options_overrides) {
     var max_x = -Infinity;
     var min_x = Infinity;
     
+    var numXTicks = numTicks,
+        numYTicks = numTicks; // for now.
+    
     var newy, newx;
     var errorbar_width = 12;
     var labels = data_obj.options.series.map(function(d) { return d.label });
     var x = (options.log_x ? d3.scale.log : d3.scale.linear)();
     var y = (options.log_y ? d3.scale.log : d3.scale.linear)();
+    var xAxis = d3.svg.axis(),
+        yAxis = d3.svg.axis(),
+        xAxisGrid = d3.svg.axis(),
+        yAxisGrid = d3.svg.axis();
+        
     var data = data_obj.data;
     /*
     var di;
@@ -133,22 +142,35 @@ function plotD3(target_id, data_obj, options_overrides) {
         .domain([min_y, max_y])
         .range([height, 0]);
 
-	  
-    var xAxis = d3.svg.axis()
-        .scale(x)
+	  xAxis
+      .scale(x)
+      .ticks(numberOfTicks)
+      .tickPadding(10)	
+      .tickSubdivide(true)	
+      .orient("bottom");
+    
+    yAxis
+      .scale(y)
+      .ticks(numberOfTicks)
+      .tickPadding(10)	
+      .tickSubdivide(true)	
+      .orient("left");
+      
+    xAxisGrid
+      .scale(x)
 	    .tickSize(-height)
-	    .ticks(5)
+	    .ticks(numXTicks)
 	    .tickPadding(10)	
 	    .tickSubdivide(true)	
-        .orient("bottom");	
+      .orient("bottom");	
 	
-    var yAxis = d3.svg.axis()
-        .scale(y)
+    yAxisGrid
+      .scale(y)
 	    .tickPadding(10)
-	    .ticks(5)
+	    .ticks(numYTicks)
 	    .tickSize(-width)
 	    .tickSubdivide(true)	
-        .orient("left");
+      .orient("left");
     
     var zoom = d3.behavior.zoom().x(x).y(y).on("zoom", zoomed);
 
@@ -432,7 +454,9 @@ function plotD3(target_id, data_obj, options_overrides) {
     //************************************************************
     function zoomed() {
 	    svg.select(".x.axis").call(xAxis);
-	    svg.select(".y.axis").call(yAxis);   
+	    svg.select(".y.axis").call(yAxis);
+	    svg.select(".grid.x").call(xAxisGrid);
+      svg.select(".grid.y").call(yAxisGrid);
 	    if (line) svg.selectAll('path.line').attr('d', line);  
      
 	    if (points) {
