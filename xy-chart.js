@@ -47,12 +47,13 @@ function xyChart(options_override) {
   
   var zoom = d3.behavior.zoom().x(x).y(y).on("zoom", zoomed);
   var resetzoom = function() {
-    zoom.translate([0,0]).scale(1);
+    zoom.translate([0,0]).scale(1.0);
     zoomed.call(this);
   }
   var source_data;
-   
-  function fullrange() {
+  var base_zoom_offset = 0.05; // zoom out 5% from min and max by default;
+  
+  function do_autoscale() {
     var extents;
     var merged_data = d3.merge(source_data);
     if (options.show_errorbars) {
@@ -68,9 +69,16 @@ function xyChart(options_override) {
       min_x = extents[0];
       max_x = extents[1];
     }
+    var dx = (max_x - min_x) || 1.0,
+        dy = (max_y - min_y) || 1.0;
+    
+    min_x -= (dx * base_zoom_offset);
+    max_x += (dx * base_zoom_offset);
+    min_y -= (dy * base_zoom_offset); 
+    max_y += (dy * base_zoom_offset);
     return {min_x: min_x, max_x: max_x, min_y: min_y, max_y: max_y}
   }
-  this.fullrange = fullrange;
+  this.do_autoscale = do_autoscale;
     
   // make it possible to show single data points:
   if (min_x == max_x) {
@@ -120,16 +128,7 @@ function xyChart(options_override) {
       source_data = data;
       chart.update = function() { outercontainer.transition().call(chart); };   
       if (options.autoscale) {
-        fullrange();
-        // make it possible to show single data points:
-        if (min_x == max_x) {
-          min_x -= 1;
-          max_x += 1;
-        }
-        if (min_y == max_y) {
-          min_y -= 1;
-          max_y += 1;
-        }
+        do_autoscale();
       }
       
       //************************************************************
@@ -198,7 +197,8 @@ function xyChart(options_override) {
         .append("g")
           .attr("class", "mainview")
           .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")")
-          .call(zoom);
+          //.call(zoom);
+
       console.log(gEnter);
       /*
       esvg.append("g")
@@ -291,6 +291,7 @@ function xyChart(options_override) {
       //  .attr("transform", "translate(" + options.margin.left + ",0)"); 
        
       chart.svg = svg;
+      resetzoom(); // set to 10% zoom out.
       chart.g = svg.selectAll("g.mainview");
 	
       //************************************************************
