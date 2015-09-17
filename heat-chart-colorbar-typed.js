@@ -358,7 +358,6 @@ function heatChart() {
       var svg = chart.svg;
       var canvas = chart.mainCanvas;
       var container = chart.outercontainer;
-      //console.log(container);
       svg.select(".x.axis").call(xAxis);
       svg.select(".y.axis").call(yAxis);
       svg.select(".grid.x").call(xAxisGrid);
@@ -505,7 +504,6 @@ function heatChart() {
     var xcenter = (xmax + xmin) / 2.0;
     var graph_ratio = width / height;
     var ratio = yrange/xrange * graph_ratio;
-    //console.log('ratios:', ratio, aspect_ratio);
     if (isNaN(ratio) || ratio == aspect_ratio) { return };
     if (ratio < aspect_ratio) { // y-range is too small
         yrange = aspect_ratio * xrange / graph_ratio;
@@ -514,7 +512,6 @@ function heatChart() {
         xrange = yrange / aspect_ratio * graph_ratio;
     }
             
-    //console.log('ranges:', yrange, xrange);
     var output = {
         'xmin': xcenter - xrange/2.0, 
         'xmax': xcenter + xrange/2.0,
@@ -652,7 +649,6 @@ function heatChart() {
       if (existing_max == undefined || new_min_max.max > existing_max) {
         var existing_max = new_min_max.max;
       }
-      //console.log(i, existing_min);
     }
     return {min: existing_min, max: existing_max}
   };

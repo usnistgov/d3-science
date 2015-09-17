@@ -1,12 +1,7 @@
 // The "extend" function from jQuery, by itself.
 
 (function() {
-  var extend = function() {
-    var options, name, src, copy, copyIsArray, clone, target = arguments[0] || {},
-    i = 1,
-    length = arguments.length,
-    deep = false,
-    toString = Object.prototype.toString,
+  var toString = Object.prototype.toString,
     hasOwn = Object.prototype.hasOwnProperty,
     push = Array.prototype.push,
     slice = Array.prototype.slice,
@@ -21,40 +16,45 @@
       "[object Date]": "date",
       "[object RegExp]": "regexp",
       "[object Object]": "object"
-    },
-    jQuery = {
-      isFunction: function (obj) {
-        return jQuery.type(obj) === "function"
-      },
-      isArray: Array.isArray ||
-      function (obj) {
-        return jQuery.type(obj) === "array"
-      },
-      isWindow: function (obj) {
-        return obj != null && obj == obj.window
-      },
-      isNumeric: function (obj) {
-        return !isNaN(parseFloat(obj)) && isFinite(obj)
-      },
-      type: function (obj) {
-        return obj == null ? String(obj) : class2type[toString.call(obj)] || "object"
-      },
-      isPlainObject: function (obj) {
-        if (!obj || jQuery.type(obj) !== "object" || obj.nodeType) {
-          return false
-        }
-        try {
-          if (obj.constructor && !hasOwn.call(obj, "constructor") && !hasOwn.call(obj.constructor.prototype, "isPrototypeOf")) {
-            return false
-          }
-        } catch (e) {
-          return false
-        }
-        var key;
-        for (key in obj) {}
-        return key === undefined || hasOwn.call(obj, key)
-      }
     };
+  jQuery = {
+    isFunction: function (obj) {
+      return jQuery.type(obj) === "function"
+    },
+    isArray: Array.isArray ||
+    function (obj) {
+      return jQuery.type(obj) === "array"
+    },
+    isWindow: function (obj) {
+      return obj != null && obj == obj.window
+    },
+    isNumeric: function (obj) {
+      return !isNaN(parseFloat(obj)) && isFinite(obj)
+    },
+    type: function (obj) {
+      return obj == null ? String(obj) : class2type[toString.call(obj)] || "object"
+    },
+    isPlainObject: function (obj) {
+      if (!obj || jQuery.type(obj) !== "object" || obj.nodeType) {
+        return false
+      }
+      try {
+        if (obj.constructor && !hasOwn.call(obj, "constructor") && !hasOwn.call(obj.constructor.prototype, "isPrototypeOf")) {
+          return false
+        }
+      } catch (e) {
+        return false
+      }
+      var key;
+      for (key in obj) {}
+      return key === undefined || hasOwn.call(obj, key)
+    }
+  };
+  var extend = function() {
+    var options, name, src, copy, copyIsArray, clone, target = arguments[0] || {},
+    i = 1,
+    length = arguments.length,
+    deep = false;
     if (typeof target === "boolean") {
       deep = target;
       target = arguments[1] || {};
@@ -93,7 +93,6 @@
     return target;
   }
   
-  if (typeof jQuery == 'undefined') jQuery = {};
-  if (!jQuery.extend) jQuery.extend = extend;
+  jQuery.extend = extend;
   
 })();

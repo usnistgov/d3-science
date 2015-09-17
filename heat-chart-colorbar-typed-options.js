@@ -23,7 +23,7 @@ function heatChart(options_override) {
   var options = jQuery.extend(true, {}, options_defaults); // copy
   jQuery.extend(true, options, options_override); // process any overrides from creation;
   
-  var plotdata;
+  var plotdata, source_data;
   var z = d3.scale[options.ztransform]();
     
   var dims = {
@@ -31,8 +31,6 @@ function heatChart(options_override) {
     xmax: 1,
     ymin: 0, 
     ymax: 1,
-    xdim: 512,
-    ydim: 512,
     zmin: 1.0,
     zmax: 100.0
   }
@@ -101,9 +99,8 @@ function heatChart(options_override) {
         width = innerwidth - options.margin.right - options.margin.left,
         height = innerheight - options.margin.top - options.margin.bottom;
       chart.outercontainer = outercontainer;
-      chart.source_data = data;
+      source_data = data;
       chart.update = function() { outercontainer.transition().call(chart); chart.colorbar.update(); };   
-      
       if (options.autoscale) {
         var new_min_max = get_min_max(data, z);
         zdims.zmin = new_min_max.min;
@@ -113,9 +110,9 @@ function heatChart(options_override) {
         zdims.zmax = dims.zmax;
       }
       
-      make_plotdata(data, dims, zdims, z);
       
-      var limits = fixAspect(options.aspect_ratio, dims.xmin, dims.xmax, dims.ymin, dims.ymax, width, height);
+      
+      var limits = fixAspect(width, height);
       // Update the x-scale.
       x
         .domain([limits.xmin, limits.xmax])
@@ -125,6 +122,11 @@ function heatChart(options_override) {
       y
         .domain([limits.ymin, limits.ymax])
         .range([height, 0]);
+      
+      z
+        .domain([zdims.zmin, zdims.zmax])
+          
+      make_plotdata();
       
       xAxisGrid
         .scale(x)
@@ -255,9 +257,7 @@ function heatChart(options_override) {
       
       
       // update the z axis
-      z
-        .domain([zdims.zmin, zdims.zmax])
-        .range([height, 0]);
+      z.range([height, 0]);
         
       zAxis
         .scale(z)
@@ -353,8 +353,7 @@ function heatChart(options_override) {
   chart.redrawLoop = function() {
     if (_recalculate_main == true) {
       _recalculate_main = false;
-      var plotdata = make_plotdata(chart.source_data, dims, zdims, z);
-      chart.mainCanvas.data([plotdata]);
+      make_plotdata();
       _redraw_backing = true;
       _redraw_main = true;
       //drawImage(chart.mainCanvas) //, plotdata);
@@ -364,7 +363,6 @@ function heatChart(options_override) {
       var svg = chart.svg;
       var canvas = chart.mainCanvas;
       var container = chart.outercontainer;
-      //console.log(container);
       svg.select(".x.axis").call(xAxis);
       svg.select(".y.axis").call(yAxis);
       svg.select(".grid.x").call(xAxisGrid);
@@ -404,55 +402,21 @@ function heatChart(options_override) {
   for (var attr in options) {
     // ignore the ones we've already defined accessors for.
     if (!(attr in chart)) {
-      chart[attr] = function(_) {
-        if (!arguments.length) return options[attr];
-        if (jQuery.type(_) == "object") {
-        
-      }
+      chart[attr] = (function(attr) {     
+        var accessor = function(_) {
+          if (!arguments.length) return options[attr];
+          if (jQuery.type(options[attr]) == "object") {
+            jQuery.extend(options[attr], _); 
+          } else {
+            options[attr] = _;
+          }
+          return chart;
+        }
+        return accessor
+      })(attr);
     }
   }
   
-  chart.aspect_ratio = function(_) {
-    if (!arguments.length) return options.aspect_ratio;
-    options.aspect_ratio = _;
-    return chart;
-  };
-  
-  chart.plotdata = function(_) {
-    if (!arguments.length) return plotdata;
-    plotdata = _;
-    return chart;
-  };
-  
-  chart.dims = function(_) {
-    if (!arguments.length) return dims;
-    jQuery.extend(dims, _); // can call for instance chart.dims({"xmin": 12}) to update just that.
-    return chart;
-  };
-  
-  chart.zdims = function(_) {
-    if (!arguments.length) return zdims;
-    zdims = _;
-    return chart;
-  };
-  
-  chart.autoscale = function(_) {
-    if (!arguments.length) return options.autoscale;
-    options.autoscale = _;
-    return chart;
-  };
-  
-  chart.xlabel = function(_) {
-    if (!arguments.length) return options.xlabel;
-    options.xlabel = _;
-    return chart;
-  };
-  
-  chart.ylabel = function(_) {
-    if (!arguments.length) return options.ylabel;
-    options.ylabel = _;
-    return chart;
-  };
 
   chart.x = function(_) {
     if (!arguments.length) return x;
@@ -484,8 +448,10 @@ function heatChart(options_override) {
   };
 
   var get_sxdx = function(){
-    var delta_x = (dims.xmax - dims.xmin)/(dims.xdim),
-        delta_y = (dims.ymax - dims.ymin)/(dims.ydim);
+    var xdim = source_data[0].length,
+        ydim = source_data.length;
+    var delta_x = (dims.xmax - dims.xmin)/(xdim),
+        delta_y = (dims.ymax - dims.ymin)/(ydim);
     
     var graph_xmax = Math.max.apply(Math, x.domain()),
         graph_xmin = Math.min.apply(Math, x.domain()),
@@ -514,7 +480,12 @@ function heatChart(options_override) {
     return {sx:sx, sy:sy, sw:sw, sh:sh, dx:dx, dy:dy, dw:dw, dh:dh}
   };
   
-  var fixAspect = function(aspect_ratio, xmin, xmax, ymin, ymax, width, height) {
+  var fixAspect = function(width, height) {
+    var aspect_ratio = options.aspect_ratio,
+        xmin = dims.xmin,
+        xmax = dims.xmax,
+        ymin = dims.ymin, 
+        ymax = dims.ymax;
     if (aspect_ratio == null) {
       return {'xmin': xmin, 'xmax': xmax, 'ymin': ymin, 'ymax': ymax}
     }
@@ -524,7 +495,6 @@ function heatChart(options_override) {
     var xcenter = (xmax + xmin) / 2.0;
     var graph_ratio = width / height;
     var ratio = yrange/xrange * graph_ratio;
-    //console.log('ratios:', ratio, aspect_ratio);
     if (isNaN(ratio) || ratio == aspect_ratio) { return };
     if (ratio < aspect_ratio) { // y-range is too small
         yrange = aspect_ratio * xrange / graph_ratio;
@@ -533,7 +503,6 @@ function heatChart(options_override) {
         xrange = yrange / aspect_ratio * graph_ratio;
     }
             
-    //console.log('ranges:', yrange, xrange);
     var output = {
         'xmin': xcenter - xrange/2.0, 
         'xmax': xcenter + xrange/2.0,
@@ -553,22 +522,18 @@ function heatChart(options_override) {
       ctx = backing_canvas.getContext("2d");
         
     if (_redraw_backing) {
-      _redraw_backing = false;        
-      backing_canvas.width = dims.xdim;
-      backing_canvas.height = dims.ydim;
-      var image = ctx.createImageData(dims.xdim, dims.ydim);
+      _redraw_backing = false;
+      var height = source_data.length,
+          width = source_data[0].length;
+      backing_canvas.width = width;
+      backing_canvas.height = height;
+      var image = ctx.createImageData(width, height);
       var data = image.data;
       var yp, pp=0;
-      for (var yt = 0, p = -1; yt < dims.ydim; ++yt) {
+      for (var yt = 0, p = -1; yt < height; ++yt) {
         yp = dims.ydim - 1 - yt; // y-axis starts at the top!
-        for (var xp = 0; xp < dims.xdim; ++xp, pp++) {
+        for (var xp = 0; xp < width; ++xp, pp++) {
           var c = _colormap_array[plotdata[pp]];
-          /*
-          data[++p] = c[0];
-          data[++p] = c[1];
-          data[++p] = c[2];
-          data[++p] = c[3];
-          */
           data[++p] = c.r;
           data[++p] = c.g;
           data[++p] = c.b;
@@ -623,28 +588,25 @@ function heatChart(options_override) {
   }
   
   // call after setting transform
-  var make_plotdata = function(source_data, dims, clim, t) {
+  var make_plotdata = function() {
     // source_data is 2d array
-    // dims is object with dim, max and min for x,y,z
-    // t is transform (is function(x) {return x} for linear)
-    var maxColorIndex = 255;
-    var overflowIndex = 256;
-    var width = dims.xdim;
-    var height = dims.ydim;
-    var tzmax = t(clim.zmax);
-    var tzmin = t(clim.zmin);
-    var data = source_data;
+    var plotz = z.copy().range([0,255]);
+    //var crange = d3.range(256);
+    //var lookups = crange.slice(0,255).map(plotz.invert);
+    //var threshold = d3.scale.quantile().domain(lookups).range(crange);
+    var height = source_data.length,
+        width = source_data[0].length;
     // set the local plotdata:
+    plotdata = null;
     plotdata = new Uint8ClampedArray(width*height);
-    var d2c = maxColorIndex / (tzmax - tzmin);
-
     // plotdata is stored in row-major order ("C"), where row is "y"
     var zz, r, c, dr, plotz, pp=0;
     for (r = height - 1; r >=0; r--) {
-      dr = data[r];
-      for (c = 0; c < width; c++, pp++) {
+      dr = source_data[r];
+      for (c = 0; c < width; c++) {
         zz = dr[c];        
-        plotdata[pp] = (t(zz) - tzmin) * d2c;
+        plotdata[pp++] = plotz(zz);
+        //plotdata[pp++] = threshold(zz);
       }
     }
     _redraw_backing = true;
@@ -671,7 +633,7 @@ function heatChart(options_override) {
       if (existing_max == undefined || new_min_max.max > existing_max) {
         var existing_max = new_min_max.max;
       }
-      //console.log(i, existing_min);
+
     }
     return {min: existing_min, max: existing_max}
   };
