@@ -55,7 +55,7 @@ function xyChart(options_override) {
   function fullrange() {
     var extents;
     var merged_data = d3.merge(source_data);
-    if (this.options.show_errorbars) {
+    if (options.show_errorbars) {
       max_y = d3.extent(merged_data, function(d) { return isFinite(y(d[2].yupper))? d[2].yupper : null })[1];
       min_y = d3.extent(merged_data, function(d) { return isFinite(y(d[2].ylower))? d[2].ylower : null })[0];
       max_x = d3.extent(merged_data, function(d) { return isFinite(x(d[2].xupper))? d[2].xupper : null })[1];
