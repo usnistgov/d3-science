@@ -254,7 +254,7 @@ function plotD3(target_id, data_obj, options_overrides) {
 	    .attr("class", "axis-label")
 	    .attr("x", width/2.0)
 	    .attr("text-anchor", "middle")
-        .attr("y", height + 35)
+      .attr("y", height + margin.bottom - 10)
 	    .text(options.xlabel);
      
     svg.append("g")
@@ -267,8 +267,8 @@ function plotD3(target_id, data_obj, options_overrides) {
 	    .attr("class", "axis-label")
 	    .attr("text-anchor", "middle")
 	    .attr("transform", "rotate(-90)")
-	    .attr("y", (-margin.left) + 10)
-	    .attr("x", -height/2)
+	    .attr("y", (-options.margin.left) -10)
+	    .attr("x", -height/2 )
 	    .text(options.ylabel);	
      
     svg.append("defs").append("clipPath")

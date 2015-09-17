@@ -5,10 +5,13 @@
 function xyChart(options_override) {
   var debug=false;
   var options_defaults = {
-    margin: {top: 10, right: 10, bottom: 50, left: 50},
+    margin: {top: 10, right: 10, bottom: 75, left: 100},
+    autoscale: true,
     show_points: true,
+    show_line: true,
     show_errorbars: true,
     numberOfTicks: 4,
+    position_cursor: true,
     vcursor: false,
     hcursor: false,
     xlabel: "x-axis",
@@ -18,11 +21,14 @@ function xyChart(options_override) {
     xtransform: "linear",
     ytransform: "linear",
     legend: {show: true},
+    axes: {
+      xaxis: {label: "x-axis"},
+      yaxis: {label: "y-axis"}
+    },
     series: []
   }
     
   var options = jQuery.extend(true, {}, options_defaults); // copy
-  jQuery.extend(true, options, data_obj.options); // overwrite from data_obj
   jQuery.extend(true, options, options_override); // process any overrides from creation;
     
   this.options = options;
@@ -31,7 +37,7 @@ function xyChart(options_override) {
   var max_x = -Infinity;
   var min_x = Infinity;
     
-  var labels = data_obj.options.series.map(function(d, i) { return d.label || i });
+  var labels = options.series.map(function(d, i) { return d.label || i });
   var x = d3.scale[options.xtransform]();
   var y = d3.scale[options.ytransform]();
   var xAxis = d3.svg.axis(),
@@ -40,11 +46,15 @@ function xyChart(options_override) {
       yAxisGrid = d3.svg.axis();
   
   var zoom = d3.behavior.zoom().x(x).y(y).on("zoom", zoomed);
+  var resetzoom = function() {
+    zoom.translate([0,0]).scale(1);
+    zoomed.call(this);
+  }
   var source_data;
    
   function fullrange() {
     var extents;
-    var merged_data = d3.merge(data);
+    var merged_data = d3.merge(source_data);
     if (this.options.show_errorbars) {
       max_y = d3.extent(merged_data, function(d) { return isFinite(y(d[2].yupper))? d[2].yupper : null })[1];
       min_y = d3.extent(merged_data, function(d) { return isFinite(y(d[2].ylower))? d[2].ylower : null })[0];
@@ -61,7 +71,6 @@ function xyChart(options_override) {
     return {min_x: min_x, max_x: max_x, min_y: min_y, max_y: max_y}
   }
   this.fullrange = fullrange;
-  fullrange();
     
   // make it possible to show single data points:
   if (min_x == max_x) {
@@ -101,14 +110,15 @@ function xyChart(options_override) {
   
   function chart(selection) {
     selection.each(function(data) {
+      console.log(data);
       var outercontainer = d3.select(this),
-        innerwidth = outercontainer.node().clientWidth - offset_right,
+        innerwidth = outercontainer.node().clientWidth,
         innerheight = outercontainer.node().clientHeight,
         width = innerwidth - options.margin.right - options.margin.left,
         height = innerheight - options.margin.top - options.margin.bottom;
       chart.outercontainer = outercontainer;
       source_data = data;
-      chart.update = function() { outercontainer.transition().call(chart); chart.colorbar.update(); };   
+      chart.update = function() { outercontainer.transition().call(chart); };   
       if (options.autoscale) {
         fullrange();
       }
@@ -131,7 +141,8 @@ function xyChart(options_override) {
 	      .ticks(options.numberOfTicks)
 	      .tickPadding(10)	
 	      .tickSubdivide(true)	
-        .orient("bottom");	
+        .orient("bottom")
+        .tickFormat("");	
 	
       yAxisGrid
         .scale(y)
@@ -139,7 +150,8 @@ function xyChart(options_override) {
 	      .ticks(options.numberOfTicks)
 	      .tickSize(-width)
 	      .tickSubdivide(true)	
-        .orient("left");
+        .orient("left")
+        .tickFormat("");
         
       xAxis
         .scale(x)
@@ -152,7 +164,7 @@ function xyChart(options_override) {
         .scale(y)
         .ticks(options.numberOfTicks)
         .tickPadding(10)	
-        .tickSubdivide(true)	
+        .tickSubdivide(true)
         .orient("left");
     
       zoom.x(x).y(y);
@@ -166,18 +178,21 @@ function xyChart(options_override) {
       //************************************************************
       // Generate our SVG object
       //************************************************************
-      var svg = container.selectAll("svg.mainplot").data([0]);
-      var esvg = svg.enter()
+      var svg = outercontainer.selectAll("svg.mainplot").data([0]);
+      var gEnter = svg.enter()
         .append("svg")
           .attr("class", "mainplot")
           .call(zoom)
           .on("dblclick.zoom", null)
           .on("dblclick.resetzoom", null)
-          .on("dblclick.resetzoom", resetzoom);
-	      .append("g")
-          .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-          .call(zoom)
+          .on("dblclick.resetzoom", resetzoom)
         .append("g")
+          .attr("class", "mainview")
+          .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")")
+          .call(zoom);
+      console.log(gEnter);
+      /*
+      esvg.append("g")
           .on("mousedown", function() {
             if (!zoomRect) return;
             var e = this,
@@ -216,89 +231,106 @@ function xyChart(options_override) {
                 }, true);
             d3.event.stopPropagation();
           });
-    
-
-      esvg.append("rect")
+      */
+      gEnter.append("rect")
           .attr("width", width)
           .attr("height", height)
           //.call(zoom);
-      esvg.append("g")
-        .attr("class", "x axis");
-      esvg.append("g")
+      gEnter.append("g")
         .attr("class", "x axis")
         .append("text")
         .attr("class", "x axis-label")
         .attr("x", width/2.0)
         .attr("text-anchor", "middle")
-        .attr("y", 35)
-      esvg.append("g")
-	      .attr("class", "y axis")
-	      .append("text")
-	      .attr("class", "y axis-label")
-	      .attr("text-anchor", "middle")
-	      .attr("transform", "rotate(-90)")
-	      .attr("y", -35 )
-	      .attr("x", -height/2)
-	    esvg.append("defs").append("clipPath")
-	      .attr("id", "myClip") // local def
-	      .append("rect")
+        .attr("y", options.margin.bottom - 15)
+      gEnter.append("g")
+        .attr("class", "y axis")
+        .append("text")
+        .attr("class", "y axis-label")
+        .attr("text-anchor", "middle")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -options.margin.left + 15 )
+        .attr("x", -height/2)
+      gEnter.append("defs").append("clipPath")
+        .attr("id", "myClip") // local def
+        .append("rect")
+        .attr("x", x(min_x)) // options.margin.left)
+        .attr("y", options.margin.top)
 	      .attr("width", width)
 	      .attr("height", height);
 	    
-      esvg.append("g")
-        .attr("class", "y axis");
-      esvg.append("g")
+      gEnter.append("g")
         .attr("class", "x grid");           
-      esvg.append("g")
+      gEnter.append("g")
         .attr("class", "y grid");
       
       svg.select(".x.axis").call(xAxis);
       svg.select(".y.axis").call(yAxis);
       svg.select(".x.grid").call(xAxisGrid);
       svg.select(".y.grid").call(yAxisGrid);
-      svg.select(".x.axis-label").text(options.xlabel);
-      svg.select(".y.axis-label").text(options.ylabel);        
+      svg.select(".x.axis-label").text(((options.axes || {}).xaxis || {}).label || "x-axis");
+      svg.select(".y.axis-label").text(((options.axes || {}).yaxis || {}).label || "y-axis");
       
+      svg.attr("width", width + options.margin.left + options.margin.right)
+          .attr("height", height + options.margin.top + options.margin.bottom);
+                
+      console.log(svg);
+      svg.selectAll("g.x")
+        .attr("transform", "translate(0," + height + ")");
+        
+      svg.selectAll("#clipPath")
+      //  .attr("transform", "translate(" + options.margin.left + ",0)"); 
        
-      
+      chart.svg = svg;
+      chart.g = svg.selectAll("g.mainview");
 	
       //************************************************************
       // Create D3 legend
       //************************************************************
       if (options.legend) {
-	      var legend = svg.append("g")
+	      var legend = svg.selectAll("g.legend").data([0]);
+	      var el = legend.enter().append("g")
 	        .attr("class", "legend")
 	        .attr("x", width - 65)
 	        .attr("y", 25)
 	        .attr("height", 100)
 	        .attr("width", 100);
 	
-	      legend.selectAll('g').data(data)
-            .enter()
+	      el.selectAll('g').data(data)
+          .enter()
             .append('g')
             .each(function(d, i) {
               var g = d3.select(this);
               g.append("rect")
                 .attr("x", width - 65)
-                .attr("y", i*25)
+                .attr("y", i*25 + 15)
                 .attr("width", 10)
                 .attr("height", 10)
-                .style("fill", colors[i%colors.length]);
-              
-              g.append("text")
-                .attr("x", width - 50)
-                .attr("y", i * 25 + 8)
-                .attr("height",30)
-                .attr("width",100)
-                .style("text-anchor", "start")
                 .style("fill", colors[i%colors.length])
-                .text(labels[i])
                 .on("mouseover", function() {
                   d3.selectAll('.line')[0][i].classList.add('highlight');
                 })
                 .on("mouseout", function() {
                   d3.selectAll('.line')[0][i].classList.remove('highlight');
                 });
+              
+              g.append("text")
+                .attr("x", width - 50)
+                .attr("y", i * 25 + 25)
+                .attr("height",30)
+                .attr("width",100)
+                .style("text-anchor", "start")
+                .style("fill", colors[i%colors.length])
+                .on("mouseover", function() {
+                  d3.selectAll('.line')[0][i].classList.add('highlight');
+                })
+                .on("mouseout", function() {
+                  d3.selectAll('.line')[0][i].classList.remove('highlight');
+                });
+            });
+          legend.selectAll("text")
+            .each(function(d, i) {
+              d3.select(this).text((options.series[i] && options.series[i].label != null) ? options.series[i].label : i+1)
             });
       }
 	
@@ -314,7 +346,7 @@ function xyChart(options_override) {
               .y(function(d) { return y(d[1]); });
           
 
-          svg.selectAll('.line')
+          chart.g.selectAll('.line')
               .data(data)
               .enter()
               .append("path")
@@ -337,7 +369,7 @@ function xyChart(options_override) {
       //************************************************************
       if (options.show_points) {
 
-          var points = svg.selectAll(".points")
+          var points = chart.g.selectAll(".series")
             .data(data)
           points
           .enter().append("g")
@@ -348,6 +380,7 @@ function xyChart(options_override) {
           .enter().append("circle")
             .filter(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
             .attr("class", "dot")
+            .attr("clip-path", "url(#myClip)")
             .attr("r", 2.5)
             .attr("cx", function(d) { return x(d[0]); })
             .attr("cy", function(d) { return y(d[1]); });
@@ -363,7 +396,7 @@ function xyChart(options_override) {
       
 	    
       if (options.show_errorbars) {
-        var errorbars = svg.selectAll(".errorbars")
+        var errorbars = chart.g.selectAll(".errorbars")
             .data(data)
           errorbars
           .enter().append("g")
@@ -380,6 +413,7 @@ function xyChart(options_override) {
                 isFinite(y(d[2].ylower)) &&
                 isFinite(y(d[2].yupper))) })
             .attr("class", "errorbar")
+            .attr("clip-path", "url(#myClip)")
             .attr("stroke-width", "1.5px")
             .attr("d", errorbar_generator);
       } else {
@@ -392,7 +426,7 @@ function xyChart(options_override) {
       // Position cursor (shows position of mouse in data coords)
       //************************************************************
       if (options.position_cursor) {
-          var position_disp = svg.append("text")
+          var position_disp = chart.g.append("text")
             .attr("x", width - 10)
             .attr("y", height - 10)
             .style("text-anchor", "end");
@@ -452,7 +486,8 @@ function xyChart(options_override) {
             .on("mouseover.hcursor", follow_y); 
                
       }
-    }
+    });
+  }
     
     //************************************************************
     // Zoom specific updates
@@ -460,7 +495,9 @@ function xyChart(options_override) {
     function zoomed() {
       var svg = chart.svg;
 	    svg.select(".x.axis").call(xAxis);
-	    svg.select(".y.axis").call(yAxis);   
+	    svg.select(".y.axis").call(yAxis); 
+	    svg.select(".x.grid").call(xAxisGrid);
+	    svg.select(".y.grid").call(yAxisGrid);  
 	    if (chart.line) svg.selectAll('path.line').attr('d', chart.line);  
      
 	    if (chart.points) {
@@ -485,6 +522,7 @@ function xyChart(options_override) {
     
     
     function errorbar_generator(d) {
+      var errorbar_width = options.errorbar_width;
       var pathstring = "";
       var draw_top_bottom = (d[2].yupper != d[2].ylower);
       var draw_left_right = (d[2].xupper != d[2].xlower);
@@ -531,6 +569,30 @@ function xyChart(options_override) {
       
       return pathstring;
     }
+    
+    chart.options = function(_) {
+      if (!arguments.length) return options;
+      jQuery.extend(true, options, _);
+      return chart;
+    };
+    
+    chart.source_data = function(_) {
+      if (!arguments.length) return source_data;
+      source_data = _;
+      return chart;
+    };
+    
+    chart.x = function(_) {
+      if (!arguments.length) return x;
+      x = _;
+      return chart;
+    };
+
+    chart.y = function(_) {
+      if (!arguments.length) return y;
+      y = _;
+      return chart;
+    };
     
     return chart;
 }
