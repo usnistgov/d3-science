@@ -69,11 +69,11 @@ function xyChart(options_override) {
       min_x = extents[0];
       max_x = extents[1];
     }
-    var dx = (max_x - min_x) || 1.0,
-        dy = (max_y - min_y) || 1.0;
+    var dx = (x(max_x) - x(min_x)) || 1.0,
+        dy = (y(max_y) - y(min_y)) || 1.0;
     
-    min_x -= (dx * base_zoom_offset);
-    max_x += (dx * base_zoom_offset);
+    min_x = x.invert(x(min_x) - (dx * base_zoom_offset));
+    max_x = x.invert(x(max_x) + (dx * base_zoom_offset));
     min_y -= (dy * base_zoom_offset); 
     max_y += (dy * base_zoom_offset);
     return {min_x: min_x, max_x: max_x, min_y: min_y, max_y: max_y}
