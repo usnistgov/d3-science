@@ -20,7 +20,7 @@ function xyChart(options_override) {
     errorbar_width: 12,
     xtransform: "linear",
     ytransform: "linear",
-    legend: {show: false},
+    legend: {show: false, left: 65},
     axes: {
       xaxis: {label: "x-axis"},
       yaxis: {label: "y-axis"}
@@ -312,7 +312,7 @@ function xyChart(options_override) {
             .each(function(d, i) {
               var g = d3.select(this);
               g.append("rect")
-                .attr("x", width - 65)
+                .attr("x", width - options.legend.left)
                 .attr("y", i*25 + 15)
                 .attr("width", 10)
                 .attr("height", 10)
@@ -325,7 +325,7 @@ function xyChart(options_override) {
                 });
               
               g.append("text")
-                .attr("x", width - 50)
+                .attr("x", width - options.legend.left + 15)
                 .attr("y", i * 25 + 25)
                 .attr("height",30)
                 .attr("width",100)
