@@ -611,7 +611,7 @@ function xyChart(options_override) {
     chart.ytransform = function(_) {
     if (!arguments.length) return options.ytransform;
       options.ytransform = _;
-      x = d3.scale[options.ytransform]();
+      y = d3.scale[options.ytransform]();
       return chart;
     };
     
