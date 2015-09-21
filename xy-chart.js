@@ -601,5 +601,19 @@ function xyChart(options_override) {
       return chart;
     };
     
+    chart.xtransform = function(_) {
+    if (!arguments.length) return options.xtransform;
+      options.xtransform = _;
+      x = d3.scale[options.xtransform]();
+      return chart;
+    };
+    
+    chart.ytransform = function(_) {
+    if (!arguments.length) return options.ytransform;
+      options.ytransform = _;
+      x = d3.scale[options.ytransform]();
+      return chart;
+    };
+    
     return chart;
 }
