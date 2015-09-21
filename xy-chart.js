@@ -118,7 +118,6 @@ function xyChart(options_override) {
   
   function chart(selection) {
     selection.each(function(data) {
-      console.log(data);
       var outercontainer = d3.select(this),
         innerwidth = outercontainer.node().clientWidth,
         innerheight = outercontainer.node().clientHeight,
@@ -199,7 +198,6 @@ function xyChart(options_override) {
           .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")")
           //.call(zoom);
 
-      console.log(gEnter);
       /*
       esvg.append("g")
           .on("mousedown", function() {
@@ -283,7 +281,6 @@ function xyChart(options_override) {
       svg.attr("width", width + options.margin.left + options.margin.right)
           .attr("height", height + options.margin.top + options.margin.bottom);
                 
-      console.log(svg);
       svg.selectAll("g.x")
         .attr("transform", "translate(0," + height + ")");
         
