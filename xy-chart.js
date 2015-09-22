@@ -2,6 +2,10 @@
 //   - jquery-extend.js (or jQuery, to get jQuery.extend)
 //   - d3.js
 
+if (!d3.hasOwnProperty("id")) {
+  d3.id = (function(){var a = 0; return function(){return a++}})();
+}
+
 function xyChart(options_override) {
   var debug=false;
   var options_defaults = {
@@ -31,6 +35,8 @@ function xyChart(options_override) {
   var options = jQuery.extend(true, {}, options_defaults); // copy
   jQuery.extend(true, options, options_override); // process any overrides from creation;
     
+  var id = d3.id();
+  
   this.options = options;
   var max_y = -Infinity;
   var min_y = Infinity;
@@ -259,7 +265,7 @@ function xyChart(options_override) {
         .attr("y", -options.margin.left + 15 )
         .attr("x", -height/2)
       gEnter.append("defs").append("clipPath")
-        .attr("id", "myClip") // local def
+        .attr("id", "d3clip_" + id.toFixed()) // local def
         .append("rect")
         //.attr("x", 0) // x(min_x)) // options.margin.left)
         //.attr("y", 0)
@@ -283,9 +289,6 @@ function xyChart(options_override) {
                 
       svg.selectAll("g.x")
         .attr("transform", "translate(0," + height + ")");
-        
-      svg.selectAll("#clipPath")
-      //  .attr("transform", "translate(" + options.margin.left + ",0)"); 
        
       chart.svg = svg;
       resetzoom(); // set to 10% zoom out.
@@ -359,7 +362,7 @@ function xyChart(options_override) {
               .append("path")
               //.filter(function(d) { return (d && isFinite(x(d.x)) && isFinite(y(d.y))); })
               .attr("class", "line")
-              .attr("clip-path", "url(#myClip)")
+              .attr("clip-path", "url(#d3clip_" + id.toFixed() + ")")
               .attr('stroke', function(d,i){
 	              return colors[i%colors.length];
               })
@@ -387,7 +390,7 @@ function xyChart(options_override) {
           .enter().append("circle")
             .filter(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
             .attr("class", "dot")
-            .attr("clip-path", "url(#myClip)")
+            .attr("clip-path", "url(#d3clip_" + id.toFixed() + ")")
             .attr("r", 2.5)
             .attr("cx", function(d) { return x(d[0]); })
             .attr("cy", function(d) { return y(d[1]); });
@@ -420,7 +423,7 @@ function xyChart(options_override) {
                 isFinite(y(d[2].ylower)) &&
                 isFinite(y(d[2].yupper))) })
             .attr("class", "errorbar")
-            .attr("clip-path", "url(#myClip)")
+            .attr("clip-path", "url(#d3clip_" + id.toFixed() + ")")
             .attr("stroke-width", "1.5px")
             .attr("d", errorbar_generator);
       } else {
@@ -516,7 +519,7 @@ function xyChart(options_override) {
 	    if (chart.points) {
         chart.points.selectAll('.dot')
 	      .attr("cx", function(d) { return x(d[0]); })
-        .attr("cy", function(d) { return y(d[1]); });
+          .attr("cy", function(d) { return y(d[1]); });
       }
       
       if (chart.errorbars) {
