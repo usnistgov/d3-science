@@ -433,20 +433,26 @@ function xyChart(options_override) {
       // Position cursor (shows position of mouse in data coords)
       //************************************************************
       if (options.position_cursor) {
-          var position_disp = chart.g.append("text")
+        var position_cursor = chart.g.selectAll(".position-cursor")
+          .data([0])
+        position_cursor
+          .enter().append("text")
+            .attr("class", "position-cursor")
             .attr("x", width - 10)
             .attr("y", height - 10)
             .style("text-anchor", "end");
           
-          var follow = function (){  
-              var mouse = d3.mouse(this);
-              position_disp.text(
-                  x.invert(mouse[0]).toPrecision(5) + 
-                  ", " + 
-                  y.invert(mouse[1]).toPrecision(5));
-          }
+        var follow = function (){  
+          var mouse = d3.mouse(this);
+          position_cursor.text(
+            x.invert(mouse[0]).toPrecision(5) + 
+            ", " + 
+            y.invert(mouse[1]).toPrecision(5));
+        }
           
           svg
+            .on("mousemove.position_cursor", null)
+            .on("mouseover.position_cursor", null)
             .on("mousemove.position_cursor", follow)
             .on("mouseover.position_cursor", follow);
       }
