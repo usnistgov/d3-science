@@ -52,8 +52,11 @@ function xyChart(options_override) {
       yAxisGrid = d3.svg.axis();
   
   var zoom = d3.behavior.zoom().x(x).y(y).on("zoom", zoomed);
+  var base_zoom_offset = 0.05; // zoom out 5% from min and max by default;
   var resetzoom = function() {
-    zoom.translate([0,0]).scale(1.0);
+    var xoffset = (x.range()[1] - x.range()[0]) * base_zoom_offset,
+        yoffset = (y.range()[1] + y.range()[0]) * base_zoom_offset;
+    zoom.scale(1.0 - (2.0 * base_zoom_offset)).translate([xoffset, yoffset]);
     zoomed.call(this);
   }
   var source_data;
@@ -75,13 +78,15 @@ function xyChart(options_override) {
       min_x = extents[0];
       max_x = extents[1];
     }
+    /*
     var dx = (x(max_x) - x(min_x)) || 1.0,
         dy = (y(max_y) - y(min_y)) || 1.0;
     
     min_x = x.invert(x(min_x) - (dx * base_zoom_offset));
     max_x = x.invert(x(max_x) + (dx * base_zoom_offset));
     min_y = y.invert(y(min_y) - (dy * base_zoom_offset)); 
-    max_y = y.invert(y(max_y) + (dy * base_zoom_offset)); 
+    max_y = y.invert(y(max_y) + (dy * base_zoom_offset));
+    */
     return {min_x: min_x, max_x: max_x, min_y: min_y, max_y: max_y}
   }
   this.do_autoscale = do_autoscale;
