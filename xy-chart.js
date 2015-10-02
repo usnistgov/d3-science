@@ -36,6 +36,7 @@ function xyChart(options_override) {
   jQuery.extend(true, options, options_override); // process any overrides from creation;
     
   var id = d3.id();
+  var interactors = [];
   
   this.options = options;
   var max_y = -Infinity;
@@ -531,6 +532,8 @@ function xyChart(options_override) {
         chart.errorbars.selectAll('.errorbar')
           .attr("d", errorbar_generator);
       }
+      
+      chart.interactors().forEach(function(d,i) { if (d.update) {d.update();}});
     }
     
     function refresh() {
@@ -627,6 +630,13 @@ function xyChart(options_override) {
       options.ytransform = _;
       y = d3.scale[options.ytransform]();
       return chart;
+    };
+    
+    chart.interactors = function(_) {
+      if (!arguments.length) return interactors;
+      chart.svg.select("g.mainview").call(_);
+      _.x(x).y(y).update();
+      interactors.push(_);
     };
     
     return chart;

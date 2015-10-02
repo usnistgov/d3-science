@@ -5,8 +5,11 @@ function rectangleInteractor(state, x, y) {
   // dispatch is the d3 event dispatcher: should have event "update" register
   //var state = options;
   var name = state.name;
+  var radius = ( state.radius == null ) ? 5 : state.radius;
   var event_name = "rectangle." + state.name;
   var dispatch = d3.dispatch("update");
+  var x = d3.scale.linear();
+  var y = d3.scale.linear();
 
   var line = d3.svg.line()
     .x(function(d) { return x(d[0]); })
@@ -173,6 +176,18 @@ function rectangleInteractor(state, x, y) {
     }
     interactor.update();
   }
+  
+  interactor.x = function(_) {
+    if (!arguments.length) return x;
+    x = _;
+    return interactor;
+  };
+
+  interactor.y = function(_) {
+    if (!arguments.length) return y;
+    y = _;
+    return interactor;
+  };
    
   interactor.state = state;
   interactor.dispatch = dispatch;
