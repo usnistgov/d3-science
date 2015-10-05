@@ -22,7 +22,7 @@ function heatChart(options_override) {
   }
   var options = jQuery.extend(true, {}, options_defaults); // copy
   jQuery.extend(true, options, options_override); // process any overrides from creation;
-  
+  var interactors = [];
   var plotdata, source_data;
   var z = d3.scale[options.ztransform]();
     
@@ -223,6 +223,8 @@ function heatChart(options_override) {
         .attr("class", "x grid");           
       esvg.append("g")
         .attr("class", "y grid");
+      esvg.append("g")
+        .attr("class", "y interactors")
       
       svg.select(".x.axis").call(xAxis);
       svg.select(".y.axis").call(yAxis);
@@ -368,6 +370,8 @@ function heatChart(options_override) {
       svg.select(".grid.x").call(xAxisGrid);
       svg.select(".grid.y").call(yAxisGrid);
       chart.mainCanvas.call(drawImage);
+      
+      chart.interactors().forEach(function(d,i) { if (d.update) {d.update();}});
     }
     window.requestAnimationFrame(chart.redrawLoop);
   };
@@ -433,6 +437,14 @@ function heatChart(options_override) {
   chart.z = function(_) {
     if (!arguments.length) return z;
     z = _;
+    return chart;
+  };
+  
+  chart.interactors = function(_) {
+    if (!arguments.length) return interactors;
+    chart.svg.select("g.interactors").call(_);
+    _.x(x).y(y).update();
+    interactors.push(_);
     return chart;
   };
   
@@ -597,8 +609,9 @@ function heatChart(options_override) {
     var height = source_data.length,
         width = source_data[0].length;
     // set the local plotdata:
-    plotdata = null;
-    plotdata = new Uint8ClampedArray(width*height);
+    if (plotdata == null || plotdata.length != (width * height)) {
+      plotdata = new Uint8ClampedArray(width*height);
+    }
     // plotdata is stored in row-major order ("C"), where row is "y"
     var zz, r, c, dr, plotz, pp=0;
     for (r = height - 1; r >=0; r--) {

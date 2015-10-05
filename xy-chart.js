@@ -637,6 +637,7 @@ function xyChart(options_override) {
       chart.svg.select("g.mainview").call(_);
       _.x(x).y(y).update();
       interactors.push(_);
+      return chart;
     };
     
     return chart;

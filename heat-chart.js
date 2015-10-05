@@ -6,6 +6,7 @@ function heatChart() {
   var numberOfTicks = 4;
   var aspect_ratio = null;
   var autoscale = false;
+  var interactors = [];
   var transforms = {
     "lin": function(x) {return x},
     "log": function(x) {
@@ -67,6 +68,8 @@ function heatChart() {
     svg.select(".grid.x").call(xAxisGrid);
     svg.select(".grid.y").call(yAxisGrid);
     container.select('canvas.mainplot').call(drawImage, data);
+    
+    chart.interactors().forEach(function(d,i) { if (d.update) {d.update();}});
   }
   var zoom = d3.behavior.zoom().on("zoom.main", zoomed);
   var resetzoom = function() {
@@ -285,6 +288,13 @@ function heatChart() {
     if (!arguments.length) return y;
     y = _;
     return chart;
+  };
+  
+  chart.interactors = function(_) {
+    if (!arguments.length) return interactors;
+    chart.svg.select("g.mainview").call(_);
+    _.x(x).y(y).update();
+    interactors.push(_);
   };
 
   var get_sxdx = function(){

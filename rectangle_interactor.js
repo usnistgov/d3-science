@@ -8,8 +8,8 @@ function rectangleInteractor(state, x, y) {
   var radius = ( state.radius == null ) ? 5 : state.radius;
   var event_name = "rectangle." + state.name;
   var dispatch = d3.dispatch("update");
-  var x = d3.scale.linear();
-  var y = d3.scale.linear();
+  var x = x || d3.scale.linear();
+  var y = y || d3.scale.linear();
 
   var line = d3.svg.line()
     .x(function(d) { return x(d[0]); })
@@ -61,7 +61,8 @@ function rectangleInteractor(state, x, y) {
 
   function interactor(selection) {
     var group = selection.append("g")
-      .classed("interactor-" + name, true);
+      .classed("interactor-" + name, true)
+      .style("cursor", "move")
     var edges = group.append("g")
           .attr("class", "edges")
           .attr("stroke", state.color1)
