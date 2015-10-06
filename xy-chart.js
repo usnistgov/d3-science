@@ -137,7 +137,8 @@ function xyChart(options_override) {
         height = innerheight - options.margin.top - options.margin.bottom;
       chart.outercontainer = outercontainer;
       source_data = data;
-      chart.update = function() { outercontainer.transition().call(chart); };   
+      //chart.update = function() { outercontainer.transition().call(chart); };   
+      chart.update = zoomed;
       if (options.autoscale) {
         do_autoscale();
       }
@@ -197,18 +198,20 @@ function xyChart(options_override) {
       //************************************************************
       // Generate our SVG object
       //************************************************************
-      var svg = outercontainer.selectAll("svg.mainplot").data([0]);
-      var gEnter = svg.enter()
-        .append("svg")
-          .attr("class", "mainplot")
-          .call(zoom)
-          .on("dblclick.zoom", null)
-          .on("dblclick.resetzoom", null)
-          .on("dblclick.resetzoom", resetzoom)
-        .append("g")
-          .attr("class", "mainview")
-          .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")")
-          //.call(zoom);
+      var svg = outercontainer.append("svg")
+        .attr("class", "mainplot")
+        .call(zoom)
+        .on("dblclick.zoom", null)
+        .on("dblclick.resetzoom", null)
+        .on("dblclick.resetzoom", resetzoom)
+          
+      var axes = svg.append("g")
+        .attr("class", "axes")
+        .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");
+        
+      var mainview = svg.append("g")
+        .attr("class", "mainview")
+        .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");  
 
       /*
       esvg.append("g")
@@ -251,18 +254,18 @@ function xyChart(options_override) {
             d3.event.stopPropagation();
           });
       */
-      gEnter.append("rect")
+      mainview.append("rect")
           .attr("width", width)
           .attr("height", height)
           //.call(zoom);
-      gEnter.append("g")
+      axes.append("g")
         .attr("class", "x axis")
         .append("text")
         .attr("class", "x axis-label")
         .attr("x", width/2.0)
         .attr("text-anchor", "middle")
         .attr("y", options.margin.bottom - 15)
-      gEnter.append("g")
+      axes.append("g")
         .attr("class", "y axis")
         .append("text")
         .attr("class", "y axis-label")
@@ -270,30 +273,32 @@ function xyChart(options_override) {
         .attr("transform", "rotate(-90)")
         .attr("y", -options.margin.left + 15 )
         .attr("x", -height/2)
-      gEnter.append("defs").append("clipPath")
+      mainview.append("defs").append("clipPath")
         .attr("id", "d3clip_" + id.toFixed()) // local def
         .append("rect")
         //.attr("x", 0) // x(min_x)) // options.margin.left)
         //.attr("y", 0)
 	      .attr("width", width)
 	      .attr("height", height);
+	      
+	    mainview.attr("clip-path", "url(#d3clip_" + id.toFixed() + ")");    
 	    
-      gEnter.append("g")
+      axes.append("g")
         .attr("class", "x grid");           
-      gEnter.append("g")
+      axes.append("g")
         .attr("class", "y grid");
       
-      svg.select(".x.axis").call(xAxis);
-      svg.select(".y.axis").call(yAxis);
-      svg.select(".x.grid").call(xAxisGrid);
-      svg.select(".y.grid").call(yAxisGrid);
-      svg.select(".x.axis-label").text(((options.axes || {}).xaxis || {}).label || "x-axis");
-      svg.select(".y.axis-label").text(((options.axes || {}).yaxis || {}).label || "y-axis");
+      axes.select(".x.axis").call(xAxis);
+      axes.select(".y.axis").call(yAxis);
+      axes.select(".x.grid").call(xAxisGrid);
+      axes.select(".y.grid").call(yAxisGrid);
+      axes.select(".x.axis-label").text(((options.axes || {}).xaxis || {}).label || "x-axis");
+      axes.select(".y.axis-label").text(((options.axes || {}).yaxis || {}).label || "y-axis");
       
       svg.attr("width", width + options.margin.left + options.margin.right)
           .attr("height", height + options.margin.top + options.margin.bottom);
                 
-      svg.selectAll("g.x")
+      axes.selectAll("g.x")
         .attr("transform", "translate(0," + height + ")");
        
       chart.svg = svg;
@@ -362,13 +367,12 @@ function xyChart(options_override) {
               .y(function(d) { return y(d[1]); });
           
 
-          chart.g.selectAll('.line')
+          mainview.selectAll('.line')
               .data(data)
               .enter()
               .append("path")
               //.filter(function(d) { return (d && isFinite(x(d.x)) && isFinite(y(d.y))); })
               .attr("class", "line")
-              .attr("clip-path", "url(#d3clip_" + id.toFixed() + ")")
               .attr('stroke', function(d,i){
 	              return colors[i%colors.length];
               })
@@ -412,7 +416,7 @@ function xyChart(options_override) {
       
 	    
       if (options.show_errorbars) {
-        var errorbars = chart.g.selectAll(".errorbars")
+        var errorbars = mainview.selectAll(".errorbars")
             .data(data)
           errorbars
           .enter().append("g")
@@ -429,7 +433,6 @@ function xyChart(options_override) {
                 isFinite(y(d[2].ylower)) &&
                 isFinite(y(d[2].yupper))) })
             .attr("class", "errorbar")
-            .attr("clip-path", "url(#d3clip_" + id.toFixed() + ")")
             .attr("stroke-width", "1.5px")
             .attr("d", errorbar_generator);
       } else {
@@ -442,7 +445,7 @@ function xyChart(options_override) {
       // Position cursor (shows position of mouse in data coords)
       //************************************************************
       if (options.position_cursor) {
-        var position_cursor = chart.g.selectAll(".position-cursor")
+        var position_cursor = mainview.selectAll(".position-cursor")
           .data([0])
         position_cursor
           .enter().append("text")
@@ -521,11 +524,12 @@ function xyChart(options_override) {
 	    svg.select(".x.grid").call(xAxisGrid);
 	    svg.select(".y.grid").call(yAxisGrid);  
 	    if (chart.line) svg.selectAll('path.line').attr('d', chart.line);  
-     
+      
+      //if (chart.zoomPoints) chart.zoomPoints();
 	    if (chart.points) {
         chart.points.selectAll('.dot')
 	      .attr("cx", function(d) { return x(d[0]); })
-          .attr("cy", function(d) { return y(d[1]); });
+        .attr("cy", function(d) { return y(d[1]); });
       }
       
       if (chart.errorbars) {
@@ -637,6 +641,7 @@ function xyChart(options_override) {
       chart.svg.select("g.mainview").call(_);
       _.x(x).y(y).update();
       interactors.push(_);
+      return chart;
     };
     
     return chart;
