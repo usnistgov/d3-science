@@ -86,8 +86,8 @@ module_opts.forEach(function(d,i) {
 
 var contextMenuShowing = false;
 
-d3.select("body").on('contextmenu',function (d,i) {
-    if(contextMenuShowing) {
+editor.on('contextmenu',function (d,i) {
+    if (contextMenuShowing) {
         d3.event.preventDefault();
         d3.select(".popup").remove();
         contextMenuShowing = false;
@@ -104,15 +104,81 @@ d3.select("body").on('contextmenu',function (d,i) {
             .style("left", d3.event.x + "px")
             .style("top", d3.event.y + "px")
             .append("ul")
-
-            popup.append("li").text("hello").on("click", function() {alert("hello"); d3.select(".popup").remove();});
-            popup.append("hr")
-            popup.append("li").text("there");          
+            
+            popup.append("li").text("delete").on("click", function() {d3_target.remove(); d3.select(".popup").remove(); contextMenuShowing=false;});
+            //popup.append("hr")
+            console.log(popup);
         }
+        else if (d3_target.classed("module title")) {
+            d3.event.preventDefault();
+            contextMenuShowing = true;
+
+            // Build the popup            
+            popup = d3.select("#editor_div")
+            .append("div")
+            .attr("class", "popup")
+            .style("left", d3.event.x + "px")
+            .style("top", d3.event.y + "px")
+            .append("ul")
+            
+            popup.append("li").text("configure").on("click", function() {alert("implement configure"); d3.select(".popup").remove(); contextMenuShowing=false;});
+            popup.append("hr")
+            popup.append("li").text("delete").on("click", function() {
+                while (!d3_target.classed("module base")) {
+                    d3_target = d3.select(d3_target.node().parentNode)
+                }
+                d3_target.remove(); 
+                d3.select(".popup").remove(); 
+                dispatch.update();
+                contextMenuShowing=false;
+            });
+        }
+                     
     }
+})
+
+d3.selectAll(".titlebar").on('contextmenu',function (d,i) {
+    console.log(this, contextMenuShowing );
+    if (contextMenuShowing) {
+        d3.event.preventDefault();
+        d3.select(".popup").remove();
+        contextMenuShowing = false;
+    } else {
+        console.log("building popup...", d3.select("#editor_div"));
+        d3.event.preventDefault();
+        contextMenuShowing = true;
+
+        // Build the popup            
+        popup = d3.select("#editor_div")
+        .append("div")
+        .attr("class", "popup")
+        .style("left", d3.event.x + "px")
+        .style("top", d3.event.y + "px")
+        .append("ul")
+        console.log(popup);
+        popup.append("li").text("configure").on("click", function() {alert("implement configure"); d3.select(".popup").remove(); contextMenuShowing=false;});
+        popup.append("hr")
+        popup.append("li").text("delete").on("click", function() {d3_target.remove(); d3.select(".popup").remove(); contextMenuShowing=false;});
+        popup.append("hr")
+    }
+}, true);
+
+d3.select('#new_module').on("change", function() {
+    var title = this.value;
+    var box = new dataflow.module({title:title});
+    boxes.push(box);
+    editor.call(box)
 });
+
 }
 </script>
+<div id="controls">
+    <select id="new_module">
+        <option>Load</option>
+        <option>Subtract background</option>
+        <option>Slice</option>
+    </select>
+</div>
 <div id="editor_div">
 </div>
 </body>

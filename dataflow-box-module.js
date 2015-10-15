@@ -18,8 +18,6 @@ function draw_wire(connector) {
     src_pos = event;
   } else {
     src_pos = get_terminal_pos(src);
-    var src_terminal = d3.select('[id=\"' + src + '\"]');
-    src_pos.x += +src_terminal.attr("width");
   }
   
   if (tgt == "cursor") {
@@ -27,7 +25,10 @@ function draw_wire(connector) {
   } else {
     tgt_pos = get_terminal_pos(tgt);
   }
-  connector.attr("d", makeConnector(src_pos, tgt_pos));  
+  if (tgt_pos == null || src_pos == null) { connector.remove() }
+  else {
+    connector.attr("d", makeConnector(src_pos, tgt_pos));
+  }
 }
 
 function makeConnector(pt1, pt2) {
@@ -57,7 +58,7 @@ function module(argopts) {
     .on("drag", dragmove)
     .origin(function() { return options });
   
-  wire = d3.behavior.drag()
+  wireaction = d3.behavior.drag()
     .on("dragstart.wire", wirestart)
     .on("drag.wire", wirepull)
     .on("dragend.wire", wirestop)
@@ -70,7 +71,7 @@ function module(argopts) {
   function box(selection) {
     parent = selection;
     group = selection.append("g")
-      .classed("module", true)
+      .classed("module base", true)
       .style("cursor", "move")
       .attr("transform", "translate(" + options.x.toFixed() + "," + options.y.toFixed() + ")")
       .attr("x-origin", options.x.toFixed())
@@ -78,20 +79,21 @@ function module(argopts) {
       .attr("module_id", id)
     
     var title = group.append("g")
-      .classed("title", true)
+      .classed("module title", true)
       
     var titleborder = title.append("rect")
+      .classed("module title border", true)
       .style("fill", "#ffffff")
       .style("stroke-width", "2px")
       .style("stroke", "#0000ff")
       
     var titlebox = title.append("text")
-      .attr("class", "module-title")
+      .classed("module title textbox", true)
       //.attr("text-anchor", "middle")
     titlebox.selectAll(".sublines")
       .data(options.title.split("\n"))
       .enter().append("tspan")
-        .classed("sublines", true)
+        .classed("module title sublines", true)
         .attr("x", padding)
         .attr("dy", 20)
         .text(function(d) {return d});
@@ -120,7 +122,7 @@ function module(argopts) {
         //.attr("y", function(d,i) { return parseFloat(titleborder.attr("height")) + i*20 })
         .attr("transform", function(d,i) { return "translate(0," + (height + i*20).toFixed() + ")"})
         .attr("id", function(d) { return id.toFixed() + ":" + d; })
-        .call(wire)
+        .call(wireaction)
         .append("svg:title")
           .text(function(d) { return d; });
   
@@ -139,7 +141,7 @@ function module(argopts) {
         //.attr("y", function(d,i) { return parseFloat(titleborder.attr("height")) + i*20 })
         .attr("transform", function(d,i) { return "translate(" + (width/2).toFixed() + "," + (height + i*20).toFixed() + ")"})
         .attr("id", function(d) { return id.toFixed() + ":" + d; })
-        .call(wire)
+        .call(wireaction)
         .append("svg:title")
           .text(function(d) { return d; });
       
@@ -152,7 +154,6 @@ function module(argopts) {
     options.x = d3.event.x;
     options.y = d3.event.y;
     group.attr("transform", "translate(" + options.x + "," + options.y.toFixed() + ")");
-    //dispatch.update.apply(this);
     dispatch.update();
   }
   
@@ -164,22 +165,19 @@ function module(argopts) {
     var terminal_id = d3.select(this).attr("id");
     active_wire = new dataflow.wire();
     parent.call(active_wire);
-    //parent.on(" mousemove", null)
-    //  .on(".mouseover", null)
-    //  .on(".mouseout", null);
     if (this.classList.contains("input")) {
       active_wire.tgt(terminal_id);
       active_wire.src("cursor");
       
       parent.selectAll(".output")
-        .on("mouseover", function() {d3.select(this).classed("highlight", true)}, true)
-        .on("mouseout", function(e) {d3.select(this).classed("highlight", false)}, true)
+        .on("mouseenter", function() {d3.select(this).classed("highlight", true)})
+        .on("mouseleave", function(e) {d3.select(this).classed("highlight", false)})
     } else {
       active_wire.src(terminal_id);
       active_wire.tgt("cursor");
       parent.selectAll(".input")
-        .on("mouseover", function() {d3.select(this).classed("highlight", true)})
-        .on("mouseout", function(e) {d3.select(this).classed("highlight", false)})
+        .on("mouseenter", function() {d3.select(this).classed("highlight", true)})
+        .on("mouseleave", function(e) {d3.select(this).classed("highlight", false)})
     }
     
   }
@@ -192,7 +190,6 @@ function module(argopts) {
         active_wire.remove();
       } else {
         active_wire.src(new_src.attr("id"))
-        //active_wire.draw();
       }
     } 
     else if (this.classList.contains("output")) {
@@ -201,14 +198,13 @@ function module(argopts) {
         active_wire.remove();
       } else {
         active_wire.tgt(new_tgt.attr("id"));
-        //active_wire.draw();
       }
     }
     dispatch.update();
     parent.selectAll(".terminal")
       .classed("highlight", false)
-      .on("mouseover", null)
-      .on("mouseout", null)
+      .on("mouseenter", null)
+      .on("mouseleave", null)
     active_wire = null;
   }
   
@@ -221,7 +217,7 @@ function module(argopts) {
         x: d3.event.x + mtranslate[0],
         y: d3.event.y + mtranslate[1] 
       }
-      //active_wire.draw(cursor);
+      active_wire.draw();
     }
     wire_end = d3.event;
   }
@@ -232,13 +228,19 @@ function module(argopts) {
 function get_terminal_pos(term_id) {
   var module = d3.select('[module_id="' + term_id.split(":")[0] + '"]');
   var terminal = d3.select('[id=\"' + term_id + '\"]');
+  if (module.empty() || terminal.empty()) { return null }
+  
   var terminal_tf = d3.transform(terminal.attr("transform")),
     module_tf = d3.transform(module.attr("transform")),
     terminal_pos = {x: terminal_tf.translate[0],
                     y: terminal_tf.translate[1]}
   terminal_pos.x += module_tf.translate[0];
   terminal_pos.y += module_tf.translate[1];
+  //console.log(terminal_pos, terminal.node().getBBox());
   terminal_pos.y += +terminal.attr("height")/2.0;
+  if (terminal.classed("output")) {
+    terminal_pos.x += +terminal.attr("width");
+  }
   return terminal_pos;
 }
 
@@ -261,11 +263,14 @@ function wire(argopts) {
     
   }
   
-  path.draw = function(event) {
-    // pass x and y to this - relative to the start point.
+  path.draw = function() {
     var src_pos, tgt_pos;
+    var mouse = d3.mouse(parent.node());
+    // add tiny offset to x position of mouse, so that mouseover 
+    // does not get confused by being over the wire (sometimes)
+    var mouse_pos = {x: mouse[0] - 3, y: mouse[1]};
     if (src == "cursor") {
-      src_pos = event;
+      src_pos = mouse_pos;
     } else {
       src_pos = get_terminal_pos(src);
       var src_terminal = d3.select('[id=\"' + src + '\"]');
@@ -273,29 +278,7 @@ function wire(argopts) {
     }
     
     if (tgt == "cursor") {
-      tgt_pos = event;
-    } else {
-      tgt_pos = get_terminal_pos(tgt);
-    }
-    connector.attr("d", makeBezier(src_pos, tgt_pos));  
-  }
-  
-  path.newdraw = function(event) {
-    // pass x and y to this - relative to the start point.
-    console.log("newdraw", event);
-    var src_pos, tgt_pos;
-    var src = connector.attr("src"),
-        tgt = connector.attr("tgt")
-    if (src == "cursor") {
-      src_pos = event;
-    } else {
-      src_pos = get_terminal_pos(src);
-      var src_terminal = d3.select('[id=\"' + src + '\"]');
-      src_pos.x += +src_terminal.attr("width");
-    }
-    
-    if (tgt == "cursor") {
-      tgt_pos = event;
+      tgt_pos = mouse_pos;
     } else {
       tgt_pos = get_terminal_pos(tgt);
     }
