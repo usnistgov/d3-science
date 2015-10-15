@@ -57,6 +57,7 @@ svg {
 <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 <script src="jquery-extend.js"></script>
 <script src="dataflow-box-module.js"></script>
+<script src="dataflow-editor.js"></script>
 <script>
 window.onload = function() {
 var width = d3.select("body").node().clientWidth - 50,
@@ -74,19 +75,32 @@ var module_opts = [
     x: 200
   }
 ];
+/*
 editor = d3.select("#editor_div").selectAll("svg").data([module_opts])
     .enter().append("svg")
     
 boxes = []
 module_opts.forEach(function(d,i) {    
-  var box = new dataflow.module(d);
+  var box = new module(d);
   boxes.push(box);
   editor.call(box)
 });
+*/
+
+opts = {
+    modules: module_opts,
+    wires: [{src: "0:out_0", tgt: "1:in_0"}]
+    //wires: []
+}
+
+e = new dataflow.editor();
+e.data([opts]);
+d3.select("#editor_div").call(e);
+
 
 var contextMenuShowing = false;
 
-editor.on('contextmenu',function (d,i) {
+e.svg().on('contextmenu',function (d,i) {
     if (contextMenuShowing) {
         d3.event.preventDefault();
         d3.select(".popup").remove();
@@ -165,7 +179,7 @@ d3.selectAll(".titlebar").on('contextmenu',function (d,i) {
 
 d3.select('#new_module').on("change", function() {
     var title = this.value;
-    var box = new dataflow.module({title:title});
+    var box = new module({title:title});
     boxes.push(box);
     editor.call(box)
 });

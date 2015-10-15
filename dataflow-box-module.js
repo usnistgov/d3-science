@@ -346,7 +346,3 @@ function wire(argopts) {
   return path;
 }
 
-dataflow = (typeof dataflow == 'undefined') ? {} : dataflow;
-dataflow.wire = wire;
-dataflow.module = module;
-
