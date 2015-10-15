@@ -10,6 +10,11 @@ function rectangleInteractor(state, x, y) {
   var dispatch = d3.dispatch("update");
   var x = x || d3.scale.linear();
   var y = y || d3.scale.linear();
+  var show_points = (state.show_points == null) ? true : state.show_points;
+  var show_lines = (state.show_lines == null) ? true : state.show_lines;
+  var show_center = (state.show_center == null) ? true : state.show_center;
+  var fixed = (state.fixed == null) ? false : state.fixed;
+  var cursor = (fixed) ? "auto" : "move";
 
   var line = d3.svg.line()
     .x(function(d) { return x(d[0]); })
@@ -17,25 +22,35 @@ function rectangleInteractor(state, x, y) {
          
   var state_to_pairs = function(state) {
     // convert from xmin, xmax... to pairs of points for rectangle
-    return [
-      [[state.xmin, state.ymin], [state.xmax, state.ymin]],
-      [[state.xmax, state.ymin], [state.xmax, state.ymax]],
-      [[state.xmax, state.ymax], [state.xmin, state.ymax]],
-      [[state.xmin, state.ymax], [state.xmin, state.ymin]]
-    ]
+    if (show_lines) {
+      return [
+        [[state.xmin, state.ymin], [state.xmax, state.ymin]],
+        [[state.xmax, state.ymin], [state.xmax, state.ymax]],
+        [[state.xmax, state.ymax], [state.xmin, state.ymax]],
+        [[state.xmin, state.ymax], [state.xmin, state.ymin]]
+      ]
+    }
+    else {
+      return [];
+    }
   }
   
   var state_to_points = function(state) {
-    return [
-      [state.xmin, state.ymin],
-      [state.xmax, state.ymin],
-      [state.xmax, state.ymax],
-      [state.xmin, state.ymax],
-    ]
+    if (show_points) {
+      return [
+        [state.xmin, state.ymin],
+        [state.xmax, state.ymin],
+        [state.xmax, state.ymax],
+        [state.xmin, state.ymax],
+      ]
+    }
+    else { 
+      return [];
+    }
   }
   
   var state_to_center = function(state) {
-    if (state.showcenter) {
+    if (show_center) {
       return [
         [x.invert((x(state.xmax) + x(state.xmin)) / 2.0),
          y.invert((y(state.ymax) + y(state.ymin)) / 2.0)]
@@ -61,11 +76,12 @@ function rectangleInteractor(state, x, y) {
 
   function interactor(selection) {
     var group = selection.append("g")
-      .classed("interactor-" + name, true)
-      .style("cursor", "move")
+      .classed("interactors interactor-" + name, true)
+      .style("cursor", cursor)
     var edges = group.append("g")
           .attr("class", "edges")
-          .attr("stroke", state.color1)
+          .style("stroke", state.color1)
+          .style("stroke-linecap", "round")
           .selectAll(".edge")
         .data(state_to_pairs(state))
           .enter().append("path")
@@ -74,7 +90,7 @@ function rectangleInteractor(state, x, y) {
           .attr("fill", "none")
           .attr("stroke-width", "4px")
           .attr("d", line)
-          .call(drag_edge)
+    if (!fixed) edges.call(drag_edge);
       
     var corners = group.append("g")
       .classed("corners", true)
@@ -87,7 +103,7 @@ function rectangleInteractor(state, x, y) {
         .attr("r", radius)
         .attr("cx", function(d) {return x(d[0])})
         .attr("cy", function(d) {return y(d[1])})
-        .call(drag_corner)
+    if (!fixed) corners.call(drag_corner);
     
     var center_group = group.append("g")
       .classed("center_group", true)
@@ -99,7 +115,7 @@ function rectangleInteractor(state, x, y) {
         .attr("r", radius)
         .attr("cx", function(d) {return x(d[0])})
         .attr("cy", function(d) {return y(d[1])})
-        .call(drag_center)
+    if (!fixed) center_group.call(drag_center);
 
     interactor.update = function() {
       group.selectAll('.center').data(state_to_center(state))
@@ -189,6 +205,7 @@ function rectangleInteractor(state, x, y) {
     y = _;
     return interactor;
   };
+  
    
   interactor.state = state;
   interactor.dispatch = dispatch;
