@@ -311,8 +311,6 @@ function wire(argopts) {
     return terminal_pos;
   }
   
-
-  
   function makeBezier(pt1, pt2) {
     var d = "M";
     d  = "M" + pt1.x + "," + pt1.y + " ";

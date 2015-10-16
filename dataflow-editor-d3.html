@@ -156,6 +156,8 @@ d3.select('#new_module').on("change", function() {
     e.update();
 });
 
+d3.select("#show_value").on("click", function() { var win = window.open(); win.document.write("<pre>" + JSON.stringify(e.data()[0], null, 2) + "</pre>")});
+
 }
 </script>
 <div id="controls">
@@ -164,6 +166,7 @@ d3.select('#new_module').on("change", function() {
         <option>Subtract background</option>
         <option>Slice</option>
     </select>
+    <button id="show_value">Show data</button>
 </div>
 <div id="editor_div">
 </div>

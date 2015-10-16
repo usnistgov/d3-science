@@ -47,7 +47,8 @@ dataflow.editor = function(data) {
   function update() {
     var module_update = svg.selectAll(".module").data(function(d) {return d.modules}, function(d) { return d.module_id; })
     module_update.enter().append(dataflow.module);
-    module_update.exit().remove()
+    module_update.exit().remove();
+    module_update.attr("index", function(d,i) {return i});
     
     var module_ids = [];
     module_update.each(function(d,i) {module_ids[i] = d.module_id});
