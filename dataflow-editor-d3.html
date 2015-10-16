@@ -56,7 +56,7 @@ svg {
 <body>
 <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 <script src="jquery-extend.js"></script>
-<script src="dataflow-box-module.js"></script>
+<!--<script src="dataflow-box-module.js"></script>-->
 <script src="dataflow-editor.js"></script>
 <script>
 window.onload = function() {
@@ -119,7 +119,22 @@ e.svg().on('contextmenu',function (d,i) {
             .style("top", d3.event.y + "px")
             .append("ul")
             
-            popup.append("li").text("delete").on("click", function() {d3_target.remove(); d3.select(".popup").remove(); contextMenuShowing=false;});
+            popup.append("li").text("delete").on("click", function() {
+                var active_data = d3_target.datum();
+                var parentNode = d3_target.node().parentNode;
+                var wires = d3.select(parentNode).datum().wires;
+                for (var i=0; i<wires.length; i++) {
+                    var w = wires[i]; 
+                    if (w.src == active_data.src && w.tgt == active_data.tgt) {
+                        wires.pop(i);
+                        break;
+                    }
+                };
+                parentNode.update();
+                d3.select(".popup").remove(); 
+                contextMenuShowing=false;
+                
+            });
             //popup.append("hr")
             console.log(popup);
         }
@@ -141,9 +156,10 @@ e.svg().on('contextmenu',function (d,i) {
                 while (!d3_target.classed("module base")) {
                     d3_target = d3.select(d3_target.node().parentNode)
                 }
+                var parentNode = d3_target.node().parentNode;
                 d3_target.remove(); 
                 d3.select(".popup").remove(); 
-                dispatch.update();
+                parentNode.update();
                 contextMenuShowing=false;
             });
         }
