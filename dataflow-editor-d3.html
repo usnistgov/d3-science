@@ -60,37 +60,23 @@ svg {
 <script src="dataflow-editor.js"></script>
 <script>
 window.onload = function() {
-var width = d3.select("body").node().clientWidth - 50,
-    height = d3.select("body").node().clientHeight - 50,
-    radius = 5;
 
 var module_opts = [
   {
     title: "Load\ndata",
     inputs: ["in_a"],
-    outputs: ["out_0", "out_b"]
+    outputs: ["out_0", "out_b"],
+    x: 200
   },
   { 
     title: "background",
-    x: 200
+    x: 300
   }
 ];
-/*
-editor = d3.select("#editor_div").selectAll("svg").data([module_opts])
-    .enter().append("svg")
-    
-boxes = []
-module_opts.forEach(function(d,i) {    
-  var box = new module(d);
-  boxes.push(box);
-  editor.call(box)
-});
-*/
 
 opts = {
     modules: module_opts,
-    wires: [{src: "0:out_0", tgt: "1:in_0"}]
-    //wires: []
+    wires: [{src: "0:out_b", tgt: "1:in_0"}]
 }
 
 e = new dataflow.editor();
@@ -126,7 +112,7 @@ e.svg().on('contextmenu',function (d,i) {
                 for (var i=0; i<wires.length; i++) {
                     var w = wires[i]; 
                     if (w.src == active_data.src && w.tgt == active_data.tgt) {
-                        wires.pop(i);
+                        wires.splice(i,1);
                         break;
                     }
                 };
@@ -135,10 +121,9 @@ e.svg().on('contextmenu',function (d,i) {
                 contextMenuShowing=false;
                 
             });
-            //popup.append("hr")
             console.log(popup);
         }
-        else if (d3_target.classed("module title")) {
+        else if (d3_target.classed("title")) {
             d3.event.preventDefault();
             contextMenuShowing = true;
 
@@ -153,13 +138,11 @@ e.svg().on('contextmenu',function (d,i) {
             popup.append("li").text("configure").on("click", function() {alert("implement configure"); d3.select(".popup").remove(); contextMenuShowing=false;});
             popup.append("hr")
             popup.append("li").text("delete").on("click", function() {
-                while (!d3_target.classed("module base")) {
-                    d3_target = d3.select(d3_target.node().parentNode)
-                }
-                var parentNode = d3_target.node().parentNode;
-                d3_target.remove(); 
+                console.log(d3_target.datum().module_id);
+                var module_id = d3_target.datum().module_id;
+                e.svg().datum().modules = e.svg().datum().modules.filter(function(d) { return d.module_id != module_id});
                 d3.select(".popup").remove(); 
-                parentNode.update();
+                e.update();
                 contextMenuShowing=false;
             });
         }
@@ -167,37 +150,10 @@ e.svg().on('contextmenu',function (d,i) {
     }
 })
 
-d3.selectAll(".titlebar").on('contextmenu',function (d,i) {
-    console.log(this, contextMenuShowing );
-    if (contextMenuShowing) {
-        d3.event.preventDefault();
-        d3.select(".popup").remove();
-        contextMenuShowing = false;
-    } else {
-        console.log("building popup...", d3.select("#editor_div"));
-        d3.event.preventDefault();
-        contextMenuShowing = true;
-
-        // Build the popup            
-        popup = d3.select("#editor_div")
-        .append("div")
-        .attr("class", "popup")
-        .style("left", d3.event.x + "px")
-        .style("top", d3.event.y + "px")
-        .append("ul")
-        console.log(popup);
-        popup.append("li").text("configure").on("click", function() {alert("implement configure"); d3.select(".popup").remove(); contextMenuShowing=false;});
-        popup.append("hr")
-        popup.append("li").text("delete").on("click", function() {d3_target.remove(); d3.select(".popup").remove(); contextMenuShowing=false;});
-        popup.append("hr")
-    }
-}, true);
-
 d3.select('#new_module').on("change", function() {
     var title = this.value;
-    var box = new module({title:title});
-    boxes.push(box);
-    editor.call(box)
+    e.data()[0].modules.push({title: title});
+    e.update();
 });
 
 }
