@@ -252,10 +252,16 @@ dataflow.module = function(module_data) {
     .attr("y-origin", module_data.y.toFixed())
     .attr("module_id", id)
     
+    /*
     // this is a bit of a hack: creating a not-so-visible read-only property of 
     // the data object referring to the module_id, so that d3 data join will be 
     // able to relink data and selections;
     Object.defineProperty(module_data, "module_id", {get: function() {return id;}});
+    */
+    // breaking the rules: putting information into the data.
+    // once we can in a stable way use list index of modules for addressing we 
+    // can stop doing this...
+    module_data.module_id = id;
     
     var title = group.append("g")
       .classed("title", true)
@@ -327,12 +333,10 @@ dataflow.module = function(module_data) {
 
 dataflow.wire = function(wire_data) {
   var parent = this; // calling context;
-  var id = d3.id();
   var connector = document.createElementNS("http://www.w3.org/2000/svg", "path");
   d3.select(connector)
     .classed("wire", true)
     .style("cursor", "crosshair")
-    .attr("wire_id", id)
     .style("fill", "none")
     .style("stroke-width", "2.5px")
     .style("stroke", "red")
