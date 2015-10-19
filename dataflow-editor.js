@@ -33,40 +33,93 @@ if (!d3.hasOwnProperty("id")) {
 dataflow = (typeof dataflow == 'undefined') ? {} : dataflow;
 dataflow.editor = function(data) {
   var data = data || [];
-  var svg;
-  var dispatch = d3.dispatch("update");
+  var svg, container;
+  var dispatch = d3.dispatch("update", "draw_wires");
   dispatch.on("update", update);
+  dispatch.on("draw_wires", draw_wires);
   
   var wire_keyfn = function(d) {return "{src: " + d.src + "," + "tgt: " + d.tgt + "}"};
+  var check_end = function(e) {
+    if (e == 'cursor') { return true }
+    else {
+        var es = e.split(":");
+        if (es.length != 2) { return false }
+        var module_index = es[0],
+            terminal_id = es[1];
+        return (container.select('.module[index="' + module_index + '"] .terminal[terminal_id="' + terminal_id + '"]').empty() == false)
+    }
+  }
+  /*
   var wire_checkends = function(w) {
-    var src_exists = (w.src == 'cursor' || !(svg.select('[id=\"' + w.src + '\"]').empty()) );
-    var tgt_exists = (w.tgt == 'cursor' || !(svg.select('[id=\"' + w.tgt + '\"]').empty()) );
+    var src_exists, tgt_exists;
+    src_exists = (w.src == 'cursor' || !(svg.select('[id=\"' + w.src + '\"]').empty()) );
+    tgt_exists = (w.tgt == 'cursor' || !(svg.select('[id=\"' + w.tgt + '\"]').empty()) );
     return (src_exists && tgt_exists)
   }
+  */
   
+  var wire_checkends = function(w) {
+    return (check_end(w.src) && check_end(w.tgt))
+  }
+  
+  function rewire(index_updates) {
+    var wires = svg.datum().wires;
+    var end_names = ['src', 'tgt'];
+    wires.forEach(function(w) {
+      end_names.forEach(function(e) {
+        var end = w[e];
+        if (end != 'cursor' && end.split(":").length == 2) {
+          var index_in = end.split(":")[0];
+          var terminal_id = end.split(":")[1];
+          if (index_in in index_updates) {
+            //console.log('rewiring ' + end + ' ' + index_in + ' to ' + index_updates[index_in]);
+            w[e] = index_updates[index_in] + ":" + terminal_id;
+          }
+        }
+      });
+    });
+  }
+
   function update() {
+    var id_to_index = {},
+        index_to_id = {},
+        index_updates = {},
+        additions = [],
+        removals = [];
+    svg.selectAll(".module").each(function(d,i) { index_to_id[d3.select(this).attr("index")] = d.module_id});
     var module_update = svg.selectAll(".module").data(function(d) {return d.modules}, function(d) { return d.module_id; })
-    module_update.enter().append(dataflow.module);
-    module_update.exit().remove();
+    module_update.enter().append(dataflow.module).each(function(d) {additions.push(d.module_id)});
+    module_update.exit().each(function(d) {removals.push(d.module_id)}).remove();
     module_update.attr("index", function(d,i) {return i});
-    
-    var module_ids = [];
-    module_update.each(function(d,i) {module_ids[i] = d.module_id});
+    svg.selectAll(".module").each(function(d,i) { id_to_index[d.module_id] = d3.select(this).attr("index")});
+    for (var index in index_to_id) {
+      var outdex = id_to_index[index_to_id[index]];
+      if (outdex != index) { 
+        index_updates[index] = outdex;
+      }
+    }
+    // for the moment, will only deal with deletions... in principle any just-added
+    // modules won't have any wires pointing to them yet.  
+    rewire(index_updates);
     
     // remove wires without existing endpoints;
     svg.datum().wires = svg.datum().wires.filter(wire_checkends);
-    
-    
+
     var wire_update = svg.selectAll(".wire").data(function(d) {return d.wires}, wire_keyfn);
     wire_update.enter().append(dataflow.wire);
     wire_update.exit().remove();
     
-    d3.selectAll(".wire").each(draw_wire) 
+    draw_wires();
+  }
+  
+  function draw_wires() {
+    svg.selectAll(".wire").each(draw_wire) 
   }
   
   function get_terminal_pos(term_id) {
-    var module = d3.select('[module_id="' + term_id.split(":")[0] + '"]');
-    var terminal = d3.select('[id=\"' + term_id + '\"]');
+    var module = container.select('.module[index="' + term_id.split(":")[0] + '"]');
+    var terminal = container.select('.module[index="' + term_id.split(":")[0] + '"]')
+        .select('.terminal[terminal_id="' + term_id.split(":")[1] + '"]');
     if (module.empty() || terminal.empty()) { return null }
     var reference_point = svg.node().createSVGPoint();
     var terminal_origin = reference_point.matrixTransform(terminal.node().getCTM());
@@ -122,6 +175,7 @@ dataflow.editor = function(data) {
   }  
   
   function editor(selection) {
+    container = selection; // store for later use
     svg = selection.selectAll("svg.editor").data(data)
       .enter().append("svg")
       .classed("editor", true)
@@ -129,14 +183,16 @@ dataflow.editor = function(data) {
     svg.selectAll(".module")
       .data(function(d) { return d.modules }) 
       .enter().append(dataflow.module)
+      .attr("index", function(d,i) {return i});
       
     svg.selectAll(".wire")
       .data(function(d) {return d.wires})
       .enter().append(dataflow.wire)
     
-    console.log(JSON.stringify(data[0].wires));
     // bind the update function directly to the svg so children can use.
+    // running these through the dispatcher, not sure if that is needed...
     Object.defineProperty(svg.node(), 'update', {value: dispatch.update});
+    Object.defineProperty(svg.node(), 'draw_wires', {value: dispatch.draw_wires});
       
     dispatch.update();
   }
@@ -152,12 +208,14 @@ dataflow.editor = function(data) {
   }
   
   editor.update = update;
+  editor.draw_wires = draw_wires;
   
   return editor;
 }
 
 dataflow.module = function(module_data) {
   var parentNode = this; // calling context
+  var group; // this will be the module group.
   if (!('x' in module_data)) module_data.x = 100;
   if (!('y' in module_data)) module_data.y = 100;
   if (!('inputs' in module_data)) module_data.inputs = ['in_0'];
@@ -169,7 +227,7 @@ dataflow.module = function(module_data) {
   var active_wire, new_wiredata;
   var drag = d3.behavior.drag()
     .on("drag", dragmove)
-    .origin(function() { return module_data });
+    .origin(function() { return {x: module_data.x, y: module_data.y} });
     
   var wireaction = d3.behavior.drag()
     .on("dragstart.wire", wirestart)
@@ -180,28 +238,31 @@ dataflow.module = function(module_data) {
     module_data.x = d3.event.x;
     module_data.y = d3.event.y;
     group.attr("transform", "translate(" + module_data.x.toFixed() + "," + module_data.y.toFixed() + ")");
-    parentNode.update();
+    parentNode.draw_wires();
   }
   
   
   function wirestart() {
     d3.event.sourceEvent.stopPropagation();
     d3.select(this).classed("highlight", true);
-    var terminal_id = d3.select(this).attr("id");
-    new_wiredata = {}
+    var terminal_id = d3.select(this).attr("terminal_id");
+    var module_index = group.attr("index");
+    var address = module_index + ":" + terminal_id;
+    new_wiredata = {src: null, tgt: null}
     var dest_selector = (this.classList.contains("input")) ? ".output" : ".input";
     d3.select(parentNode).selectAll(dest_selector)
       .on("mouseenter", function() {d3.select(this).classed("highlight", true)})
       .on("mouseleave", function(e) {d3.select(this).classed("highlight", false)})
     if (this.classList.contains("input")) {
-      new_wiredata.tgt = terminal_id;
+      new_wiredata.tgt = address;
       new_wiredata.src = "cursor";        
     } else {
-      new_wiredata.src = terminal_id;
+      new_wiredata.src = address;
       new_wiredata.tgt = "cursor";
     }
     active_wire = true;
     d3.select(parentNode).datum().wires.push(new_wiredata);
+    parentNode.update();
   }
   
   function wirestop() {
@@ -210,13 +271,15 @@ dataflow.module = function(module_data) {
     if (this.classList.contains("input")) {
       var new_src = d3.select(".output.highlight");
       if (!new_src.empty()) {
-        active_data.src = new_src.attr("id");
+        var module_index = d3.select(new_src.node().parentNode).attr("index");
+        active_data.src = module_index + ":" + new_src.attr("terminal_id");
       }
     } 
     else if (this.classList.contains("output")) {
       var new_tgt = d3.select(".input.highlight");
       if (!new_tgt.empty()) {
-        active_data.tgt = new_tgt.attr("id");
+        var module_index = d3.select(new_tgt.node().parentNode).attr("index");
+        active_data.tgt = module_index + ":" + new_tgt.attr("terminal_id");
       }
     }
     if (active_data.tgt == 'cursor' || active_data.src == 'cursor') {
@@ -238,12 +301,11 @@ dataflow.module = function(module_data) {
   
   function wirepull() {
     d3.event.sourceEvent.stopPropagation();
-    parentNode.update();
+    parentNode.draw_wires();
   }
   
   // create and append module HTML element:
-  console.log('creating: ', id);
-  var group = d3.select(document.createElementNS("http://www.w3.org/2000/svg", "g"))
+  group = d3.select(document.createElementNS("http://www.w3.org/2000/svg", "g"))
     .datum(module_data)
     .classed("module", true)
     .style("cursor", "move")
@@ -252,16 +314,17 @@ dataflow.module = function(module_data) {
     .attr("y-origin", module_data.y.toFixed())
     .attr("module_id", id)
     
-    /*
     // this is a bit of a hack: creating a not-so-visible read-only property of 
-    // the data object referring to the module_id, so that d3 data join will be 
+    // the data object referring to the unique module_id, so that d3 data join will be 
     // able to relink data and selections;
     Object.defineProperty(module_data, "module_id", {get: function() {return id;}});
-    */
+    
+    /*
     // breaking the rules: putting information into the data.
     // once we can in a stable way use list index of modules for addressing we 
     // can stop doing this...
     module_data.module_id = id;
+    */
     
     var title = group.append("g")
       .classed("title", true)
@@ -301,9 +364,9 @@ dataflow.module = function(module_data) {
         .attr("width", width/2)
         .attr("height", 20)
         .attr("wireoffset_x", 0)
-        .attr("wireoffset_y", height/2)
+        .attr("wireoffset_y", 10)
         .attr("transform", function(d,i) { return "translate(0," + (height + i*20).toFixed() + ")"})
-        .attr("id", function(d) { return id.toFixed() + ":" + d; })
+        .attr("terminal_id", function(d) {return d})
         .call(wireaction)
         .append("svg:title")
           .text(function(d) { return d; });
@@ -320,9 +383,9 @@ dataflow.module = function(module_data) {
         .attr("width", width/2)
         .attr("height", 20)
         .attr("wireoffset_x", width/2)
-        .attr("wireoffset_y", height/2)
+        .attr("wireoffset_y", 10)
         .attr("transform", function(d,i) { return "translate(" + (width/2).toFixed() + "," + (height + i*20).toFixed() + ")"})
-        .attr("id", function(d) { return id.toFixed() + ":" + d; })
+        .attr("terminal_id", function(d) {return d})
         .call(wireaction)
         .append("svg:title")
           .text(function(d) { return d; });
