@@ -83,6 +83,7 @@ function heatChart(options_override) {
   
   // some private working variables
   var backing_canvas = document.createElement('canvas');
+  var backing_image;
   var colorbar_backing_canvas = document.createElement('canvas');
   var _recalculate_main = false;
   var _redraw_main = false;
@@ -537,10 +538,12 @@ function heatChart(options_override) {
       _redraw_backing = false;
       var height = source_data.length,
           width = source_data[0].length;
-      backing_canvas.width = width;
-      backing_canvas.height = height;
-      var image = ctx.createImageData(width, height);
-      var data = image.data;
+      if (backing_image == null || backing_canvas.width != width || backing_canvas.height != height) {
+        backing_canvas.width = width;
+        backing_canvas.height = height;
+        backing_image = ctx.createImageData(width, height);
+      }
+      var data = backing_image.data;
       var yp, pp=0;
       for (var yt = 0, p = -1; yt < height; ++yt) {
         yp = dims.ydim - 1 - yt; // y-axis starts at the top!
@@ -552,7 +555,7 @@ function heatChart(options_override) {
           data[++p] = c.a;
         }
       }
-      ctx.putImageData(image, 0, 0);
+      ctx.putImageData(backing_image, 0, 0);
     }
     
 	//context.mozImageSmoothingEnabled = false;
