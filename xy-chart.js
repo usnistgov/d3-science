@@ -634,7 +634,9 @@ function xyChart(options_override) {
       do_autoscale();
       x.domain([min_x, max_x])
        .range([0, width]);
-      zoom.x(x);   
+      zoom.x(x);
+      xAxisGrid.scale(x);
+      xAxis.scale(x);
       return chart;
     };
     
@@ -649,6 +651,8 @@ function xyChart(options_override) {
       y.domain([min_y, max_y])
        .range([height, 0]);
       zoom.y(y);
+      yAxisGrid.scale(y);
+      yAxis.scale(y);
       return chart;
     };
     
