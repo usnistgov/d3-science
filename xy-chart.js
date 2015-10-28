@@ -633,7 +633,8 @@ function xyChart(options_override) {
           height = parseFloat(g.attr("height"));
       do_autoscale();
       x.domain([min_x, max_x])
-       .range([0, width]);      
+       .range([0, width]);
+      zoom.x(x);   
       return chart;
     };
     
@@ -647,6 +648,7 @@ function xyChart(options_override) {
       do_autoscale(); 
       y.domain([min_y, max_y])
        .range([height, 0]);
+      zoom.y(y);
       return chart;
     };
     
