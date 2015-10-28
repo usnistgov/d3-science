@@ -637,6 +637,7 @@ function xyChart(options_override) {
       zoom.x(x);
       xAxisGrid.scale(x);
       xAxis.scale(x);
+      zoomed();
       return chart;
     };
     
@@ -653,6 +654,7 @@ function xyChart(options_override) {
       zoom.y(y);
       yAxisGrid.scale(y);
       yAxis.scale(y);
+      zoomed();
       return chart;
     };
     
