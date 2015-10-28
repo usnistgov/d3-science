@@ -628,7 +628,7 @@ function xyChart(options_override) {
     if (!arguments.length) return options.xtransform;
       options.xtransform = _;
       x = d3.scale[options.xtransform]();
-      var g = charg.svg.selectAll("g.mainview");
+      var g = chart.svg.selectAll("g.mainview");
       var width = parseFloat(g.attr("width")),
           height = parseFloat(g.attr("height"));
       do_autoscale();
@@ -641,7 +641,7 @@ function xyChart(options_override) {
     if (!arguments.length) return options.ytransform;
       options.ytransform = _;
       y = d3.scale[options.ytransform]();
-      var g = charg.svg.selectAll("g.mainview");
+      var g = chart.svg.selectAll("g.mainview");
       var width = parseFloat(g.attr("width")),
           height = parseFloat(g.attr("height"));
       do_autoscale(); 
