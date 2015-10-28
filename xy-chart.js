@@ -211,7 +211,9 @@ function xyChart(options_override) {
         
       var mainview = svg.append("g")
         .attr("class", "mainview")
-        .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");  
+        .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")")
+        .attr("width", width)
+        .attr("height", height);
 
       /*
       esvg.append("g")
@@ -528,7 +530,7 @@ function xyChart(options_override) {
       //if (chart.zoomPoints) chart.zoomPoints();
 	    if (chart.points) {
         chart.points.selectAll('.dot')
-	      .attr("cx", function(d) { return x(d[0]); })
+        .attr("cx", function(d) { return x(d[0]); })
         .attr("cy", function(d) { return y(d[1]); });
       }
       
@@ -626,6 +628,12 @@ function xyChart(options_override) {
     if (!arguments.length) return options.xtransform;
       options.xtransform = _;
       x = d3.scale[options.xtransform]();
+      var g = charg.svg.selectAll("g.mainview");
+      var width = parseFloat(g.attr("width")),
+          height = parseFloat(g.attr("height"));
+      do_autoscale();
+      x.domain([min_x, max_x])
+       .range([0, width]);      
       return chart;
     };
     
@@ -633,6 +641,12 @@ function xyChart(options_override) {
     if (!arguments.length) return options.ytransform;
       options.ytransform = _;
       y = d3.scale[options.ytransform]();
+      var g = charg.svg.selectAll("g.mainview");
+      var width = parseFloat(g.attr("width")),
+          height = parseFloat(g.attr("height"));
+      do_autoscale(); 
+      y.domain([min_y, max_y])
+       .range([height, 0]);
       return chart;
     };
     
