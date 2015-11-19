@@ -43,6 +43,8 @@ function xyChart(options_override) {
   var min_y = Infinity;
   var max_x = -Infinity;
   var min_x = Infinity;
+  var zoomRect = false;
+  var zoomScroll = true;
     
   var labels = options.series.map(function(d, i) { return d.label || i });
   var x = d3.scale[options.xtransform]();
@@ -188,19 +190,16 @@ function xyChart(options_override) {
         .orient("left");
     
       zoom.x(x).y(y);
-
-      var zoomRect = false;
       
-      d3.select("#zoom-rect").on("change", function() {
-        zoomRect = this.checked;
-      });
+      //d3.select("#zoom-rect").on("change", function() {
+      //  zoomRect = this.checked;
+      //});
     
       //************************************************************
       // Generate our SVG object
       //************************************************************
       var svg = outercontainer.append("svg")
         .attr("class", "mainplot")
-        .call(zoom)
         .on("dblclick.zoom", null)
         .on("dblclick.resetzoom", null)
         .on("dblclick.resetzoom", resetzoom)
@@ -215,51 +214,49 @@ function xyChart(options_override) {
         .attr("width", width)
         .attr("height", height);
 
-      /*
-      esvg.append("g")
-          .on("mousedown", function() {
-            if (!zoomRect) return;
-            var e = this,
-                origin = d3.mouse(e),
-                rect = svg.append("rect").attr("class", "zoom");
-            d3.select("body").classed("noselect", true);
-            origin[0] = Math.max(0, Math.min(width, origin[0]));
-            origin[1] = Math.max(0, Math.min(height, origin[1]));
-            d3.select(window)
-                .on("mousemove.zoomRect", function() {
-                  var m = d3.mouse(e);
-                  m[0] = Math.max(0, Math.min(width, m[0]));
-                  m[1] = Math.max(0, Math.min(height, m[1]));
-                  rect.attr("x", Math.min(origin[0], m[0]))
-                      .attr("y", Math.min(origin[1], m[1]))
-                      .attr("width", Math.abs(m[0] - origin[0]))
-                      .attr("height", Math.abs(m[1] - origin[1]));
-                })
-                .on("mouseup.zoomRect", function() {
-                  d3.select(window).on("mousemove.zoomRect", null).on("mouseup.zoomRect", null);
-                  d3.select("body").classed("noselect", false);
-                  var m = d3.mouse(e);
-                  m[0] = Math.max(0, Math.min(width, m[0]));
-                  m[1] = Math.max(0, Math.min(height, m[1]));
-                  if (m[0] !== origin[0] && m[1] !== origin[1]) {
-                    zoom.x(x.domain([origin[0], m[0]].map(x.invert).sort(function(a,b) {return a-b})))
-                        .y(y.domain([origin[1], m[1]].map(y.invert).sort(function(a,b) {return a-b})));
-                  } else {
-                      zoom.scale(1);
-                      zoom.translate([0,0]);
-                      zoom.x(x.domain([min_x, max_x]))
-                          .y(y.domain([min_y, max_y]));
-                  }
-                  rect.remove();
-                  zoomed();
-                }, true);
-            d3.event.stopPropagation();
-          });
-      */
+      svg
+        .on("mousedown.zoomRect", function() {
+          if (!zoomRect) return;
+          var e = mainview.node(),
+            origin = d3.mouse(e),
+            rect = mainview.append("rect").attr("class", "zoom");
+          d3.select("body").classed("noselect", true);
+          origin[0] = Math.max(0, Math.min(width, origin[0]));
+          origin[1] = Math.max(0, Math.min(height, origin[1]));
+          svg
+            .on("mousemove.zoomRect", function() {
+              var m = d3.mouse(e);
+              m[0] = Math.max(0, Math.min(width, m[0]));
+              m[1] = Math.max(0, Math.min(height, m[1]));
+              rect.attr("x", Math.min(origin[0], m[0]))
+                .attr("y", Math.min(origin[1], m[1]))
+                .attr("width", Math.abs(m[0] - origin[0]))
+                .attr("height", Math.abs(m[1] - origin[1]));
+            })
+            .on("mouseup.zoomRect", function() {
+              svg.on("mousemove.zoomRect", null).on("mouseup.zoomRect", null);
+              d3.select("body").classed("noselect", false);
+              var m = d3.mouse(e);
+              m[0] = Math.max(0, Math.min(width, m[0]));
+              m[1] = Math.max(0, Math.min(height, m[1]));
+              if (m[0] !== origin[0] && m[1] !== origin[1]) {
+                zoom.x(x.domain([origin[0], m[0]].map(x.invert).sort(function(a,b) {return a-b})))
+                    .y(y.domain([origin[1], m[1]].map(y.invert).sort(function(a,b) {return a-b})));
+              } else {
+                zoom.scale(1);
+                zoom.translate([0,0]);
+                zoom.x(x.domain([min_x, max_x]))
+                    .y(y.domain([min_y, max_y]));
+              }
+              rect.remove();
+              zoomed();
+            }, true);
+          d3.event.stopPropagation();
+        });
+        
       mainview.append("rect")
           .attr("width", width)
           .attr("height", height)
-          //.call(zoom);
       axes.append("g")
         .attr("class", "x axis")
         .append("text")
@@ -621,6 +618,24 @@ function xyChart(options_override) {
     chart.y = function(_) {
       if (!arguments.length) return y;
       y = _;
+      return chart;
+    };
+    
+    chart.zoomRect = function(_) {
+      if (!arguments.length) return zoomRect;
+      zoomRect = _;
+      return chart;
+    };
+    
+    chart.zoomScroll = function(_) {
+      if (!arguments.length) return zoomScroll;
+      zoomScroll = _;
+      if (zoomScroll == true) {
+        chart.svg.call(zoom);
+      }
+      else if (zoomScroll == false) {
+        chart.svg.on(".zoom", null);
+      }
       return chart;
     };
     
