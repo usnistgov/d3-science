@@ -441,6 +441,12 @@ function heatChart(options_override) {
     return chart;
   };
   
+  chart.source_data = function(_) {
+    if (!arguments.length) return source_data;
+    source_data = _;
+    make_plotdata();
+  };
+  
   chart.interactors = function(_) {
     if (!arguments.length) return interactors;
     chart.svg.select("g.interactors").call(_);
@@ -653,6 +659,41 @@ function heatChart(options_override) {
     }
     return {min: existing_min, max: existing_max}
   };
+  
+  function generate_cumsums() {
+    //console.log('generating cumsum');
+    var height = source_data.length,
+        width = source_data[0].length,
+        data = source_data;
+    
+    var cumsum_x = [], cumsum_x_col;
+    var cumsum_y = [], cumsum_y_col;
+    var ysum = [], xsum;
+    // initialize the y-sum:
+    for (var r = 0; r<height; r++) ysum[r] = 0;
+    cumsum_y[0] = ysum.slice();
+           
+    for (var c = 0; c < width; c++) {
+      cumsum_x_col = [0]; xsum = 0;
+      cumsum_y_col = [];
+      for (var r = 0; r < height; r++) {
+        var z = data[r][c];
+        if (isFinite(z)) {
+          xsum += z;
+          ysum[r] += z;
+        }
+        cumsum_x_col[r] = xsum;
+        cumsum_y_col[r] = ysum[r];  
+      }
+      cumsum_x[c] = cumsum_x_col;
+      cumsum_y[c] = cumsum_y_col;
+    }
+    return {x: cumsum_x, y: cumsum_y}
+    //this.cumsum_x = cumsum_x;
+    //this.cumsum_y = cumsum_y;
+  };
+  
+  chart.generate_cumsums = generate_cumsums;
   
   return chart
   

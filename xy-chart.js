@@ -457,7 +457,7 @@ function xyChart(options_override) {
             .style("text-anchor", "end");
           
         var follow = function (){  
-          var mouse = d3.mouse(this);
+          var mouse = d3.mouse(mainview.node());
           position_cursor.text(
             x.invert(mouse[0]).toPrecision(5) + 
             ", " + 
@@ -483,7 +483,7 @@ function xyChart(options_override) {
               .attr("stroke-width", 2);
               
           var follow_x = function (){  
-              var mouse = d3.mouse(this);
+              var mouse = d3.mouse(mainview.node());
               var mousex = mouse[0];
               vertical.attr("d", "M " + mousex.toFixed(1) + " 0 L " + mousex.toFixed(1) + " " + height);
           }
@@ -503,7 +503,7 @@ function xyChart(options_override) {
               .attr("stroke-width", 2);
 
           var follow_y = function (){  
-              var mouse = d3.mouse(this);
+              var mouse = d3.mouse(mainview.node());
               var mousey = mouse[1];
               horizontal.attr("d", "M 0 " + mousey.toFixed(1) + " L " + width + " " + mousey.toFixed(1));
           }
