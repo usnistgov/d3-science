@@ -44,7 +44,7 @@ function xyChart(options_override) {
   var max_x = -Infinity;
   var min_x = Infinity;
   var zoomRect = false;
-  var zoomScroll = true;
+  var zoomScroll = false;
     
   var labels = options.series.map(function(d, i) { return d.label || i });
   var x = d3.scale[options.xtransform]();
@@ -190,16 +190,13 @@ function xyChart(options_override) {
         .orient("left");
     
       zoom.x(x).y(y);
-      
-      //d3.select("#zoom-rect").on("change", function() {
-      //  zoomRect = this.checked;
-      //});
-    
+
       //************************************************************
       // Generate our SVG object
       //************************************************************
       var svg = outercontainer.append("svg")
         .attr("class", "mainplot")
+        //.call(zoom) // call this from zoomScroll setter
         .on("dblclick.zoom", null)
         .on("dblclick.resetzoom", null)
         .on("dblclick.resetzoom", resetzoom)
@@ -210,10 +207,9 @@ function xyChart(options_override) {
         
       var mainview = svg.append("g")
         .attr("class", "mainview")
-        .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")")
-        .attr("width", width)
-        .attr("height", height);
+        .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");  
 
+      
       svg
         .on("mousedown.zoomRect", function() {
           if (!zoomRect) return;
@@ -223,6 +219,7 @@ function xyChart(options_override) {
           d3.select("body").classed("noselect", true);
           origin[0] = Math.max(0, Math.min(width, origin[0]));
           origin[1] = Math.max(0, Math.min(height, origin[1]));
+          //d3.select(window)
           svg
             .on("mousemove.zoomRect", function() {
               var m = d3.mouse(e);
@@ -234,6 +231,7 @@ function xyChart(options_override) {
                 .attr("height", Math.abs(m[1] - origin[1]));
             })
             .on("mouseup.zoomRect", function() {
+              //d3.select(window).on("mousemove.zoomRect", null).on("mouseup.zoomRect", null);
               svg.on("mousemove.zoomRect", null).on("mouseup.zoomRect", null);
               d3.select("body").classed("noselect", false);
               var m = d3.mouse(e);
@@ -253,10 +251,11 @@ function xyChart(options_override) {
             }, true);
           d3.event.stopPropagation();
         });
-        
+      
       mainview.append("rect")
           .attr("width", width)
           .attr("height", height)
+          //.call(zoom);
       axes.append("g")
         .attr("class", "x axis")
         .append("text")
@@ -527,7 +526,7 @@ function xyChart(options_override) {
       //if (chart.zoomPoints) chart.zoomPoints();
 	    if (chart.points) {
         chart.points.selectAll('.dot')
-        .attr("cx", function(d) { return x(d[0]); })
+	      .attr("cx", function(d) { return x(d[0]); })
         .attr("cy", function(d) { return y(d[1]); });
       }
       
@@ -643,16 +642,6 @@ function xyChart(options_override) {
     if (!arguments.length) return options.xtransform;
       options.xtransform = _;
       x = d3.scale[options.xtransform]();
-      var g = chart.svg.selectAll("g.mainview");
-      var width = parseFloat(g.attr("width")),
-          height = parseFloat(g.attr("height"));
-      do_autoscale();
-      x.domain([min_x, max_x])
-       .range([0, width]);
-      zoom.x(x);
-      xAxisGrid.scale(x);
-      xAxis.scale(x);
-      zoomed();
       return chart;
     };
     
@@ -660,16 +649,6 @@ function xyChart(options_override) {
     if (!arguments.length) return options.ytransform;
       options.ytransform = _;
       y = d3.scale[options.ytransform]();
-      var g = chart.svg.selectAll("g.mainview");
-      var width = parseFloat(g.attr("width")),
-          height = parseFloat(g.attr("height"));
-      do_autoscale(); 
-      y.domain([min_y, max_y])
-       .range([height, 0]);
-      zoom.y(y);
-      yAxisGrid.scale(y);
-      yAxis.scale(y);
-      zoomed();
       return chart;
     };
     
