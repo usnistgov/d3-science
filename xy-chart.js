@@ -209,9 +209,11 @@ function xyChart(options_override) {
         .attr("class", "mainview")
         .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");  
 
+      var drag = d3.behavior.drag();
+      svg.call(drag);
       
-      svg
-        .on("mousedown.zoomRect", function() {
+      drag
+        .on("dragstart.zoomRect", function() {
           if (!zoomRect) return;
           var e = mainview.node(),
             origin = d3.mouse(e),
@@ -220,8 +222,8 @@ function xyChart(options_override) {
           origin[0] = Math.max(0, Math.min(width, origin[0]));
           origin[1] = Math.max(0, Math.min(height, origin[1]));
           //d3.select(window)
-          svg
-            .on("mousemove.zoomRect", function() {
+          drag
+            .on("drag.zoomRect", function() {
               var m = d3.mouse(e);
               m[0] = Math.max(0, Math.min(width, m[0]));
               m[1] = Math.max(0, Math.min(height, m[1]));
@@ -230,9 +232,9 @@ function xyChart(options_override) {
                 .attr("width", Math.abs(m[0] - origin[0]))
                 .attr("height", Math.abs(m[1] - origin[1]));
             })
-            .on("mouseup.zoomRect", function() {
+            .on("dragend.zoomRect", function() {
               //d3.select(window).on("mousemove.zoomRect", null).on("mouseup.zoomRect", null);
-              svg.on("mousemove.zoomRect", null).on("mouseup.zoomRect", null);
+              drag.on("drag.zoomRect", null).on("drag.zoomRect", null);
               d3.select("body").classed("noselect", false);
               var m = d3.mouse(e);
               m[0] = Math.max(0, Math.min(width, m[0]));
