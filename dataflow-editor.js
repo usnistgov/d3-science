@@ -225,6 +225,7 @@ dataflow.module = function(module_data) {
   var padding = 5;
   var min_width = 75;
   var active_wire, new_wiredata;
+  
   var drag = d3.behavior.drag()
     .on("drag", dragmove)
     .origin(function() { return {x: module_data.x, y: module_data.y} });
@@ -271,14 +272,14 @@ dataflow.module = function(module_data) {
     if (this.classList.contains("input")) {
       var new_src = d3.select(".output.highlight");
       if (!new_src.empty()) {
-        var module_index = d3.select(new_src.node().parentNode).attr("index");
+        var module_index = d3.select(new_src.node().parentNode.parentNode).attr("index");
         active_data.src = module_index + ":" + new_src.attr("terminal_id");
       }
     } 
     else if (this.classList.contains("output")) {
       var new_tgt = d3.select(".input.highlight");
       if (!new_tgt.empty()) {
-        var module_index = d3.select(new_tgt.node().parentNode).attr("index");
+        var module_index = d3.select(new_tgt.node().parentNode.parentNode).attr("index");
         active_data.tgt = module_index + ":" + new_tgt.attr("terminal_id");
       }
     }
@@ -354,7 +355,18 @@ dataflow.module = function(module_data) {
       
     var inputs = group.selectAll(".input")
       .data(function(d) { return d.inputs })
-      .enter().append("rect")
+      .enter().append("g")
+        .attr("transform", function(d,i) { return "translate(0," + (height + i*20).toFixed() + ")"})
+    
+    inputs
+        .append("text")
+          .style("dominant-baseline", "text-before-edge")
+          .attr("x", padding)
+          .attr("y", padding)
+          .style("padding", padding)
+          .text(function(d) { return d; });
+    
+    inputs.append("rect")
         .classed("terminal input", true)
         .style("cursor", "crosshair")
         .style("fill", "#00FF00")
@@ -365,15 +377,25 @@ dataflow.module = function(module_data) {
         .attr("height", 20)
         .attr("wireoffset_x", 0)
         .attr("wireoffset_y", 10)
-        .attr("transform", function(d,i) { return "translate(0," + (height + i*20).toFixed() + ")"})
         .attr("terminal_id", function(d) {return d})
         .call(wireaction)
-        .append("svg:title")
-          .text(function(d) { return d; });
+    
+    
   
     var outputs = group.selectAll(".output")
       .data(function(d) { return d.outputs })
-      .enter().append("rect")
+      .enter().append("g")
+        .attr("transform", function(d,i) { return "translate(" + (width/2).toFixed() + "," + (height + i*20).toFixed() + ")"})
+      
+    outputs
+        .append("text")
+          .style("dominant-baseline", "text-before-edge")
+          .attr("x", padding)
+          .attr("y", padding)
+          .style("padding", padding)
+          .text(function(d) { return d; });
+          
+    outputs.append("rect")
         .classed("terminal output", true)
         .style("cursor", "crosshair")
         .style("fill", "#00FFFF")
@@ -383,8 +405,7 @@ dataflow.module = function(module_data) {
         .attr("width", width/2)
         .attr("height", 20)
         .attr("wireoffset_x", width/2)
-        .attr("wireoffset_y", 10)
-        .attr("transform", function(d,i) { return "translate(" + (width/2).toFixed() + "," + (height + i*20).toFixed() + ")"})
+        .attr("wireoffset_y", 10)        
         .attr("terminal_id", function(d) {return d})
         .call(wireaction)
         .append("svg:title")
