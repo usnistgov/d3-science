@@ -228,32 +228,33 @@ dataflow.module = function(module_data) {
   
   var drag = d3.behavior.drag()
     .on("drag", dragmove)
-    .origin(function() { return {x: module_data.x, y: module_data.y} });
-    
-  var wireaction = d3.behavior.drag()
-    .on("dragstart.wire", wirestart)
-    .on("drag.wire", wirepull)
-    .on("dragend.wire", wirestop)
+    .origin(function(a) { return {x: module_data.x, y: module_data.y} });
     
   function dragmove() {
+    if (!d3.select(this).classed("draggable")) {return}
     module_data.x = d3.event.x;
     module_data.y = d3.event.y;
     group.attr("transform", "translate(" + module_data.x.toFixed() + "," + module_data.y.toFixed() + ")");
     parentNode.draw_wires();
   }
   
+  var wireaction = d3.behavior.drag()
+    .on("dragstart.wire", wirestart)
+    .on("drag.wire", wirepull)
+    .on("dragend.wire", wirestop)
   
   function wirestart() {
+    if (!d3.select(this.parentNode.parentNode).classed("wireable")) {return}
     d3.event.sourceEvent.stopPropagation();
     d3.select(this).classed("highlight", true);
     var terminal_id = d3.select(this).attr("terminal_id");
     var module_index = group.attr("index");
     var address = module_index + ":" + terminal_id;
     new_wiredata = {src: null, tgt: null}
-    var dest_selector = (this.classList.contains("input")) ? ".output" : ".input";
+    var dest_selector = (this.classList.contains("input")) ? ".wireable .output" : ".wireable .input";
     d3.select(parentNode).selectAll(dest_selector)
       .on("mouseenter", function() {d3.select(this).classed("highlight", true)})
-      .on("mouseleave", function(e) {d3.select(this).classed("highlight", false)})
+      .on("mouseleave", function() {d3.select(this).classed("highlight", false)})
     if (this.classList.contains("input")) {
       new_wiredata.tgt = address;
       new_wiredata.src = "cursor";        
@@ -308,7 +309,7 @@ dataflow.module = function(module_data) {
   // create and append module HTML element:
   group = d3.select(document.createElementNS("http://www.w3.org/2000/svg", "g"))
     .datum(module_data)
-    .classed("module", true)
+    .classed("module draggable wireable", true)
     .style("cursor", "move")
     .attr("transform", "translate(" + module_data.x.toFixed() + "," + module_data.y.toFixed() + ")")
     .attr("x-origin", module_data.x.toFixed())
@@ -360,6 +361,7 @@ dataflow.module = function(module_data) {
     
     inputs
         .append("text")
+          .classed("input label", true)
           .style("dominant-baseline", "text-before-edge")
           .attr("x", padding)
           .attr("y", padding)
@@ -379,6 +381,8 @@ dataflow.module = function(module_data) {
         .attr("wireoffset_y", 10)
         .attr("terminal_id", function(d) {return d})
         .call(wireaction)
+        .append("svg:title")
+          .text(function(d) { return d; });
     
     
   
@@ -389,6 +393,7 @@ dataflow.module = function(module_data) {
       
     outputs
         .append("text")
+          .classed("output label", true)
           .style("dominant-baseline", "text-before-edge")
           .attr("x", padding)
           .attr("y", padding)
