@@ -8,7 +8,7 @@ function heatChart(options_override) {
   var debug=false;
   var options_defaults = {
     margin: {top: 10, right: 10, bottom: 50, left: 50},
-    cb_margin: {top: 10, right: 75, bottom: 50, left: 10},
+    cb_margin: {top: 10, right: 50, bottom: 50, left: 10},
     show_grid: true,
     show_colorbar: true,
     colorbar_width: 120,
