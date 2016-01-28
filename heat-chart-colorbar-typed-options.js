@@ -399,7 +399,12 @@ function heatChart(options_override) {
   chart.ztransform = function(_) {
     if (!arguments.length) return options.ztransform;
     options.ztransform = _;
+    var old_range = z.range(),
+        old_domain = z.domain();
     z = d3.scale[options.ztransform]();
+    z.range(old_range).domain(old_domain);
+    zAxis.scale(z);
+    cb_resetzoom.call(chart.colorbar.svg.node());
     _redraw_backing = true;
     return chart;
   };
@@ -447,11 +452,9 @@ function heatChart(options_override) {
     if (!arguments.length) return source_data;
     source_data = _;
     if (options.autoscale) {
-      console.log('autoscaling');
       do_autoscale();
     }
     _recalculate_main = true;
-    //make_plotdata();
   };
   
   chart.interactors = function(_) {
@@ -650,8 +653,9 @@ function heatChart(options_override) {
         zdims.zmin = new_min_max.min;
         zdims.zmax = new_min_max.max;
     z.domain([zdims.zmin, zdims.zmax]);
-    cb_zoomed.call(chart.colorbar.svg.node());
     cb_zoom.y(z);
+    zAxis.scale(z);
+    cb_zoomed.call(chart.colorbar.svg.node()); 
     chart.colorbar.svg.select(".z.axis").call(zAxis);
     _recalculate_main = true;    
   }
