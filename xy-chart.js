@@ -60,7 +60,8 @@ function xyChart(options_override) {
     var xoffset = (x.range()[1] - x.range()[0]) * base_zoom_offset,
         yoffset = (y.range()[1] + y.range()[0]) * base_zoom_offset;
     zoom.scale(1.0 - (2.0 * base_zoom_offset)).translate([xoffset, yoffset]);
-    zoomed.call(this);
+    zoomed();
+    //.call(this);
   }
   var source_data;
   var base_zoom_offset = 0.05; // zoom out 5% from min and max by default;
@@ -251,7 +252,7 @@ function xyChart(options_override) {
               rect.remove();
               zoomed();
             }, true);
-          d3.event.stopPropagation();
+          d3.event.sourceEvent.stopPropagation();
         });
       
       mainview.append("rect")
@@ -426,12 +427,6 @@ function xyChart(options_override) {
           .selectAll(".errorbar")
             .data(function(d) { return d; })
           .enter().append("path")
-            .filter(function(d) {
-              return (d && d[1] != null &&
-                isFinite(x(d[2].xlower)) && 
-                isFinite(x(d[2].xupper)) && 
-                isFinite(y(d[2].ylower)) &&
-                isFinite(y(d[2].yupper))) })
             .attr("class", "errorbar")
             .attr("stroke-width", "1.5px")
             .attr("d", errorbar_generator);
@@ -552,8 +547,16 @@ function xyChart(options_override) {
     function errorbar_generator(d) {
       var errorbar_width = options.errorbar_width;
       var pathstring = "";
-      var draw_top_bottom = (d[2].yupper != d[2].ylower);
-      var draw_left_right = (d[2].xupper != d[2].xlower);
+      var draw_top_bottom = (
+        (d[2].yupper != d[2].ylower) &&
+          isFinite(y(d[2].ylower)) &&
+          isFinite(y(d[2].yupper))
+      );
+      var draw_left_right = (
+        (d[2].xupper != d[2].xlower) &&
+        isFinite(x(d[2].xlower)) && 
+        isFinite(x(d[2].xupper)) 
+      );
       var px = x(d[0]),
           py = y(d[1]),
           pux = x(d[2].xupper),
@@ -643,14 +646,28 @@ function xyChart(options_override) {
     chart.xtransform = function(_) {
     if (!arguments.length) return options.xtransform;
       options.xtransform = _;
-      x = d3.scale[options.xtransform]();
+      var old_range = x.range(),
+          old_domain = x.domain();
+      x = d3.scale[options.xtransform]()
+      do_autoscale();
+      x.domain([min_x, max_x]).range(old_range);
+      xAxis.scale(x);
+      xAxisGrid.scale(x);
+      chart.resetzoom();
       return chart;
     };
     
     chart.ytransform = function(_) {
     if (!arguments.length) return options.ytransform;
       options.ytransform = _;
-      y = d3.scale[options.ytransform]();
+      var old_range = y.range(),
+          old_domain = y.domain();
+      y = d3.scale[options.ytransform]()
+      do_autoscale();
+      y.domain([min_y, max_y]).range(old_range);
+      yAxis.scale(y);
+      yAxisGrid.scale(y);
+      chart.resetzoom();
       return chart;
     };
     
@@ -661,6 +678,8 @@ function xyChart(options_override) {
       interactors.push(_);
       return chart;
     };
+    
+    chart.resetzoom = resetzoom;
     
     return chart;
 }

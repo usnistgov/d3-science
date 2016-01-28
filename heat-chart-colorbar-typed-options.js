@@ -644,21 +644,18 @@ function heatChart(options_override) {
   
   function do_autoscale() {
     var new_min_max = get_min_max(source_data, z, Infinity, -Infinity);
+    if (!isFinite(new_min_max.min) || !isFinite(new_min_max.max)) {
+        new_min_max = {min: 1, max: 2}; // need to put something for invalid input scales.
+    } 
         zdims.zmin = new_min_max.min;
         zdims.zmax = new_min_max.max;
     z.domain([zdims.zmin, zdims.zmax]);
-    
-    chart.colorbar.svg.select(".z.axis").call(zAxis);
-    //cb_zoom.y(z);
     cb_zoomed.call(chart.colorbar.svg.node());
-    console.log(zAxis);
-    myz = zAxis;
-    
+    cb_zoom.y(z);
+    chart.colorbar.svg.select(".z.axis").call(zAxis);
+    _recalculate_main = true;    
   }
   chart.do_autoscale = do_autoscale;
-  chart._recalculate_main = _recalculate_main;
-  chart.cb_zoom = cb_zoom;
-  chart.cb_zoomed = cb_zoomed;
   
   function get_min_max(array, transform, existing_min, existing_max) {
     var new_min_max = {min: existing_min, max: existing_max};
