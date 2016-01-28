@@ -1,4 +1,4 @@
-"use strict";
+//"use strict";
 
 if (!d3.hasOwnProperty("id")) {
   d3.id = (function(){var a = 0; return function(){return a++}})();
@@ -8,7 +8,7 @@ function heatChart(options_override) {
   var debug=false;
   var options_defaults = {
     margin: {top: 10, right: 10, bottom: 50, left: 50},
-    cb_margin: {top: 10, right: 50, bottom: 50, left: 10},
+    cb_margin: {top: 10, right: 75, bottom: 50, left: 10},
     show_grid: true,
     show_colorbar: true,
     colorbar_width: 120,
@@ -101,7 +101,7 @@ function heatChart(options_override) {
         height = innerheight - options.margin.top - options.margin.bottom;
       chart.outercontainer = outercontainer;
       source_data = data;
-      chart.update = function() { outercontainer.transition().call(chart); chart.colorbar.update(); };   
+      //chart.update = function() { outercontainer.transition().call(chart); chart.colorbar.update(); };   
       if (options.autoscale) {
         var new_min_max = get_min_max(data, z);
         zdims.zmin = new_min_max.min;
@@ -323,6 +323,7 @@ function heatChart(options_override) {
       svg.selectAll("g.z")
         .attr("transform", "translate(" + width + ",0)");
         
+      chart.colorbar.svg = svg;
     });
   }
   chart.colorbar.update = function() { this.outercontainer.call(chart.colorbar); };   
@@ -370,6 +371,7 @@ function heatChart(options_override) {
       svg.select(".y.axis").call(yAxis);
       svg.select(".grid.x").call(xAxisGrid);
       svg.select(".grid.y").call(yAxisGrid);
+
       chart.mainCanvas.call(drawImage);
       
       chart.interactors().forEach(function(d,i) { if (d.update) {d.update();}});
@@ -444,7 +446,12 @@ function heatChart(options_override) {
   chart.source_data = function(_) {
     if (!arguments.length) return source_data;
     source_data = _;
-    make_plotdata();
+    if (options.autoscale) {
+      console.log('autoscaling');
+      do_autoscale();
+    }
+    _recalculate_main = true;
+    //make_plotdata();
   };
   
   chart.interactors = function(_) {
@@ -635,6 +642,23 @@ function heatChart(options_override) {
     return
   };
   
+  function do_autoscale() {
+    var new_min_max = get_min_max(source_data, z, Infinity, -Infinity);
+        zdims.zmin = new_min_max.min;
+        zdims.zmax = new_min_max.max;
+    z.domain([zdims.zmin, zdims.zmax]);
+    
+    chart.colorbar.svg.select(".z.axis").call(zAxis);
+    //cb_zoom.y(z);
+    cb_zoomed.call(chart.colorbar.svg.node());
+    console.log(zAxis);
+    myz = zAxis;
+    
+  }
+  chart.do_autoscale = do_autoscale;
+  chart._recalculate_main = _recalculate_main;
+  chart.cb_zoom = cb_zoom;
+  chart.cb_zoomed = cb_zoomed;
   
   function get_min_max(array, transform, existing_min, existing_max) {
     var new_min_max = {min: existing_min, max: existing_max};
