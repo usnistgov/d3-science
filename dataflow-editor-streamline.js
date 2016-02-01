@@ -383,7 +383,13 @@ dataflow.module = function(module_data) {
         .call(wireaction)
         .append("svg:title")
           .text(function(d) { return d; });
-    
+          
+    inputs.append("polygon")
+        .classed("terminal input state", true)
+        .style("fill", "#444444")
+        .style("fill-opacity", 0.5)
+        .style("display", "none")
+        .attr("points", "0,0 20," + (height/2).toFixed() + " 0," + height.toFixed())    
     
   
     var outputs = group.selectAll(".output")
@@ -415,6 +421,13 @@ dataflow.module = function(module_data) {
         .call(wireaction)
         .append("svg:title")
           .text(function(d) { return d; });
+    
+    outputs.append("polygon")
+        .classed("terminal input state", true)
+        .style("fill", "#444444")
+        .style("fill-opacity", 0.5)
+        .style("display", "none")
+        .attr("points", "0,0 20," + (height/2).toFixed() + " 0," + height.toFixed())    
     
     group.call(drag);
     return group.node();  
