@@ -405,8 +405,8 @@ function heatChart(options_override) {
     z = d3.scale[options.ztransform]();
     z.range(old_range).domain(old_domain);
     zAxis.scale(z);
+    cb_zoom.y(z);
     cb_resetzoom.call(chart.colorbar.svg.node());
-    _redraw_backing = true;
     return chart;
   };
   
