@@ -18,7 +18,15 @@ function heatChart(options_override) {
     xlabel: "x-axis",
     ylabel: "y-axis",
     zlabel: "z-axis",
-    ztransform: "linear"
+    ztransform: "linear", 
+    dims: {
+      xmin: 0,
+      xmax: 1,
+      ymin: 0, 
+      ymax: 1,
+      zmin: 1.0,
+      zmax: 100.0
+    }
   }
   var options = jQuery.extend(true, {}, options_defaults); // copy
   jQuery.extend(true, options, options_override); // process any overrides from creation;
@@ -26,14 +34,7 @@ function heatChart(options_override) {
   var plotdata, source_data;
   var z = d3.scale[options.ztransform]();
     
-  var dims = {
-    xmin: 0,
-    xmax: 1,
-    ymin: 0, 
-    ymax: 1,
-    zmin: 1.0,
-    zmax: 100.0
-  }
+  var dims = options.dims;
   // create working copy of zmax and zmin, for zooming colorbar
   var zdims = {}
   var id = d3.id();
@@ -574,14 +575,11 @@ function heatChart(options_override) {
       ctx.putImageData(backing_image, 0, 0);
     }
     
-	//context.mozImageSmoothingEnabled = false;
-	//context.webkitImageSmoothingEnabled = false;
-	//context.msImageSmoothingEnabled = false;
-	//context.imageSmoothingEnabled = false;
-	var x0=x(dims.xmin),
-	    y0=y(dims.ymin),
-	    x1=x(dims.xmax),
-	    y1=y(dims.ymax);
+	  //context.mozImageSmoothingEnabled = false;
+	  //context.webkitImageSmoothingEnabled = false;
+	  //context.msImageSmoothingEnabled = false;
+	  //context.imageSmoothingEnabled = false;
+
 	   
     context.clearRect(0,0, context.canvas.width, context.canvas.height);
     if (context.mozImageSmoothingEnabled) context.mozImageSmoothingEnabled = false;
