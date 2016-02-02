@@ -202,8 +202,6 @@ function heatChart(options_override) {
           .on("dblclick.resetzoom", null)
           .on("dblclick.resetzoom", resetzoom);
       esvg.append("g")
-        .attr("class", "x axis");
-      esvg.append("g")
         .attr("class", "x axis")
         .append("text")
         .attr("class", "x axis-label")
@@ -269,10 +267,6 @@ function heatChart(options_override) {
         .tickPadding(10)	
         .tickSubdivide(true)	
         .orient("right");
-        
-      var cx = d3.scale.linear()
-        .domain([0, 10])
-        .range([0, width]);
         
       // we will bind data to the container div, a slightly non-standard
       // arrangement.
@@ -717,6 +711,78 @@ function heatChart(options_override) {
   };
   
   chart.generate_cumsums = generate_cumsums;
+  
+  chart.autofit = function() {
+    var offset_right = (options.show_colorbar) ? options.colorbar_width + 5 : 0;
+    var outercontainer = this.outercontainer,
+        innerwidth = outercontainer.node().clientWidth - offset_right,
+        innerheight = outercontainer.node().clientHeight,
+        width = innerwidth - options.margin.right - options.margin.left,
+        height = innerheight - options.margin.top - options.margin.bottom;
+        
+    var limits = fixAspect(width, height);
+      // Update the x-scale.
+      x
+        .domain([limits.xmin, limits.xmax])
+        .range([0, width]);
+        
+      // Update the y-scale.
+      y
+        .domain([limits.ymin, limits.ymax])
+        .range([height, 0]);
+    
+    zoom.x(x).y(y);
+    outercontainer.select(".heatmap-container")
+      .attr("width", innerwidth)
+      .attr("height", innerheight)
+      .style("width", innerwidth + "px")
+      .style("height", innerheight + "px");
+    
+    outercontainer.select("canvas.mainplot")
+          .attr("width", width)
+          .attr("height", height)
+          .style("width", width + "px")
+          .style("height", height + "px")
+      
+    chart.svg.attr("width", width + options.margin.left + options.margin.right)
+          .attr("height", height + options.margin.top + options.margin.bottom);
+    
+    chart.svg.selectAll("g.x")
+        .attr("transform", "translate(" + options.margin.left + "," + height + ")");
+    chart.svg.selectAll("g.y")
+        .attr("transform", "translate(" + options.margin.left + ",0)");
+    
+    chart.svg.selectAll("g.x.axis text").attr("x", width/2.0);
+    chart.svg.selectAll("g.y.axis text").attr("x", -height/2.0);
+          
+    var innerwidth = options.colorbar_width,
+        width = innerwidth - options.cb_margin.right,
+        height = innerheight - options.cb_margin.top - options.cb_margin.bottom;
+    
+    z.range([height, 0]);
+    
+    outercontainer.select(".colorbar-container")
+        .attr("width", innerwidth)
+        .attr("height", innerheight)
+        .style("width", innerwidth + "px")
+        .style("height", innerheight + "px");
+    
+    outercontainer.select("canvas.colorbar")
+          .attr("width", width)
+          .attr("height", height)
+          .style("width", width + "px")
+          .style("height", height + "px")
+          .call(drawScale);
+    
+    chart.colorbar.svg.select(".z.axis").call(zAxis);
+    chart.colorbar.svg.attr("width", width + options.cb_margin.left + options.cb_margin.right)
+      .attr("height", height + options.cb_margin.top + options.cb_margin.bottom);
+      
+    chart.colorbar.svg.selectAll("g.z")
+        .attr("transform", "translate(" + width + ",0)");
+        
+    _redraw_main = true;
+  }
   
   return chart
   
