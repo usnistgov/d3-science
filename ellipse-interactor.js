@@ -6,7 +6,6 @@ function ellipseInteractor(state, x, y) {
   // if dragging the ellipse itself, the eccentricity (ry/rx) is preserved
   var name = state.name;
   var point_radius = ( state.point_radius == null ) ? 5 : state.point_radius;
-  var event_name = "circle." + state.name;
   var dispatch = d3.dispatch("update");
   var x = x || d3.scale.linear();
   var y = y || d3.scale.linear();
@@ -116,7 +115,7 @@ function ellipseInteractor(state, x, y) {
         .attr("cy", function(d) {return y(d[1])})
     if (!fixed) center_group.call(drag_center);
 
-    interactor.update = function() {
+    interactor.update = function(preventPropagation) {
       group.selectAll('.center').data(state_to_center(state))
         .attr("cx", function(d) { return x(d[0]); })
         .attr("cy", function(d) { return y(d[1]); });
@@ -132,7 +131,9 @@ function ellipseInteractor(state, x, y) {
         .attr("ry", function(d) {return Math.abs(y(d['ry'] + d['cy']) - y(d['cy']))});
         
       // fire!
-      dispatch.update();
+      if (!preventPropagation) {
+        dispatch.update();
+      }
     }
   }
   
@@ -149,7 +150,6 @@ function ellipseInteractor(state, x, y) {
         state.ry = new_y - state.cy;
         break
       default:
-        console.log("default", d3.event, d3.select(this));
     }
     interactor.update();
   }
@@ -167,7 +167,6 @@ function ellipseInteractor(state, x, y) {
         new_y = y.invert(d3.event.y),
         new_rx = Math.sqrt(Math.pow(new_x - state.cx, 2) + Math.pow(new_y - state.cy, 2)/Math.pow(eccentricity, 2)),
         new_ry = eccentricity * new_rx;
-    console.log(state.rx, new_rx, state.ry, new_ry, new_x, new_y);
     state.rx = new_rx;
     state.ry = new_ry;
     interactor.update();
