@@ -105,6 +105,10 @@ canvas {
     stroke: rgba(68, 127, 255, 0.3);
 }
 
+.centerline {
+    stroke-dasharray: 10,10;
+}
+
 rect {
   fill: none;
   user-select: none; 
@@ -122,6 +126,7 @@ rect.zoom {
   <script src="xy-chart.js" charset="utf-8"></script>
   <script src="rectangle-interactor.js"></script>
   <script src="ellipse-interactor.js"></script>
+  <script src="angle-slice-interactor.js"></script>
 </head>
 <body>
 <!--<script src="d3.v3.min.js"></script>-->
@@ -173,6 +178,18 @@ window.onload = function() {
       ry: 20
   }
   
+  var opts4 = {
+    type: "AngleSlice",
+    name: "angle_slice",
+    show_lines: true,
+    color1: "red",
+    color2: "pink",
+    cx: 0.024,
+    cy: 25.0,
+    angle_offset: Math.PI/4.0,
+    angle_range: Math.PI/60.0
+  }
+  
   d3.json("sample_data/pbr_live_data.json", function(error, data) {
       mydata = data;
       c = d3.select("#plot1")
@@ -181,11 +198,13 @@ window.onload = function() {
       rectangle = new rectangleInteractor(opts1);
       ellipse_1 = new ellipseInteractor(opts2);
       ellipse_2 = new ellipseInteractor(opts3);
+      angle_slice = new angleSliceInteractor(opts4);
       chart
         .options(data[0].options)
         .interactors(rectangle)
         .interactors(ellipse_1)
         .interactors(ellipse_2)
+        .interactors(angle_slice)
         .zoomRect(true)
 
   });

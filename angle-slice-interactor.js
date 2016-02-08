@@ -22,13 +22,11 @@ function angleSliceInteractor(state, x, y) {
   var fixed = (state.fixed == null) ? false : state.fixed;
   var cursor = (fixed) ? "auto" : "move";
   
-  function angle_to_path(cx, cy, angle) {
+  var angle_to_path = function(cx, cy, angle) {
     var yd = y.range(),
         xd = x.range(),
-        y1 = y(cy) + (xd[0] - x(cx)) / Math.sin(angle),
-        x1 = x(xd[0]),
-        y2 = y(cy) + (xd[1] - x(cx)) / Math.sin(angle),
-        x2 = x(xd[0]);          
+        y1 = y(cy) + (xd[0] - x(cx)) * Math.tan(angle),
+        y2 = y(cy) + (xd[1] - x(cx)) * Math.tan(angle);
         
     var y1_rel = (y1 - yd[0]) / (yd[1] - yd[0]),
         y2_rel = (y2 - yd[0]) / (yd[1] - yd[0]);
@@ -41,11 +39,18 @@ function angleSliceInteractor(state, x, y) {
     var x1 = x(cx) + (y1 - y(cy)) / Math.tan(angle),
         x2 = x(cx) + (y2 - y(cy)) / Math.tan(angle);
         
-    var pathstring = "";
-    pathstring += "M" + x1.toFixed(3);
-    pathstring += "," + y1.toFixed(3);
-    pathstring += "L" + x2.toFixed(3);
-    pathstring += "," + y2.toFixed(3);   
+    
+    var pathstring = ""; 
+    // start in the center and draw to the edge
+    pathstring += "M" + x(cx).toFixed();
+    pathstring += "," + y(cy).toFixed();
+    pathstring += "L" + x2.toFixed();
+    pathstring += "," + y2.toFixed();
+    // and back to the center to draw the other sector
+    pathstring += "M" + x(cx).toFixed();
+    pathstring += "," + y(cy).toFixed();
+    pathstring += "L" + x1.toFixed();
+    pathstring += "," + y1.toFixed();
     return pathstring
   }
          
@@ -55,30 +60,26 @@ function angleSliceInteractor(state, x, y) {
     
     // calculate angles of graph corners
     if (show_lines) {
-      /*
-      var a1 = Math.atan2(x.domain()[0], y.domain()[0]),
-          a2 = Math.atan2(x.domain()[1], y.domain()[0]),
-          a3 = Math.atan2(x.domain()[1], y.domain()[1]),
-          a4 = Math.atan2(x.domain()[0], y.domain()[1]);
-      */
-          
+      var centerline = angle_to_path(state.cx, state.cy, state.angle_offset), 
+          upperline = angle_to_path(state.cx, state.cy, state.angle_offset + state.angle_range), 
+          lowerline = angle_to_path(state.cx, state.cy, state.angle_offset - state.angle_range);
+      
       return [
-        {cx: state.cx, cy: state.cy, rx: state.rx, ry: state.ry}
+        {
+          "path": centerline,
+          "classname": "centerline"
+        },
+        {
+          "path": upperline, 
+          "classname": "upperline"
+        },
+        {
+          "path": lowerline, 
+          "classname": "lowerline"
+        }
       ]
     }
     else {
-      return [];
-    }
-  }
-  
-  var state_to_points = function(state) {
-    if (show_points) {
-      return [
-        [state.cx + state.rx, state.cy],
-        [state.cx, state.cy + state.ry]
-      ]
-    }
-    else { 
       return [];
     }
   }
@@ -94,16 +95,12 @@ function angleSliceInteractor(state, x, y) {
     }
   }
   
-  var drag_corner = d3.behavior.drag()
-    .on("drag", dragmove_corner)
-    .on("dragstart", function() { d3.event.sourceEvent.stopPropagation(); });
-  
   var drag_center = d3.behavior.drag()
     .on("drag", dragmove_center)
     .on("dragstart", function() { d3.event.sourceEvent.stopPropagation(); });  
     
-  var drag_edge = d3.behavior.drag()
-    .on("drag", dragmove_edge)
+  var drag_lines = d3.behavior.drag()
+    .on("drag", dragmove_lines)
     .on("dragstart", function() { d3.event.sourceEvent.stopPropagation(); });
   
 
@@ -111,34 +108,19 @@ function angleSliceInteractor(state, x, y) {
     var group = selection.append("g")
       .classed("interactors interactor-" + name, true)
       .style("cursor", cursor)
-    var edges = group.append("g")
-          .attr("class", "edges")
+    var lines_group = group.append("g")
+          .attr("class", "lines_group")
+          .style("fill", "none")
           .style("stroke", state.color1)
-          .style("stroke-linecap", "round")
-          .selectAll(".edge")
-        .data(state_to_ellipse(state))
-          .enter().append("ellipse")
-          .classed("edge", true)
-          .attr("fill", "none")
-          .attr("stroke-width", "4px")
-          .attr("cx", function(d) {return x(d['cx'])})
-          .attr("cy", function(d) {return y(d['cy'])})
-          .attr("rx", function(d) {return Math.abs(x(d['rx'] + d['cx']) - x(d['cx']))})
-          .attr("ry", function(d) {return Math.abs(y(d['ry'] + d['cy']) - y(d['cy']))});         
-    if (!fixed) edges.call(drag_edge);
-    
-    var corners = group.append("g")
-      .classed("corners", true)
-      .attr("fill", state.color1)
-      .selectAll("corner")
-      .data(state_to_points(state))
-        .enter().append("circle")
-        .classed("corner", true)
-        .attr("vertex", function(d,i) { return i.toFixed()})
-        .attr("r", point_radius)
-        .attr("cx", function(d) {return x(d[0])})
-        .attr("cy", function(d) {return y(d[1])})
-    if (!fixed) corners.call(drag_corner);
+          .style("stroke-width", "4px");
+          
+    var lines = lines_group.selectAll(".lines")
+      .data(state_to_paths(state))
+        .enter().append("path")
+        .attr("class", function(d) {return d['classname']})
+        .classed("lines", true)
+        .attr("d", function(d) {return d['path']})    
+    if (!fixed) lines.call(drag_lines);
     
     var center_group = group.append("g")
       .classed("center_group", true)
@@ -153,15 +135,16 @@ function angleSliceInteractor(state, x, y) {
     if (!fixed) center_group.call(drag_center);
 
     interactor.update = function(preventPropagation) {
-      group.selectAll('.center').data(state_to_center(state))
-        .attr("cx", function(d) { return x(d[0]); })
-        .attr("cy", function(d) { return y(d[1]); });
+      group.select('.center')
+        .attr("cx", x(state.cx))
+        .attr("cy", y(state.cy));
+      
+      console.log(group.select('.lines'))
+      group.selectAll('.lines')
+        .data(state_to_paths(state))
+        .attr("d", function(d) {return d['path']})
         
-      group.selectAll('.corner').data(state_to_points(state))
-        .attr("cx", function(d) { return x(d[0]); })
-        .attr("cy", function(d) { return y(d[1]); });
-        
-      group.selectAll('.edge').data(state_to_ellipse(state))
+      group.selectAll('.edge').data(state_to_paths(state))
         .attr("cx", function(d) {return x(d['cx'])})
         .attr("cy", function(d) {return y(d['cy'])})
         .attr("rx", function(d) {return Math.abs(x(d['rx'] + d['cx']) - x(d['cx']))})
@@ -198,14 +181,17 @@ function angleSliceInteractor(state, x, y) {
   }
   
   
-  function dragmove_edge() {
-    var eccentricity = state.ry / state.rx,
-        new_x = x.invert(d3.event.x),
-        new_y = y.invert(d3.event.y),
-        new_rx = Math.sqrt(Math.pow(new_x - state.cx, 2) + Math.pow(new_y - state.cy, 2)/Math.pow(eccentricity, 2)),
-        new_ry = eccentricity * new_rx;
-    state.rx = new_rx;
-    state.ry = new_ry;
+  function dragmove_lines() {
+    var new_angle = Math.atan2(d3.event.y - y(state.cy), d3.event.x - x(state.cx))
+    if (d3.select(this).classed("centerline")) {
+      state.angle_offset = new_angle;
+    }
+    else if (d3.select(this).classed("upperline")) {
+      state.angle_range = new_angle - state.angle_offset;
+    }
+    else if (d3.select(this).classed("lowerline")) {
+      state.angle_range = -(new_angle - state.angle_offset);
+    }
     interactor.update();
   }
   
