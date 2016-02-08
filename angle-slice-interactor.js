@@ -13,9 +13,7 @@ function angleSliceInteractor(state, x, y) {
     throw "angles only defined for linear scales";
     return
   }
-  if (!('ry' in state)) {
-    state.ry = Math.abs(state.rx);
-  }
+
   var show_points = (state.show_points == null) ? true : state.show_points;
   var show_lines = (state.show_lines == null) ? true : state.show_lines;
   var show_center = (state.show_center == null) ? true : state.show_center;
@@ -139,7 +137,6 @@ function angleSliceInteractor(state, x, y) {
         .attr("cx", x(state.cx))
         .attr("cy", y(state.cy));
       
-      console.log(group.select('.lines'))
       group.selectAll('.lines')
         .data(state_to_paths(state))
         .attr("d", function(d) {return d['path']})
