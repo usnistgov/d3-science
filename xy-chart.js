@@ -64,7 +64,6 @@ function xyChart(options_override) {
     //.call(this);
   }
   var source_data;
-  var base_zoom_offset = 0.05; // zoom out 5% from min and max by default;
   
   function do_autoscale() {
     var extents;
@@ -303,8 +302,8 @@ function xyChart(options_override) {
         .attr("transform", "translate(0," + height + ")");
        
       chart.svg = svg;
-      resetzoom(); // set to 10% zoom out.
       chart.g = svg.selectAll("g.mainview");
+      resetzoom(); // set to 10% zoom out.
 	
       //************************************************************
       // Create D3 legend
@@ -356,87 +355,11 @@ function xyChart(options_override) {
             });
       }
 	
-      //************************************************************
-      // Create D3 line object and draw data on our SVG object
-      //************************************************************
-      if (options.show_line) {
-          
-          var line = d3.svg.line()
-              .defined(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
-              //.interpolate("linear")	
-              .x(function(d) { return x(d[0]); })
-              .y(function(d) { return y(d[1]); });
-          
-
-          mainview.selectAll('.line')
-              .data(data)
-              .enter()
-              .append("path")
-              //.filter(function(d) { return (d && isFinite(x(d.x)) && isFinite(y(d.y))); })
-              .attr("class", "line")
-              .attr('stroke', function(d,i){
-	              return colors[i%colors.length];
-              })
-              .attr("d", line);
-      } else {
-          var line = null;
-      }
-	
-	    chart.line = line;
-	
-	
-      //************************************************************
-      // Draw points on SVG object based on the data given
-      //************************************************************
-      if (options.show_points) {
-
-          var points = chart.g.selectAll(".series")
-            .data(data)
-          points
-          .enter().append("g")
-            .attr("class", "series")
-            .style("fill", function(d, i) { return colors[i % colors.length];  })
-          .selectAll(".dot")
-            .data(function(d) { return d; })
-          .enter().append("circle")
-            .filter(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
-            .attr("class", "dot")
-            .attr("clip-path", "url(#d3clip_" + id.toFixed() + ")")
-            .attr("r", 2.5)
-            .attr("cx", function(d) { return x(d[0]); })
-            .attr("cy", function(d) { return y(d[1]); });
-          
-      } else {
-          var points = null;
-      }	
-      chart.points = points;
-      
-	    //************************************************************
-      // Draw error bars on SVG object based on the data given
-      //************************************************************
-      
-	    
-      if (options.show_errorbars) {
-        var errorbars = mainview.selectAll(".errorbars")
-            .data(data)
-          errorbars
-          .enter().append("g")
-            .attr("class", "errorbars")
-            .style("fill", function(d, i) { return colors[i % colors.length];  })
-            .style("stroke", function(d, i) { return colors[i % colors.length];  })
-          .selectAll(".errorbar")
-            .data(function(d) { return d; })
-          .enter().append("path")
-            .attr("class", "errorbar")
-            .attr("stroke-width", "1.5px")
-            .attr("d", errorbar_generator);
-      } else {
-        var errorbars = null;
-      }	
-	
-	    chart.errorbars = errorbars;
+      chart.draw_lines(data);
+      chart.draw_points(data);
+      chart.draw_errorbars(data);
 	  
-	    //************************************************************
+      //************************************************************
       // Position cursor (shows position of mouse in data coords)
       //************************************************************
       if (options.position_cursor) {
@@ -509,6 +432,78 @@ function xyChart(options_override) {
     });
   }
     
+    
+    var line = d3.svg.line()
+      .defined(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
+      .x(function(d) { return x(d[0]); })
+      .y(function(d) { return y(d[1]); });
+
+    //************************************************************
+    // Create D3 line object and draw data on our SVG object
+    //************************************************************
+    chart.draw_lines = function(data) {
+      if (options.show_line) {
+        chart.g.selectAll('.line')
+          .data(data)
+          .enter()
+            .append("path")
+            .attr("class", "line")
+            .attr('stroke', function(d,i){
+              return colors[i%colors.length];
+            })
+        
+        chart.g.selectAll('path.line')
+          .attr("d", line);
+      }
+    }      
+    
+    //************************************************************
+    // Draw points on SVG object based on the data given
+    //************************************************************
+    chart.draw_points = function(data) {
+      if (options.show_points) {
+
+        chart.g.selectAll("g.series")
+          .data(data)
+          .enter().append("g")
+            .attr("class", "series")
+            .style("fill", function(d, i) { return colors[i % colors.length];  });
+        chart.g.selectAll("g.series").selectAll(".dot")
+            .data(function(d) { return d; })
+          .enter().append("circle")
+            .filter(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
+            .attr("class", "dot")
+            .attr("clip-path", "url(#d3clip_" + id.toFixed() + ")")
+            .attr("r", 2.5)
+            
+        chart.g.selectAll("g.series .dot")
+            .attr("cx", function(d) { return x(d[0]); })
+            .attr("cy", function(d) { return y(d[1]); });   
+      }
+    }
+    
+    //************************************************************
+    // Draw error bars on SVG object based on the data given
+    //************************************************************
+    chart.draw_errorbars = function(data) {
+      if (options.show_errorbars) {
+        chart.g.selectAll(".errorbars")
+         .data(data)
+         .enter().append("g")
+            .attr("class", "errorbars")
+            .style("fill", function(d, i) { return colors[i % colors.length];  })
+            .style("stroke", function(d, i) { return colors[i % colors.length];  })
+        chart.g.selectAll(".errorbars").selectAll(".errorbar")
+            .data(function(d) { return d; })
+          .enter().append("path")
+            .attr("class", "errorbar")
+            .attr("stroke-width", "1.5px")
+            
+        chart.g.selectAll(".errorbars path.errorbar")
+          .attr("d", errorbar_generator);
+      }
+    }	
+      
     //************************************************************
     // Zoom specific updates
     //************************************************************
@@ -518,19 +513,10 @@ function xyChart(options_override) {
 	    svg.select(".y.axis").call(yAxis); 
 	    svg.select(".x.grid").call(xAxisGrid);
 	    svg.select(".y.grid").call(yAxisGrid);  
-	    if (chart.line) svg.selectAll('path.line').attr('d', chart.line);  
-      
-      //if (chart.zoomPoints) chart.zoomPoints();
-	    if (chart.points) {
-        chart.points.selectAll('.dot')
-	      .attr("cx", function(d) { return x(d[0]); })
-        .attr("cy", function(d) { return y(d[1]); });
-      }
-      
-      if (chart.errorbars) {
-        chart.errorbars.selectAll('.errorbar')
-          .attr("d", errorbar_generator);
-      }
+
+	    chart.draw_lines(source_data);
+      chart.draw_points(source_data);
+      chart.draw_errorbars(source_data);
       
       chart.interactors().forEach(function(d,i) { if (d.update) {d.update();}});
     }
