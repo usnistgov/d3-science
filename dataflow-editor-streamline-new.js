@@ -20,7 +20,7 @@
 //       x: 300
 //     }
 //   ],
-//   wires: [{source: "0:out_b", target: "1:in_0"}],
+//   wires: [{source: [0, "out_b"], target: [1, "in_0"]}],
 // }];
 // 
 
@@ -48,10 +48,10 @@ dataflow.editor = function(data) {
   var check_end = function(e) {
     if (e == 'cursor') { return true }
     else {
-        var es = e.split(":");
-        if (es.length != 2) { return false }
-        var module_index = es[0],
-            terminal_id = es[1];
+        //var es = e.split(":"); // not making string pair around : anymore.
+        if (e.length != 2) { return false }
+        var module_index = e[0],
+            terminal_id = e[1];
         return (container.select('.module[index="' + module_index + '"] .terminal[terminal_id="' + terminal_id + '"]').empty() == false)
     }
   }
@@ -74,12 +74,12 @@ dataflow.editor = function(data) {
     wires.forEach(function(w) {
       end_names.forEach(function(e) {
         var end = w[e];
-        if (end != 'cursor' && end.split(":").length == 2) {
-          var index_in = end.split(":")[0];
-          var terminal_id = end.split(":")[1];
+        if (end != 'cursor' && end.length == 2) {
+          var index_in = end[0];
+          var terminal_id = end[1];
           if (index_in in index_updates) {
             //console.log('rewiring ' + end + ' ' + index_in + ' to ' + index_updates[index_in]);
-            w[e] = index_updates[index_in] + ":" + terminal_id;
+            w[e] = [index_updates[index_in], terminal_id];
           }
         }
       });
@@ -130,9 +130,9 @@ dataflow.editor = function(data) {
   }
   
   function get_terminal_pos(term_id) {
-    var module = container.select('.module[index="' + term_id.split(":")[0] + '"]');
-    var terminal = container.select('.module[index="' + term_id.split(":")[0] + '"]')
-        .select('.terminal[terminal_id="' + term_id.split(":")[1] + '"]');
+    var module = container.select('.module[index="' + term_id[0] + '"]');
+    var terminal = container.select('.module[index="' + term_id[0] + '"]')
+        .select('.terminal[terminal_id="' + term_id[1] + '"]');
     if (module.empty() || terminal.empty()) { return null }
     var reference_point = svg.node().createSVGPoint();
     var terminal_origin = reference_point.matrixTransform(terminal.node().getCTM());
@@ -267,7 +267,7 @@ dataflow.module = function(module_data) {
     d3.select(this).classed("highlight", true);
     var terminal_id = d3.select(this).attr("terminal_id");
     var module_index = group.attr("index");
-    var address = module_index + ":" + terminal_id;
+    var address = [parseInt(module_index),  terminal_id];
     new_wiredata = {source: null, target: null}
     var dest_selector = (this.classList.contains("input")) ? ".wireable .output" : ".wireable .input";
     d3.select(parentNode).selectAll(dest_selector)
@@ -292,14 +292,14 @@ dataflow.module = function(module_data) {
       var new_src = d3.select(".output.highlight");
       if (!new_src.empty()) {
         var module_index = d3.select(new_src.node().parentNode.parentNode).attr("index");
-        active_data.source = module_index + ":" + new_src.attr("terminal_id");
+        active_data.source = [parseInt(module_index), new_src.attr("terminal_id")];
       }
     } 
     else if (this.classList.contains("output")) {
       var new_tgt = d3.select(".input.highlight");
       if (!new_tgt.empty()) {
         var module_index = d3.select(new_tgt.node().parentNode.parentNode).attr("index");
-        active_data.target = module_index + ":" + new_tgt.attr("terminal_id");
+        active_data.target = [parseInt(module_index), new_tgt.attr("terminal_id")];
       }
     }
     if (active_data.target == 'cursor' || active_data.source == 'cursor') {
