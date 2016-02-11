@@ -283,7 +283,7 @@ e.svg().on('contextmenu',function (d,i) {
 })
 
 var module_defs = instruments[current_instrument].modules,
-    module_names = Object.keys(module_defs);
+    module_names = (["Add new module:"]).concat(Object.keys(module_defs));
     
 d3.select("#new_module").selectAll("option").data(module_names)
   .enter().append('option')
@@ -309,6 +309,22 @@ d3.select("#show_example").on("click", function() {
   e.update();
 });
 
+function loadData() {
+    var file = document.getElementById('upload_template').files[0]; // only one file allowed
+    datafilename = file.name;
+    var result = null;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+        var template = JSON.parse(this.result);
+        e.data()[0].modules = template.modules;
+        e.data()[0].wires = template.wires;
+        e.update();
+    }
+    reader.readAsText(file);
+}
+
+d3.select("#upload_template").on("change", loadData);
+
 }
 </script>
 <div id="controls">
@@ -316,6 +332,7 @@ d3.select("#show_example").on("click", function() {
       <option>Add new module:</option>
     </select>
     <button id="show_example">Load example template</button>
+    <input id="upload_template" type="file" multiple="false" name="upload_template" />
     <button id="show_value">Show data</button>
 </div>
 <div id="editor_div">
