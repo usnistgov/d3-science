@@ -20,7 +20,7 @@
 //       x: 300
 //     }
 //   ],
-//   wires: [{src: "0:out_b", tgt: "1:in_0"}],
+//   wires: [{source: "0:out_b", target: "1:in_0"}],
 // }];
 // 
 
@@ -38,7 +38,7 @@ dataflow.editor = function(data) {
   dispatch.on("update", update);
   dispatch.on("draw_wires", draw_wires);
   
-  var wire_keyfn = function(d) {return "{src: " + d.src + "," + "tgt: " + d.tgt + "}"};
+  var wire_keyfn = function(d) {return "{source: " + d.source + "," + "target: " + d.target + "}"};
   var check_end = function(e) {
     if (e == 'cursor') { return true }
     else {
@@ -52,19 +52,19 @@ dataflow.editor = function(data) {
   /*
   var wire_checkends = function(w) {
     var src_exists, tgt_exists;
-    src_exists = (w.src == 'cursor' || !(svg.select('[id=\"' + w.src + '\"]').empty()) );
-    tgt_exists = (w.tgt == 'cursor' || !(svg.select('[id=\"' + w.tgt + '\"]').empty()) );
+    src_exists = (w.source == 'cursor' || !(svg.select('[id=\"' + w.source + '\"]').empty()) );
+    tgt_exists = (w.target == 'cursor' || !(svg.select('[id=\"' + w.target + '\"]').empty()) );
     return (src_exists && tgt_exists)
   }
   */
   
   var wire_checkends = function(w) {
-    return (check_end(w.src) && check_end(w.tgt))
+    return (check_end(w.source) && check_end(w.target))
   }
   
   function rewire(index_updates) {
     var wires = svg.datum().wires;
-    var end_names = ['src', 'tgt'];
+    var end_names = ['source', 'target'];
     wires.forEach(function(w) {
       end_names.forEach(function(e) {
         var end = w[e];
@@ -133,8 +133,8 @@ dataflow.editor = function(data) {
   function draw_wire() {
     var connector = d3.select(this);
     var src_pos, tgt_pos, cursor_pos;
-    var src = connector.datum().src,
-        tgt = connector.datum().tgt;
+    var src = connector.datum().source,
+        tgt = connector.datum().target;
     if (src == "cursor" || tgt == "cursor") {
       var mouse = d3.mouse(svg.node());
       cursor_pos = {x: mouse[0] - 3, y: mouse[1] - 3}
@@ -151,7 +151,7 @@ dataflow.editor = function(data) {
       var wires = svg.datum().wires;
         for (var i=0; i<wires.length; i++) {
           var w = wires[i]; 
-          if (w.src == src && w.tgt == tgt) {
+          if (w.source == src && w.target == tgt) {
             wires.pop(i);
             break;
           }
@@ -250,17 +250,17 @@ dataflow.module = function(module_data) {
     var terminal_id = d3.select(this).attr("terminal_id");
     var module_index = group.attr("index");
     var address = module_index + ":" + terminal_id;
-    new_wiredata = {src: null, tgt: null}
+    new_wiredata = {source: null, target: null}
     var dest_selector = (this.classList.contains("input")) ? ".wireable .output" : ".wireable .input";
     d3.select(parentNode).selectAll(dest_selector)
       .on("mouseenter", function() {d3.select(this).classed("highlight", true)})
       .on("mouseleave", function() {d3.select(this).classed("highlight", false)})
     if (this.classList.contains("input")) {
-      new_wiredata.tgt = address;
-      new_wiredata.src = "cursor";        
+      new_wiredata.target = address;
+      new_wiredata.source = "cursor";        
     } else {
-      new_wiredata.src = address;
-      new_wiredata.tgt = "cursor";
+      new_wiredata.source = address;
+      new_wiredata.target = "cursor";
     }
     active_wire = true;
     d3.select(parentNode).datum().wires.push(new_wiredata);
@@ -274,21 +274,21 @@ dataflow.module = function(module_data) {
       var new_src = d3.select(".output.highlight");
       if (!new_src.empty()) {
         var module_index = d3.select(new_src.node().parentNode.parentNode).attr("index");
-        active_data.src = module_index + ":" + new_src.attr("terminal_id");
+        active_data.source = module_index + ":" + new_src.attr("terminal_id");
       }
     } 
     else if (this.classList.contains("output")) {
       var new_tgt = d3.select(".input.highlight");
       if (!new_tgt.empty()) {
         var module_index = d3.select(new_tgt.node().parentNode.parentNode).attr("index");
-        active_data.tgt = module_index + ":" + new_tgt.attr("terminal_id");
+        active_data.target = module_index + ":" + new_tgt.attr("terminal_id");
       }
     }
-    if (active_data.tgt == 'cursor' || active_data.src == 'cursor') {
+    if (active_data.target == 'cursor' || active_data.source == 'cursor') {
         active_wire = false;
     }
     var matches = d3.select(parentNode).datum().wires.filter(function(d) {
-        return (d.tgt == active_data.tgt && d.src == active_data.src)
+        return (d.target == active_data.target && d.source == active_data.source)
     });
     // active wire should be the last added: check for existing
     // if not successful target or source match, or if duplicate: pop
