@@ -230,14 +230,16 @@ dataflow.editor = function(data) {
 dataflow.grid_spacing = 5; // override if you don't want to snap to grid
 
 dataflow.module = function(module_data) {
-  console.log(this, this.draw_wires);
   var parentNode = this; // calling context
   var group; // this will be the module group.
   if (!('x' in module_data)) module_data.x = 100;
   if (!('y' in module_data)) module_data.y = 100;  
   
   // look up terminals from module definition if not in module_data:
-  var terminals = module_data.terminals || dataflow.module_defs[module_data.module].terminals;
+  //var terminals = module_data.terminals || dataflow.module_defs[module_data.module].terminals;
+  var module_def = dataflow.module_defs[module_data.module] || {};
+  var input_terminals = module_data.inputs || module_def.inputs || [],
+      output_terminals = module_data.outputs || module_def.outputs || [];
 
   var id = (module_data.module_id == undefined) ? d3.id() : module_data.module_id;
   var padding = 5;
@@ -373,7 +375,7 @@ dataflow.module = function(module_data) {
       .style("width", width)
       
     var inputs = group.selectAll(".input")
-      .data(terminals.filter(function(t) {return t.use=="in"}))
+      .data(input_terminals)
       .enter().append("g")
         .attr("transform", function(d,i) { return "translate(-20," + (height * i).toFixed() + ")"})
     
@@ -411,7 +413,7 @@ dataflow.module = function(module_data) {
     
   
     var outputs = group.selectAll(".output")
-      .data(terminals.filter(function(t) {return t.use=="out"}))
+      .data(output_terminals)
       .enter().append("g")
         .attr("transform", function(d,i) { return "translate(" + width.toFixed() + "," + (height * i).toFixed() + ")"})
       
