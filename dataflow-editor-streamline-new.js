@@ -221,6 +221,12 @@ dataflow.editor = function(data) {
     return svg;
   }
   
+  editor.module_defs = function(_) {
+    if (!arguments.length) {return module_defs}
+    module_defs = _;
+    return editor;
+  }
+  
   editor.update = update;
   editor.draw_wires = draw_wires;
   
@@ -237,7 +243,9 @@ dataflow.module = function(module_data) {
   
   // look up terminals from module definition if not in module_data:
   //var terminals = module_data.terminals || dataflow.module_defs[module_data.module].terminals;
-  var module_def = dataflow.module_defs[module_data.module] || {};
+  var module_id = module_data.module;
+  // lookup first from editor instance, then from dataflow library.
+  var module_def = parentNode.module_defs()[module_id] || dataflow.module_defs[module_id] || {};
   var input_terminals = module_data.inputs || module_def.inputs || [],
       output_terminals = module_data.outputs || module_def.outputs || [];
 
