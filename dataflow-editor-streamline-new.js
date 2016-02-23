@@ -31,6 +31,7 @@ if (!d3.hasOwnProperty("id")) {
 }
 
 dataflow = (typeof dataflow == 'undefined') ? {} : dataflow;
+dataflow.grid_spacing = 5; // override if you don't want to snap to grid
 
 // modules must be defined with at least a "terminals" key before using
 // the editor.
@@ -101,7 +102,7 @@ dataflow.editor = function(data) {
     svg.selectAll(".module").each(function(d,i) { index_to_id[d3.select(this).attr("index")] = d.module_id});
     var module_update = svg.selectAll(".module").data(function(d) {return d.modules}, key_fn);
     var en = module_update.enter();
-    en.append(dataflow.module); // .each(function(d) {additions.push(d.module_id)});
+    en.append(module); // .each(function(d) {additions.push(d.module_id)});
     module_update.exit().each(function(d) {removals.push(d.module_id)}).remove();
     module_update.attr("index", function(d,i) {return i});
     svg.selectAll(".module").each(function(d,i) { id_to_index[d.module_id] = d3.select(this).attr("index")});
@@ -119,7 +120,7 @@ dataflow.editor = function(data) {
     svg.datum().wires = svg.datum().wires.filter(wire_checkends);
 
     var wire_update = svg.selectAll(".wire").data(function(d) {return d.wires}, wire_keyfn);
-    wire_update.enter().append(dataflow.wire);
+    wire_update.enter().append(wire);
     wire_update.exit().remove();
     
     draw_wires();
@@ -196,18 +197,13 @@ dataflow.editor = function(data) {
     // unique id will be assigned to module when created...
     svg.selectAll(".module")
       .data(function(d) { return d.modules }) 
-      .enter().append(dataflow.module)
+      .enter().append(module)
       .attr("index", function(d,i) {return i});
       
     svg.selectAll(".wire")
       .data(function(d) {return d.wires})
-      .enter().append(dataflow.wire)
-    
-    // bind the update function directly to the svg so children can use.
-    // running these through the dispatcher, not sure if that is needed...
-    Object.defineProperty(svg.node(), 'update', {value: dispatch.update});
-    Object.defineProperty(svg.node(), 'draw_wires', {value: dispatch.draw_wires});
-      
+      .enter().append(wire)
+   
     dispatch.update();
   }
   
@@ -230,57 +226,22 @@ dataflow.editor = function(data) {
   editor.update = update;
   editor.draw_wires = draw_wires;
   
-  return editor;
-}
-
-dataflow.grid_spacing = 5; // override if you don't want to snap to grid
-
-dataflow.module = function(module_data) {
-  var parentNode = this; // calling context
-  var group; // this will be the module group.
-  if (!('x' in module_data)) module_data.x = 100;
-  if (!('y' in module_data)) module_data.y = 100;  
-  
-  // look up terminals from module definition if not in module_data:
-  //var terminals = module_data.terminals || dataflow.module_defs[module_data.module].terminals;
-  var module_id = module_data.module;
-  // lookup first from editor instance, then from dataflow library.
-  var module_def = parentNode.module_defs()[module_id] || dataflow.module_defs[module_id] || {};
-  var input_terminals = module_data.inputs || module_def.inputs || [],
-      output_terminals = module_data.outputs || module_def.outputs || [];
-
-  var id = (module_data.module_id == undefined) ? d3.id() : module_data.module_id;
-  var padding = 5;
-  var min_width = 75;
-  var active_wire, new_wiredata;
-  
-  var drag = d3.behavior.drag()
-    .on("drag", dragmove)
-    .origin(function(a) { return {x: module_data.x, y: module_data.y} });
-    
-  function dragmove() {
-    if (!d3.select(this).classed("draggable")) {return}
-    module_data.x = Math.round(d3.event.x/dataflow.grid_spacing) * dataflow.grid_spacing;
-    module_data.y = Math.round(d3.event.y/dataflow.grid_spacing) * dataflow.grid_spacing;
-    group.attr("transform", "translate(" + module_data.x.toFixed() + "," + module_data.y.toFixed() + ")");
-    parentNode.draw_wires();
-  }
-  
   var wireaction = d3.behavior.drag()
-    .on("dragstart.wire", wirestart)
-    .on("drag.wire", wirepull)
-    .on("dragend.wire", wirestop)
-  
+      .on("dragstart.wire", wirestart)
+      .on("drag.wire", wirepull)
+      .on("dragend.wire", wirestop)
+      
   function wirestart() {
-    if (!d3.select(this.parentNode.parentNode).classed("wireable")) {return}
+    var module_el = this.parentNode.parentNode;
+    if (!d3.select(module_el).classed("wireable")) {return}
     d3.event.sourceEvent.stopPropagation();
     d3.select(this).classed("highlight", true);
     var terminal_id = d3.select(this).attr("terminal_id");
-    var module_index = group.attr("index");
+    var module_index = d3.select(module_el).attr("index");
     var address = [parseInt(module_index),  terminal_id];
     new_wiredata = {source: null, target: null}
     var dest_selector = (this.classList.contains("input")) ? ".wireable .output" : ".wireable .input";
-    d3.select(parentNode).selectAll(dest_selector)
+    svg.selectAll(dest_selector)
       .on("mouseenter", function() {d3.select(this).classed("highlight", true)})
       .on("mouseleave", function() {d3.select(this).classed("highlight", false)})
     if (this.classList.contains("input")) {
@@ -291,184 +252,216 @@ dataflow.module = function(module_data) {
       new_wiredata.target = "cursor";
     }
     active_wire = true;
-    d3.select(parentNode).datum().wires.push(new_wiredata);
-    parentNode.update();
+    svg.datum().wires.push(new_wiredata);
+    update();
   }
-  
-  function wirestop() {
-    d3.select(this).classed("highlight", false);
-    var active_data = new_wiredata; // d3.select(active_wire).datum();
-    if (this.classList.contains("input")) {
-      var new_src = d3.select(".output.highlight");
-      if (!new_src.empty()) {
-        var module_index = d3.select(new_src.node().parentNode.parentNode).attr("index");
-        active_data.source = [parseInt(module_index), new_src.attr("terminal_id")];
+    
+    function wirestop() {
+      d3.select(this).classed("highlight", false);
+      var active_data = new_wiredata; // d3.select(active_wire).datum();
+      if (this.classList.contains("input")) {
+        var new_src = d3.select(".output.highlight");
+        if (!new_src.empty()) {
+          var module_index = d3.select(new_src.node().parentNode.parentNode).attr("index");
+          active_data.source = [parseInt(module_index), new_src.attr("terminal_id")];
+        }
+      } 
+      else if (this.classList.contains("output")) {
+        var new_tgt = d3.select(".input.highlight");
+        if (!new_tgt.empty()) {
+          var module_index = d3.select(new_tgt.node().parentNode.parentNode).attr("index");
+          active_data.target = [parseInt(module_index), new_tgt.attr("terminal_id")];
+        }
       }
-    } 
-    else if (this.classList.contains("output")) {
-      var new_tgt = d3.select(".input.highlight");
-      if (!new_tgt.empty()) {
-        var module_index = d3.select(new_tgt.node().parentNode.parentNode).attr("index");
-        active_data.target = [parseInt(module_index), new_tgt.attr("terminal_id")];
+      if (active_data.target == 'cursor' || active_data.source == 'cursor') {
+          active_wire = false;
       }
+      var matches = svg.datum().wires.filter(function(d) {
+          return (d.target == active_data.target && d.source == active_data.source)
+      });
+      // active wire should be the last added: check for existing
+      // if not successful target or source match, or if duplicate: pop
+      if (!active_wire || matches.length > 1) { svg.datum().wires.pop() }
+      update();
+      svg.selectAll(".terminal")
+        .classed("highlight", false)
+        .on("mouseenter", null)
+        .on("mouseleave", null)
+      active_wire = false;
     }
-    if (active_data.target == 'cursor' || active_data.source == 'cursor') {
-        active_wire = false;
+    
+    function wirepull() {
+      d3.event.sourceEvent.stopPropagation();
+      draw_wires();
     }
-    var matches = d3.select(parentNode).datum().wires.filter(function(d) {
-        return (d.target == active_data.target && d.source == active_data.source)
-    });
-    // active wire should be the last added: check for existing
-    // if not successful target or source match, or if duplicate: pop
-    if (!active_wire || matches.length > 1) { d3.select(parentNode).datum().wires.pop() }
-    parentNode.update();
-    d3.select(parentNode).selectAll(".terminal")
-      .classed("highlight", false)
-      .on("mouseenter", null)
-      .on("mouseleave", null)
-    active_wire = false;
-  }
   
-  function wirepull() {
-    d3.event.sourceEvent.stopPropagation();
-    parentNode.draw_wires();
-  }
-  
-  // create and append module HTML element:
-  group = d3.select(document.createElementNS("http://www.w3.org/2000/svg", "g"))
-    .datum(module_data)
-    .classed("module draggable wireable", true)
-    .style("cursor", "move")
-    .attr("transform", "translate(" + module_data.x.toFixed() + "," + module_data.y.toFixed() + ")")
-    .attr("x-origin", module_data.x.toFixed())
-    .attr("y-origin", module_data.y.toFixed())
-    .attr("module_id", id)
+  function module(module_data) {
+    var group; // this will be the module group.
+    if (!('x' in module_data)) module_data.x = 100;
+    if (!('y' in module_data)) module_data.y = 100;  
     
-    // this is a bit of a hack: creating a not-so-visible read-only property of 
-    // the data object referring to the unique module_id, so that d3 data join will be 
-    // able to relink data and selections;
-    Object.defineProperty(module_data, "module_id", {get: function() {return id;}});
+    // look up terminals from module definition if not in module_data:
+    //var terminals = module_data.terminals || dataflow.module_defs[module_data.module].terminals;
+    var module_id = module_data.module;
+    // lookup first from editor instance, then from dataflow library.
+    var module_def = module_defs[module_id] || dataflow.module_defs[module_id] || {};
+    var input_terminals = module_data.inputs || module_def.inputs || [],
+        output_terminals = module_data.outputs || module_def.outputs || [];
+
+    var id = (module_data.module_id == undefined) ? d3.id() : module_data.module_id;
+    var padding = 5;
+    var min_width = 75;
+    var active_wire, new_wiredata;
     
-    /*
-    // breaking the rules: putting information into the data.
-    // once we can in a stable way use list index of modules for addressing we 
-    // can stop doing this...
-    module_data.module_id = id;
-    */
-    
-    var title = group.append("g")
-      .classed("title", true)
-    
-    var width = 75 + (padding * 2);
-    var height = 20 + padding * 2;
+    var drag = d3.behavior.drag()
+      .on("drag", dragmove)
+      .origin(function(a) { return {x: module_data.x, y: module_data.y} });
       
-    var titleborder = title.append("rect")
-      .classed("title border", true)
-      .style("fill", "#ffffff")
-      .style("stroke-width", "2px")
-      .style("stroke", "#0000ff")
-      .attr("width", width)
-      .attr("height", height)
-      .attr("x", 0)
-      .attr("y", 0)
-      
-    var titlebox = title.append("text")
-      .classed("title text", true)
-      .text(function(d) {return d.title || d.module})
-      .attr("x", padding)
-      .attr("y", padding)
-      .style("dominant-baseline", "text-before-edge")
-      .style("height", height)
-      .style("padding", padding)
-      .style("width", width)
-      
-    var inputs = group.selectAll(".input")
-      .data(input_terminals)
-      .enter().append("g")
-        .attr("transform", function(d,i) { return "translate(-20," + (height * i).toFixed() + ")"})
+    function dragmove() {
+      if (!d3.select(this).classed("draggable")) {return}
+      module_data.x = Math.round(d3.event.x/dataflow.grid_spacing) * dataflow.grid_spacing;
+      module_data.y = Math.round(d3.event.y/dataflow.grid_spacing) * dataflow.grid_spacing;
+      group.attr("transform", "translate(" + module_data.x.toFixed() + "," + module_data.y.toFixed() + ")");
+      draw_wires();
+    }
     
-    inputs
-        .append("text")
-          .classed("input label", true)
-          .style("dominant-baseline", "text-before-edge")
-          .attr("x", padding)
-          .attr("y", padding)
-          .style("padding", padding)
-          .text(function(d) { return d.label; });
-    
-    inputs.append("rect")
-        .classed("terminal input", true)
-        .style("cursor", "crosshair")
-        .style("fill", "#00FF00")
-        .style("fill-opacity", 0.25)
+    // create and append module HTML element:
+    group = d3.select(document.createElementNS("http://www.w3.org/2000/svg", "g"))
+      .datum(module_data)
+      .classed("module draggable wireable", true)
+      .style("cursor", "move")
+      .attr("transform", "translate(" + module_data.x.toFixed() + "," + module_data.y.toFixed() + ")")
+      .attr("x-origin", module_data.x.toFixed())
+      .attr("y-origin", module_data.y.toFixed())
+      .attr("module_id", id)
+      
+      // this is a bit of a hack: creating a not-so-visible read-only property of 
+      // the data object referring to the unique module_id, so that d3 data join will be 
+      // able to relink data and selections;
+      Object.defineProperty(module_data, "module_id", {get: function() {return id;}});
+      
+      /*
+      // breaking the rules: putting information into the data.
+      // once we can in a stable way use list index of modules for addressing we 
+      // can stop doing this...
+      module_data.module_id = id;
+      */
+      
+      var title = group.append("g")
+        .classed("title", true)
+      
+      var width = 75 + (padding * 2);
+      var height = 20 + padding * 2;
+        
+      var titleborder = title.append("rect")
+        .classed("title border", true)
+        .style("fill", "#ffffff")
         .style("stroke-width", "2px")
         .style("stroke", "#0000ff")
-        .attr("width", 20)
+        .attr("width", width)
         .attr("height", height)
-        .attr("wireoffset_x", 0)
-        .attr("wireoffset_y", height/2)
-        .attr("terminal_id", function(d) {return d.id})
-        .call(wireaction)
-        .append("svg:title")
-          .text(function(d) { return d.id; });
-          
-    inputs.append("polygon")
-        .classed("terminal input state", true)
-        .style("fill", "#444444")
-        .style("fill-opacity", 0.5)
-        .style("display", "none")
-        .attr("points", "0,0 20," + (height/2).toFixed() + " 0," + height.toFixed())    
-    
-  
-    var outputs = group.selectAll(".output")
-      .data(output_terminals)
-      .enter().append("g")
-        .attr("transform", function(d,i) { return "translate(" + width.toFixed() + "," + (height * i).toFixed() + ")"})
+        .attr("x", 0)
+        .attr("y", 0)
+        
+      var titlebox = title.append("text")
+        .classed("title text", true)
+        .text(function(d) {return d.title || d.module})
+        .attr("x", padding)
+        .attr("y", padding)
+        .style("dominant-baseline", "text-before-edge")
+        .style("height", height)
+        .style("padding", padding)
+        .style("width", width)
+        
+      var inputs = group.selectAll(".input")
+        .data(input_terminals)
+        .enter().append("g")
+          .attr("transform", function(d,i) { return "translate(-20," + (height * i).toFixed() + ")"})
       
-    outputs
-        .append("text")
-          .classed("output label", true)
-          .style("dominant-baseline", "text-before-edge")
-          .attr("x", padding)
-          .attr("y", padding)
-          .style("padding", padding)
-          .text(function(d) { return d.label; });
-          
-    outputs.append("rect")
-        .classed("terminal output", true)
-        .style("cursor", "crosshair")
-        .style("fill", "#00FFFF")
-        .style("fill-opacity", 0.25)
-        .style("stroke-width", "2px")
-        .style("stroke", "#0000ff")
-        .attr("width", 20)
-        .attr("height", height)
-        .attr("wireoffset_x", 20)
-        .attr("wireoffset_y", height/2)        
-        .attr("terminal_id", function(d) {return d.id})
-        .call(wireaction)
-        .append("svg:title")
-          .text(function(d) { return d.id; });
+      inputs
+          .append("text")
+            .classed("input label", true)
+            .style("dominant-baseline", "text-before-edge")
+            .attr("x", padding)
+            .attr("y", padding)
+            .style("padding", padding)
+            .text(function(d) { return d.label; });
+      
+      inputs.append("rect")
+          .classed("terminal input", true)
+          .style("cursor", "crosshair")
+          .style("fill", "#00FF00")
+          .style("fill-opacity", 0.25)
+          .style("stroke-width", "2px")
+          .style("stroke", "#0000ff")
+          .attr("width", 20)
+          .attr("height", height)
+          .attr("wireoffset_x", 0)
+          .attr("wireoffset_y", height/2)
+          .attr("terminal_id", function(d) {return d.id})
+          .call(wireaction)
+          .append("svg:title")
+            .text(function(d) { return d.id; });
+            
+      inputs.append("polygon")
+          .classed("terminal input state", true)
+          .style("fill", "#444444")
+          .style("fill-opacity", 0.5)
+          .style("display", "none")
+          .attr("points", "0,0 20," + (height/2).toFixed() + " 0," + height.toFixed())    
+      
     
-    outputs.append("polygon")
-        .classed("terminal input state", true)
-        .style("fill", "#444444")
-        .style("fill-opacity", 0.5)
-        .style("display", "none")
-        .attr("points", "0,0 20," + (height/2).toFixed() + " 0," + height.toFixed())    
-    
-    group.call(drag);
-    return group.node();  
+      var outputs = group.selectAll(".output")
+        .data(output_terminals)
+        .enter().append("g")
+          .attr("transform", function(d,i) { return "translate(" + width.toFixed() + "," + (height * i).toFixed() + ")"})
+        
+      outputs
+          .append("text")
+            .classed("output label", true)
+            .style("dominant-baseline", "text-before-edge")
+            .attr("x", padding)
+            .attr("y", padding)
+            .style("padding", padding)
+            .text(function(d) { return d.label; });
+            
+      outputs.append("rect")
+          .classed("terminal output", true)
+          .style("cursor", "crosshair")
+          .style("fill", "#00FFFF")
+          .style("fill-opacity", 0.25)
+          .style("stroke-width", "2px")
+          .style("stroke", "#0000ff")
+          .attr("width", 20)
+          .attr("height", height)
+          .attr("wireoffset_x", 20)
+          .attr("wireoffset_y", height/2)        
+          .attr("terminal_id", function(d) {return d.id})
+          .call(wireaction)
+          .append("svg:title")
+            .text(function(d) { return d.id; });
+      
+      outputs.append("polygon")
+          .classed("terminal input state", true)
+          .style("fill", "#444444")
+          .style("fill-opacity", 0.5)
+          .style("display", "none")
+          .attr("points", "0,0 20," + (height/2).toFixed() + " 0," + height.toFixed())    
+      
+      group.call(drag);
+      return group.node();  
+  }
+  
+  function wire(wire_data) {
+    var connector = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    d3.select(connector)
+      .classed("wire", true)
+      .style("cursor", "crosshair")
+      .style("fill", "none")
+      .style("stroke-width", "2.5px")
+      .style("stroke", "red")
+    return connector;
+  }
+  return editor;
 }
 
-dataflow.wire = function(wire_data) {
-  var parent = this; // calling context;
-  var connector = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  d3.select(connector)
-    .classed("wire", true)
-    .style("cursor", "crosshair")
-    .style("fill", "none")
-    .style("stroke-width", "2.5px")
-    .style("stroke", "red")
-  return connector;
-}
