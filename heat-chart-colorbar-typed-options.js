@@ -397,7 +397,8 @@ function heatChart(options_override) {
     var old_range = z.range(),
         old_domain = z.domain();
     z = d3.scale[options.ztransform]();
-    z.range(old_range).domain(old_domain);
+    do_autoscale();
+    z.domain([zdims.zmin, zdims.zmax]).range(old_range);
     zAxis.scale(z);
     cb_zoom.y(z);
     cb_resetzoom.call(chart.colorbar.svg.node());
