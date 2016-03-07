@@ -16,16 +16,45 @@ svg {
 svg .interactors {
   cursor: move;
 }
+div#profile, div#ft {
+  width: 45%;
+  height: 100%;
+  display: inline-block;
+}
+
+</style>
+<style>
+
+.bar {
+  fill: steelblue;
+}
+
+.bar:hover {
+  fill: brown;
+}
+
+.axis {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
 
 </style>
 <body>
 <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 <script src="//www.ncnr.nist.gov/instruments/magik/calculators/js/complex.js"></script>
 <script src="polygon-interactor.js"></script>
+<div id="profile"></div>
+<div id="ft"></div>
 <script>
 
-var width = d3.select("body").node().clientWidth - 50,
-    height = d3.select("body").node().clientHeight - 50,
+var width = d3.select("#profile").node().clientWidth - 50,
+    height = d3.select("#profile").node().clientHeight - 50,
     radius = 5;
 
 var x = d3.scale.linear()
@@ -36,7 +65,7 @@ var y = d3.scale.linear()
   .domain([-1, 9])
   .range([height, 0]);
 
-var svg = d3.select("body").append("svg")
+var svg = d3.select("#profile").append("svg")
   .attr("width", width)
   .attr("height", height);
 
@@ -86,13 +115,71 @@ var ft = function() {
   for (var i=0; i<12; i++) {
     var ii=i+1;
     var k = Math.PI * 2.0 / 10.0 * ii;
-    ft_out[i] = fc(k, poly1.state.points).magsq().toFixed(4);
+    ft_out[i] = fc(k, poly1.state.points).magsq(); // .toFixed(4);
   }
   console.log((ft_out));
+  return ft_out;
 }
 
-poly1.dispatch.on("update", ft);
+var margin = {top: 20, right: 20, bottom: 70, left: 40},
+    widthf = d3.select("#ft").node().clientWidth - margin.left - margin.right,
+    heightf = d3.select("#ft").node().clientHeight - margin.top - margin.bottom;
+
+var xf = d3.scale.ordinal()
+  .rangeRoundBands([0, widthf], .1)
+  .domain(d3.range(13));
+  
+var yf = d3.scale.linear()
+  .range([heightf, 0])
+  .domain([0,300]);
+  
+var xAxisf = d3.svg.axis()
+    .scale(xf)
+    .orient("bottom");
+
+var yAxisf = d3.svg.axis()
+    .scale(yf)
+    .orient("left")
+    .ticks(5);
+
+var svgf = d3.select("#ft").append("svg")
+    .attr("width", widthf + margin.left + margin.right)
+    .attr("height", heightf + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+svgf.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + heightf + ")")
+      .call(xAxisf);
+
+svgf.append("g")
+    .attr("class", "y axis")
+    .call(yAxisf)
+  .append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("y", 6)
+    .attr("dy", ".71em")
+    .style("text-anchor", "end")
+    .text("FT");
+
+svgf.selectAll(".bar").
+    data(ft()).enter()
+      .append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d,i) {return xf(i+1)})
+      .attr("width", xf.rangeBand())
+      .attr("y", function(d) {return yf(+d)})
+      .attr("height", function(d) {return heightf - yf(+d)})
+      
+var updatef = function() {
+  svgf.selectAll(".bar").data(ft())
+    .attr("y", function(d) {return yf(+d)})
+    .attr("height", function(d) {return heightf - yf(+d)})
+}
+poly1.dispatch.on("update", updatef);
 </script>
+
 </body>
 </html>
 
