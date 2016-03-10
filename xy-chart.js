@@ -59,7 +59,9 @@ function xyChart(options_override) {
   var resetzoom = function() {
     var xoffset = (x.range()[1] - x.range()[0]) * base_zoom_offset,
         yoffset = (y.range()[1] + y.range()[0]) * base_zoom_offset;
-    zoom.scale(1.0 - (2.0 * base_zoom_offset)).translate([xoffset, yoffset]);
+    zoom.x(x.domain([min_x, max_x]))
+        .y(y.domain([min_y, max_y]))
+        .scale(1.0 - (2.0 * base_zoom_offset)).translate([xoffset, yoffset]);
     zoomed();
     //.call(this);
   }
@@ -242,11 +244,15 @@ function xyChart(options_override) {
               if (m[0] !== origin[0] && m[1] !== origin[1]) {
                 zoom.x(x.domain([origin[0], m[0]].map(x.invert).sort(function(a,b) {return a-b})))
                     .y(y.domain([origin[1], m[1]].map(y.invert).sort(function(a,b) {return a-b})));
-              } else {
+              } 
+              else {
+                // reset zoom on single click? No!
+                /*
                 zoom.scale(1);
                 zoom.translate([0,0]);
                 zoom.x(x.domain([min_x, max_x]))
                     .y(y.domain([min_y, max_y]));
+                */
               }
               rect.remove();
               zoomed();
@@ -468,17 +474,26 @@ function xyChart(options_override) {
           .enter().append("g")
             .attr("class", "series")
             .style("fill", function(d, i) { return colors[i % colors.length];  });
-        chart.g.selectAll("g.series").selectAll(".dot")
-            .data(function(d) { return d; })
-          .enter().append("circle")
-            .filter(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
+        var update_sel = chart.g.selectAll("g.series").selectAll(".dot")
+            .data(function(d) { return d; });
+        update_sel.enter().append("circle")
+            //.filter(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
             .attr("class", "dot")
             .attr("clip-path", "url(#d3clip_" + id.toFixed() + ")")
             .attr("r", 2.5)
+        update_sel.exit().remove();
             
         chart.g.selectAll("g.series .dot")
-            .attr("cx", function(d) { return x(d[0]); })
-            .attr("cy", function(d) { return y(d[1]); });   
+          .each(function(d,i) {
+            var xp = x(d[0]),
+                finite_xp = isFinite(xp),
+                yp = y(d[1]),
+                finite_yp = isFinite(yp);
+            d3.select(this)
+              .attr("cx", finite_xp ? xp : null) // isFinite(xp)?function(d) { var xp = x(d[0]); return isFinite(xp) ? xp : null })
+              .attr("cy", finite_yp ? yp : null) //function(d) { var yp = y(d[1]); return isFinite(yp) ? yp : null });
+              .style("visibility", (finite_xp && finite_yp) ? "visible" : "hidden");
+          });
       }
     }
     
@@ -493,11 +508,12 @@ function xyChart(options_override) {
             .attr("class", "errorbars")
             .style("fill", function(d, i) { return colors[i % colors.length];  })
             .style("stroke", function(d, i) { return colors[i % colors.length];  })
-        chart.g.selectAll(".errorbars").selectAll(".errorbar")
+        var update_sel = chart.g.selectAll(".errorbars").selectAll(".errorbar")
             .data(function(d) { return d; })
-          .enter().append("path")
+        update_sel.enter().append("path")
             .attr("class", "errorbar")
             .attr("stroke-width", "1.5px")
+        update_sel.exit().remove();
             
         chart.g.selectAll(".errorbars path.errorbar")
           .attr("d", errorbar_generator);
@@ -509,12 +525,13 @@ function xyChart(options_override) {
     //************************************************************
     function zoomed() {
       var svg = chart.svg;
-	    svg.select(".x.axis").call(xAxis);
-	    svg.select(".y.axis").call(yAxis); 
-	    svg.select(".x.grid").call(xAxisGrid);
-	    svg.select(".y.grid").call(yAxisGrid);  
+      svg.select(".x.axis").call(xAxis);
+      svg.select(".y.axis").call(yAxis); 
+      svg.select(".x.grid").call(xAxisGrid);
+      svg.select(".y.grid").call(yAxisGrid);
+      svg.selectAll("rect.zoom").remove();
 
-	    chart.draw_lines(source_data);
+      chart.draw_lines(source_data);
       chart.draw_points(source_data);
       chart.draw_errorbars(source_data);
       
