@@ -260,9 +260,9 @@ function xyChart(options_override) {
           d3.event.sourceEvent.stopPropagation();
         });
       
-      mainview.append("rect")
-          .attr("width", width)
-          .attr("height", height)
+      mainview.append("g")
+        .attr("class", "legend")
+        .attr("transform", "translate(" + (width-65) + ",25)");
           //.call(zoom);
       axes.append("g")
         .attr("class", "x axis")
@@ -315,21 +315,14 @@ function xyChart(options_override) {
       // Create D3 legend
       //************************************************************
       if (options.legend && options.legend.show) {
-	      var legend = svg.selectAll("g.legend").data([0]);
-	      var el = legend.enter().append("g")
-	        .attr("class", "legend")
-	        .attr("x", width - 65)
-	        .attr("y", 25)
-	        .attr("height", 100)
-	        .attr("width", 100);
-	
+	      var el = svg.select("g.legend");
 	      el.selectAll('g').data(data)
           .enter()
             .append('g')
             .each(function(d, i) {
               var g = d3.select(this);
               g.append("rect")
-                .attr("x", width - options.legend.left)
+                .attr("x", -options.legend.left)
                 .attr("y", i*25 + 15)
                 .attr("width", 10)
                 .attr("height", 10)
@@ -342,7 +335,7 @@ function xyChart(options_override) {
                 });
               
               g.append("text")
-                .attr("x", width - options.legend.left + 15)
+                .attr("x", 15-options.legend.left)
                 .attr("y", i * 25 + 25)
                 .attr("height",30)
                 .attr("width",100)
@@ -355,7 +348,7 @@ function xyChart(options_override) {
                   d3.selectAll('.line')[0][i].classList.remove('highlight');
                 });
             });
-          legend.selectAll("text")
+          el.selectAll("text")
             .each(function(d, i) {
               d3.select(this).text((options.series[i] && options.series[i].label != null) ? options.series[i].label : i+1)
             });
@@ -731,6 +724,7 @@ function xyChart(options_override) {
       chart.svg.selectAll("g.x.axis text").attr("x", width/2.0);
       chart.svg.selectAll("g.y.axis text").attr("x", -height/2.0);
       chart.svg.select(".position-cursor").attr("x", width-10).attr("y", height-10);
+      chart.svg.select("g.legend").attr("transform", "translate(" + (width-65) + ",25)");
       
       zoomed();
     }
