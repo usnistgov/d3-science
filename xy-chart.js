@@ -682,6 +682,31 @@ function xyChart(options_override) {
       return chart;
     };
     
+    chart.export_svg = function() {
+      var dsvg = d3.select(chart.svg.node().cloneNode(true));
+      dsvg.style("font-family", "sans-serif")
+        .style("font-size", "14px")
+      dsvg.selectAll("line").style("fill", "none");
+      dsvg.selectAll("path").style("fill", "none");
+      dsvg.selectAll(".mainview>rect").style("fill", "none");
+      dsvg.selectAll("clippath rect").style("fill", "none");
+      dsvg.selectAll(".axis-label").style("font-size", "18px");
+      dsvg.selectAll(".axis path,line").style("stroke", "black"); //.css("stroke-width", "1.5px");
+      dsvg.selectAll(".grid .tick").style("stroke", "lightgrey")
+        .style("opacity", "0.7");
+      dsvg.selectAll(".grid path").style("stroke-width", "0");                  
+      return dsvg.node(); // user outerHTML of this
+    }
+  
+    chart.print_plot = function() {
+      var svg = chart.export_svg();
+      var serializer = new XMLSerializer();
+      var svg_blob = new Blob([serializer.serializeToString(svg)],
+                            {'type': "image/svg+xml"});
+      var url = URL.createObjectURL(svg_blob);
+      var svg_win = window.open(url, "svg_win");  
+    }
+    
     chart.resetzoom = resetzoom;
     
     return chart;
