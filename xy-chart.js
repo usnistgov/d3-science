@@ -707,6 +707,34 @@ function xyChart(options_override) {
       var svg_win = window.open(url, "svg_win");  
     }
     
+    chart.autofit = function() {
+      var outercontainer = this.outercontainer,
+          innerwidth = outercontainer.node().clientWidth,
+          innerheight = outercontainer.node().clientHeight,
+          width = innerwidth - options.margin.right - options.margin.left,
+          height = innerheight - options.margin.top - options.margin.bottom;
+          
+      x.range([0, width]);
+      y.range([height, 0]);
+      
+      zoom.x(x).y(y);
+      xAxis.scale(x);
+      yAxis.scale(y);
+      xAxisGrid.scale(x).tickSize(-height);
+      yAxisGrid.scale(y).tickSize(-width);
+        
+      chart.svg.attr("width", width + options.margin.left + options.margin.right)
+        .attr("height", height + options.margin.top + options.margin.bottom);
+      chart.svg.select("clipPath rect").attr("width", width).attr("height", height);
+      chart.svg.selectAll("g.axes g.x").attr("transform", "translate(0," + height + ")");
+      
+      chart.svg.selectAll("g.x.axis text").attr("x", width/2.0);
+      chart.svg.selectAll("g.y.axis text").attr("x", -height/2.0);
+      chart.svg.select(".position-cursor").attr("x", width-10).attr("y", height-10);
+      
+      zoomed();
+    }
+    
     chart.resetzoom = resetzoom;
     
     return chart;
