@@ -708,7 +708,7 @@ function xyChart(options_override) {
     }
     
     chart.autofit = function() {
-      var outercontainer = this.outercontainer,
+      var outercontainer = chart.outercontainer,
           innerwidth = outercontainer.node().clientWidth,
           innerheight = outercontainer.node().clientHeight,
           width = innerwidth - options.margin.right - options.margin.left,
