@@ -479,13 +479,13 @@ function xyChart(options_override) {
         chart.g.selectAll("g.series .dot")
           .each(function(d,i) {
             var xp = x(d[0]),
-                finite_xp = isFinite(xp),
+                unplottable_xp = (!isFinite(xp) || xp == null)
                 yp = y(d[1]),
-                finite_yp = isFinite(yp);
+                unplottable_yp = (!isFinite(yp) || yp == null);
             d3.select(this)
-              .attr("cx", finite_xp ? xp : null) // isFinite(xp)?function(d) { var xp = x(d[0]); return isFinite(xp) ? xp : null })
-              .attr("cy", finite_yp ? yp : null) //function(d) { var yp = y(d[1]); return isFinite(yp) ? yp : null });
-              .style("visibility", (finite_xp && finite_yp) ? "visible" : "hidden");
+              .attr("cx", unplottable_xp ? null : xp) // isFinite(xp)?function(d) { var xp = x(d[0]); return isFinite(xp) ? xp : null })
+              .attr("cy", unplottable_yp ? null : yp) //function(d) { var yp = y(d[1]); return isFinite(yp) ? yp : null });
+              .style("visibility", (unplottable_xp || unplottable_yp) ? "hidden" : "visible");
           });
       }
     }
