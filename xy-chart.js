@@ -479,9 +479,9 @@ function xyChart(options_override) {
         chart.g.selectAll("g.series .dot")
           .each(function(d,i) {
             var xp = x(d[0]),
-                unplottable_xp = (!isFinite(xp) || xp == null)
+                unplottable_xp = (!isFinite(xp) || d[0] == null || xp == null)
                 yp = y(d[1]),
-                unplottable_yp = (!isFinite(yp) || yp == null);
+                unplottable_yp = (!isFinite(yp) || d[1] == null || yp == null);
             d3.select(this)
               .attr("cx", unplottable_xp ? null : xp) // isFinite(xp)?function(d) { var xp = x(d[0]); return isFinite(xp) ? xp : null })
               .attr("cy", unplottable_yp ? null : yp) //function(d) { var yp = y(d[1]); return isFinite(yp) ? yp : null });
