@@ -59,7 +59,9 @@ function xyChart(options_override) {
   var resetzoom = function() {
     var xoffset = (x.range()[1] - x.range()[0]) * base_zoom_offset,
         yoffset = (y.range()[1] + y.range()[0]) * base_zoom_offset;
-    zoom.scale(1.0 - (2.0 * base_zoom_offset)).translate([xoffset, yoffset]);
+    zoom.x(x.domain([min_x, max_x]))
+        .y(y.domain([min_y, max_y]))
+        .scale(1.0 - (2.0 * base_zoom_offset)).translate([xoffset, yoffset]);
     zoomed();
     //.call(this);
   }
@@ -242,11 +244,15 @@ function xyChart(options_override) {
               if (m[0] !== origin[0] && m[1] !== origin[1]) {
                 zoom.x(x.domain([origin[0], m[0]].map(x.invert).sort(function(a,b) {return a-b})))
                     .y(y.domain([origin[1], m[1]].map(y.invert).sort(function(a,b) {return a-b})));
-              } else {
+              } 
+              else {
+                // reset zoom on single click? No!
+                /*
                 zoom.scale(1);
                 zoom.translate([0,0]);
                 zoom.x(x.domain([min_x, max_x]))
                     .y(y.domain([min_y, max_y]));
+                */
               }
               rect.remove();
               zoomed();
@@ -254,9 +260,9 @@ function xyChart(options_override) {
           d3.event.sourceEvent.stopPropagation();
         });
       
-      mainview.append("rect")
-          .attr("width", width)
-          .attr("height", height)
+      mainview.append("g")
+        .attr("class", "legend")
+        .attr("transform", "translate(" + (width-65) + ",25)");
           //.call(zoom);
       axes.append("g")
         .attr("class", "x axis")
@@ -309,21 +315,14 @@ function xyChart(options_override) {
       // Create D3 legend
       //************************************************************
       if (options.legend && options.legend.show) {
-	      var legend = svg.selectAll("g.legend").data([0]);
-	      var el = legend.enter().append("g")
-	        .attr("class", "legend")
-	        .attr("x", width - 65)
-	        .attr("y", 25)
-	        .attr("height", 100)
-	        .attr("width", 100);
-	
+	      var el = svg.select("g.legend");
 	      el.selectAll('g').data(data)
           .enter()
             .append('g')
             .each(function(d, i) {
               var g = d3.select(this);
               g.append("rect")
-                .attr("x", width - options.legend.left)
+                .attr("x", -options.legend.left)
                 .attr("y", i*25 + 15)
                 .attr("width", 10)
                 .attr("height", 10)
@@ -336,7 +335,7 @@ function xyChart(options_override) {
                 });
               
               g.append("text")
-                .attr("x", width - options.legend.left + 15)
+                .attr("x", 15-options.legend.left)
                 .attr("y", i * 25 + 25)
                 .attr("height",30)
                 .attr("width",100)
@@ -349,7 +348,7 @@ function xyChart(options_override) {
                   d3.selectAll('.line')[0][i].classList.remove('highlight');
                 });
             });
-          legend.selectAll("text")
+          el.selectAll("text")
             .each(function(d, i) {
               d3.select(this).text((options.series[i] && options.series[i].label != null) ? options.series[i].label : i+1)
             });
@@ -468,17 +467,26 @@ function xyChart(options_override) {
           .enter().append("g")
             .attr("class", "series")
             .style("fill", function(d, i) { return colors[i % colors.length];  });
-        chart.g.selectAll("g.series").selectAll(".dot")
-            .data(function(d) { return d; })
-          .enter().append("circle")
-            .filter(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
+        var update_sel = chart.g.selectAll("g.series").selectAll(".dot")
+            .data(function(d) { return d; });
+        update_sel.enter().append("circle")
+            //.filter(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
             .attr("class", "dot")
             .attr("clip-path", "url(#d3clip_" + id.toFixed() + ")")
             .attr("r", 2.5)
+        update_sel.exit().remove();
             
         chart.g.selectAll("g.series .dot")
-            .attr("cx", function(d) { return x(d[0]); })
-            .attr("cy", function(d) { return y(d[1]); });   
+          .each(function(d,i) {
+            var xp = x(d[0]),
+                finite_xp = isFinite(xp),
+                yp = y(d[1]),
+                finite_yp = isFinite(yp);
+            d3.select(this)
+              .attr("cx", finite_xp ? xp : null) // isFinite(xp)?function(d) { var xp = x(d[0]); return isFinite(xp) ? xp : null })
+              .attr("cy", finite_yp ? yp : null) //function(d) { var yp = y(d[1]); return isFinite(yp) ? yp : null });
+              .style("visibility", (finite_xp && finite_yp) ? "visible" : "hidden");
+          });
       }
     }
     
@@ -493,11 +501,12 @@ function xyChart(options_override) {
             .attr("class", "errorbars")
             .style("fill", function(d, i) { return colors[i % colors.length];  })
             .style("stroke", function(d, i) { return colors[i % colors.length];  })
-        chart.g.selectAll(".errorbars").selectAll(".errorbar")
+        var update_sel = chart.g.selectAll(".errorbars").selectAll(".errorbar")
             .data(function(d) { return d; })
-          .enter().append("path")
+        update_sel.enter().append("path")
             .attr("class", "errorbar")
             .attr("stroke-width", "1.5px")
+        update_sel.exit().remove();
             
         chart.g.selectAll(".errorbars path.errorbar")
           .attr("d", errorbar_generator);
@@ -509,12 +518,13 @@ function xyChart(options_override) {
     //************************************************************
     function zoomed() {
       var svg = chart.svg;
-	    svg.select(".x.axis").call(xAxis);
-	    svg.select(".y.axis").call(yAxis); 
-	    svg.select(".x.grid").call(xAxisGrid);
-	    svg.select(".y.grid").call(yAxisGrid);  
+      svg.select(".x.axis").call(xAxis);
+      svg.select(".y.axis").call(yAxis); 
+      svg.select(".x.grid").call(xAxisGrid);
+      svg.select(".y.grid").call(yAxisGrid);
+      svg.selectAll("rect.zoom").remove();
 
-	    chart.draw_lines(source_data);
+      chart.draw_lines(source_data);
       chart.draw_points(source_data);
       chart.draw_errorbars(source_data);
       
@@ -664,6 +674,60 @@ function xyChart(options_override) {
       interactors.push(_);
       return chart;
     };
+    
+    chart.export_svg = function() {
+      var dsvg = d3.select(chart.svg.node().cloneNode(true));
+      dsvg.style("font-family", "sans-serif")
+        .style("font-size", "14px")
+      dsvg.selectAll("line").style("fill", "none");
+      dsvg.selectAll("path").style("fill", "none");
+      dsvg.selectAll(".mainview>rect").style("fill", "none");
+      dsvg.selectAll("clippath rect").style("fill", "none");
+      dsvg.selectAll(".axis-label").style("font-size", "18px");
+      dsvg.selectAll(".axis path,line").style("stroke", "black"); //.css("stroke-width", "1.5px");
+      dsvg.selectAll(".grid .tick").style("stroke", "lightgrey")
+        .style("opacity", "0.7");
+      dsvg.selectAll(".grid path").style("stroke-width", "0");                  
+      return dsvg.node(); // user outerHTML of this
+    }
+  
+    chart.print_plot = function() {
+      var svg = chart.export_svg();
+      var serializer = new XMLSerializer();
+      var svg_blob = new Blob([serializer.serializeToString(svg)],
+                            {'type': "image/svg+xml"});
+      var url = URL.createObjectURL(svg_blob);
+      var svg_win = window.open(url, "svg_win");  
+    }
+    
+    chart.autofit = function() {
+      var outercontainer = chart.outercontainer,
+          innerwidth = outercontainer.node().clientWidth,
+          innerheight = outercontainer.node().clientHeight,
+          width = innerwidth - options.margin.right - options.margin.left,
+          height = innerheight - options.margin.top - options.margin.bottom;
+          
+      x.range([0, width]);
+      y.range([height, 0]);
+      
+      zoom.x(x).y(y);
+      xAxis.scale(x);
+      yAxis.scale(y);
+      xAxisGrid.scale(x).tickSize(-height);
+      yAxisGrid.scale(y).tickSize(-width);
+        
+      chart.svg.attr("width", width + options.margin.left + options.margin.right)
+        .attr("height", height + options.margin.top + options.margin.bottom);
+      chart.svg.select("clipPath rect").attr("width", width).attr("height", height);
+      chart.svg.selectAll("g.axes g.x").attr("transform", "translate(0," + height + ")");
+      
+      chart.svg.selectAll("g.x.axis text").attr("x", width/2.0);
+      chart.svg.selectAll("g.y.axis text").attr("x", -height/2.0);
+      chart.svg.select(".position-cursor").attr("x", width-10).attr("y", height-10);
+      chart.svg.select("g.legend").attr("transform", "translate(" + (width-65) + ",25)");
+      
+      zoomed();
+    }
     
     chart.resetzoom = resetzoom;
     
