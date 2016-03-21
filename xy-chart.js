@@ -543,6 +543,7 @@ function xyChart(options_override) {
     function errorbar_generator(d) {
       var errorbar_width = options.errorbar_width;
       var pathstring = "";
+      if (!d[2]) {return pathstring}
       var draw_top_bottom = (
         (d[2].yupper != d[2].ylower) &&
           isFinite(y(d[2].ylower)) &&
