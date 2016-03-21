@@ -128,6 +128,7 @@ rect.zoom {
   <script src="rectangle-interactor.js"></script>
   <script src="ellipse-interactor.js"></script>
   <script src="angle-slice-interactor.js"></script>
+  <script src="x-slice-interactor.js"></script>
 </head>
 <body>
 <!--<script src="d3.v3.min.js"></script>-->
@@ -191,6 +192,16 @@ window.onload = function() {
     angle_range: Math.PI/60.0
   }
   
+  var optsx = {
+    type: "xslice",
+    name: "xslice",
+    show_lines: true,
+    color1: "blue",
+    color2: "green",
+    x1: 0.022,
+    x2: 0.025
+  }
+  
   d3.json("sample_data/pbr_live_data.json", function(error, data) {
       mydata = data;
       c = d3.select("#plot1")
@@ -200,8 +211,10 @@ window.onload = function() {
       ellipse_1 = new ellipseInteractor(opts2);
       ellipse_2 = new ellipseInteractor(opts3);
       angle_slice = new angleSliceInteractor(opts4);
+      x_slice = new xSliceInteractor(optsx);
       chart
         .options(data[0].options)
+        .interactors(x_slice)
         .interactors(rectangle)
         .interactors(ellipse_1)
         .interactors(ellipse_2)
