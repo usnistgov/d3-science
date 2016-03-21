@@ -71,10 +71,22 @@ function xyChart(options_override) {
     var extents;
     var merged_data = d3.merge(source_data);
     if (options.show_errorbars) {
-      max_y = d3.extent(merged_data, function(d) { return isFinite(y(d[2].yupper))? d[2].yupper : null })[1];
-      min_y = d3.extent(merged_data, function(d) { return isFinite(y(d[2].ylower))? d[2].ylower : null })[0];
-      max_x = d3.extent(merged_data, function(d) { return isFinite(x(d[2].xupper))? d[2].xupper : null })[1];
-      min_x = d3.extent(merged_data, function(d) { return isFinite(x(d[2].xlower))? d[2].xlower : null })[0];
+      max_y = d3.extent(merged_data, function(d) {
+        var yy = (d[2] && d[2].yupper != undefined) ? d[2].yupper : d[1];
+        return (isFinite(y(yy))) ? yy : null;
+      })[1];
+      min_y = d3.extent(merged_data, function(d) {
+        var yy = (d[2] && d[2].ylower != undefined) ? d[2].ylower : d[1];
+        return (isFinite(y(yy))) ? yy : null;
+      })[0];
+      max_x = d3.extent(merged_data, function(d) {
+        var xx = (d[2] && d[2].xupper != undefined) ? d[2].xupper : d[0];
+        return (isFinite(x(xx))) ? xx : null;
+      })[1];
+      min_x = d3.extent(merged_data, function(d) {
+        var xx = (d[2] && d[2].xlower != undefined) ? d[2].xlower : d[0];
+        return (isFinite(x(xx))) ? xx : null;
+      })[0];
     } else {
       extents = d3.extent(merged_data, function(d) { return isFinite(y(d[1]))? d[1] : null });
       min_y = extents[0];
