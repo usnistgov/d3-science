@@ -579,6 +579,8 @@ function heatChart(options_override) {
     context.clearRect(0,0, context.canvas.width, context.canvas.height);
     if (context.mozImageSmoothingEnabled) context.mozImageSmoothingEnabled = false;
     if (context.imageSmoothingEnabled) context.imageSmoothingEnabled = false;
+    if (context.msImageSmoothingEnabled) context.msImageSmoothingEnabled = false;
+    if (context.webkitImageSmoothingEnabled) context.webkitImageSmoothingEnabled = false;
     var sxdx = get_sxdx();
     context.drawImage(ctx.canvas, sxdx.sx, sxdx.sy, sxdx.sw, sxdx.sh, sxdx.dx, sxdx.dy, sxdx.dw, sxdx.dh);
   }
