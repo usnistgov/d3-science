@@ -95,25 +95,28 @@ dataflow.editor = function(data) {
         removals = [];
         
     // need to add module_ids to any modules that are missing them.
-    var key_fn = function(d) { 
-      d.module_id = (d.module_id == undefined)? d3.id() : d.module_id; 
+    var key_fn = function(d) {
+      if (d.module_id == undefined) {
+        var id = d3.id();
+        Object.defineProperty(d, "module_id", {get: function() {return id}});
+      }
       return d.module_id; 
     }
     svg.selectAll(".module").each(function(d,i) { index_to_id[d3.select(this).attr("index")] = d.module_id});
     var module_update = svg.selectAll(".module").data(function(d) {return d.modules}, key_fn);
     var en = module_update.enter();
     en.append(module); // .each(function(d) {additions.push(d.module_id)});
-    module_update.exit().each(function(d) {removals.push(d.module_id)}).remove();
+    module_update.exit()/*.each(function(d) {removals.push(d.module_id)})*/.remove();
     module_update.attr("index", function(d,i) {return i});
-    svg.selectAll(".module").each(function(d,i) { id_to_index[d.module_id] = d3.select(this).attr("index")});
+    svg.selectAll(".module").each(function(d,i) { id_to_index[d.module_id] = parseInt(d3.select(this).attr("index"))});
     for (var index in index_to_id) {
       var outdex = id_to_index[index_to_id[index]];
-      if (outdex != index) { 
+      if (outdex != undefined && outdex != index) { 
         index_updates[index] = outdex;
       }
     }
-    // for the moment, will only deal with deletions... in principle any just-added
-    // modules won't have any wires pointing to them yet.  
+    
+    // moves endpoints when index shifts because of deletions below in the list of modules
     rewire(index_updates);
     
     // remove wires without existing endpoints;
@@ -208,9 +211,32 @@ dataflow.editor = function(data) {
   }
   
   editor.data = function(_) {
-    if (!arguments.length) { return data }
+    if (!arguments.length) { return svg.data() }
     data = _;
     return editor;
+  }
+  
+  editor.export = function() {
+    // strip the internally-used module_id on the way out
+    var export_data = jQuery.extend(true, {}, svg.datum());
+    if (export_data.modules) {
+      export_data.modules.forEach(function(m) {
+        delete m.module_id;
+      });
+    }
+    return export_data;
+  }
+  
+  editor.import = function(datum) {
+    // strip module_id on the way in - needed internally
+    var import_data = jQuery.extend(true, {}, datum);
+    if (import_data.modules) {
+      import_data.modules.forEach(function(m) {
+        delete m.module_id;
+      });
+    }
+    svg.datum(import_data);
+    editor.update();
   }
   
   editor.svg = function() {
@@ -295,20 +321,20 @@ dataflow.editor = function(data) {
       draw_wires();
     }
   
-  function module(module_data) {
+  function module(module_data, id) {
     var group; // this will be the module group.
     if (!('x' in module_data)) module_data.x = 100;
     if (!('y' in module_data)) module_data.y = 100;  
     
     // look up terminals from module definition if not in module_data:
     //var terminals = module_data.terminals || dataflow.module_defs[module_data.module].terminals;
-    var module_id = module_data.module;
+    var module_name = module_data.module;
     // lookup first from editor instance, then from dataflow library.
-    var module_def = module_defs[module_id] || dataflow.module_defs[module_id] || {};
+    var module_def = module_defs[module_name] || dataflow.module_defs[module_name] || {};
     var input_terminals = module_data.inputs || module_def.inputs || [],
         output_terminals = module_data.outputs || module_def.outputs || [];
 
-    var id = (module_data.module_id == undefined) ? d3.id() : module_data.module_id;
+    //var id = (module_data.module_id == undefined) ? d3.id() : module_data.module_id;
     var padding = 5;
     var min_width = 75;
     var active_wire, new_wiredata;
@@ -338,7 +364,7 @@ dataflow.editor = function(data) {
       // this is a bit of a hack: creating a not-so-visible read-only property of 
       // the data object referring to the unique module_id, so that d3 data join will be 
       // able to relink data and selections;
-      Object.defineProperty(module_data, "module_id", {get: function() {return id;}});
+      //Object.defineProperty(module_data, "module_id", {get: function() {return id;}});
       
       /*
       // breaking the rules: putting information into the data.
