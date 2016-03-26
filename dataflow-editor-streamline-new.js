@@ -89,6 +89,8 @@ dataflow.editor = function(data) {
 
   function update() {
     var id_to_index = {},
+        old_ids = {},
+        new_ids = {},
         index_to_id = {},
         index_updates = {},
         additions = [],
@@ -102,17 +104,19 @@ dataflow.editor = function(data) {
       }
       return d.module_id; 
     }
-    svg.selectAll(".module").each(function(d,i) { index_to_id[d3.select(this).attr("index")] = d.module_id});
+    // make a map of id -> module index (in data) before doing update
+    svg.selectAll(".module").each(function(d,i) { old_ids[d.module_id] = i });
     var module_update = svg.selectAll(".module").data(function(d) {return d.modules}, key_fn);
     var en = module_update.enter();
     en.append(module); // .each(function(d) {additions.push(d.module_id)});
     module_update.exit()/*.each(function(d) {removals.push(d.module_id)})*/.remove();
     module_update.attr("index", function(d,i) {return i});
-    svg.selectAll(".module").each(function(d,i) { id_to_index[d.module_id] = parseInt(d3.select(this).attr("index"))});
-    for (var index in index_to_id) {
-      var outdex = id_to_index[index_to_id[index]];
-      if (outdex != undefined && outdex != index) { 
-        index_updates[index] = outdex;
+    svg.selectAll(".module").each(function(d,i) { new_ids[d.module_id] = i });
+    for (var ii in old_ids) {
+      var old_index = old_ids[ii],
+          new_index = new_ids[ii];
+      if (old_index != new_index) {
+        index_updates[old_index] = new_index;
       }
     }
     
@@ -135,9 +139,8 @@ dataflow.editor = function(data) {
   
   function get_terminal_pos(term_id) {
     var module = container.select('.module[index="' + term_id[0] + '"]');
-    var terminal = container.select('.module[index="' + term_id[0] + '"]')
-        .select('.terminal[terminal_id="' + term_id[1] + '"]');
-    if (module.empty() || terminal.empty()) { return null }
+    var terminal = module.select('.terminal[terminal_id="' + term_id[1] + '"]');
+    if (terminal.empty()) { return null }
     var reference_point = svg.node().createSVGPoint();
     var terminal_origin = reference_point.matrixTransform(terminal.node().getCTM());
     var terminal_pos = {
@@ -235,7 +238,12 @@ dataflow.editor = function(data) {
         delete m.module_id;
       });
     }
-    svg.datum(import_data);
+    // first the modules...
+    svg.datum({modules: [], wires: []});
+    svg.datum().modules = import_data.modules;
+    editor.update();
+    // then the wires...
+    svg.datum().wires = import_data.wires;
     editor.update();
   }
   
@@ -321,7 +329,7 @@ dataflow.editor = function(data) {
       draw_wires();
     }
   
-  function module(module_data, id) {
+  function module(module_data) {
     var group; // this will be the module group.
     if (!('x' in module_data)) module_data.x = 100;
     if (!('y' in module_data)) module_data.y = 100;  
@@ -334,7 +342,6 @@ dataflow.editor = function(data) {
     var input_terminals = module_data.inputs || module_def.inputs || [],
         output_terminals = module_data.outputs || module_def.outputs || [];
 
-    //var id = (module_data.module_id == undefined) ? d3.id() : module_data.module_id;
     var padding = 5;
     var min_width = 75;
     var active_wire, new_wiredata;
@@ -359,19 +366,6 @@ dataflow.editor = function(data) {
       .attr("transform", "translate(" + module_data.x.toFixed() + "," + module_data.y.toFixed() + ")")
       .attr("x-origin", module_data.x.toFixed())
       .attr("y-origin", module_data.y.toFixed())
-      .attr("module_id", id)
-      
-      // this is a bit of a hack: creating a not-so-visible read-only property of 
-      // the data object referring to the unique module_id, so that d3 data join will be 
-      // able to relink data and selections;
-      //Object.defineProperty(module_data, "module_id", {get: function() {return id;}});
-      
-      /*
-      // breaking the rules: putting information into the data.
-      // once we can in a stable way use list index of modules for addressing we 
-      // can stop doing this...
-      module_data.module_id = id;
-      */
       
       var title = group.append("g")
         .classed("title", true)
