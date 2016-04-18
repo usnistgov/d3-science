@@ -453,76 +453,68 @@ function xyChart(options_override) {
     // Create D3 line object and draw data on our SVG object
     //************************************************************
     chart.draw_lines = function(data) {
-      if (options.show_line) {
-        chart.g.selectAll('.line')
-          .data(data)
-          .enter()
-            .append("path")
-            .attr("class", "line")
-            .attr('stroke', function(d,i){
-              return colors[i%colors.length];
-            })
-        
-        chart.g.selectAll('path.line')
-          .attr("d", line);
-      }
+      chart.g.selectAll('.line')
+        .data(filterShowOption('show_line', data))
+        .enter()
+          .append("path")
+          .attr("class", "line")
+          .attr('stroke', function(d,i){
+            return colors[i%colors.length];
+          })
+      
+      chart.g.selectAll('path.line')
+        .attr("d", line);
     }      
     
     //************************************************************
     // Draw points on SVG object based on the data given
     //************************************************************
     chart.draw_points = function(data) {
-      if (options.show_points) {
-
-        chart.g.selectAll("g.series")
-          .data(data)
-          .enter().append("g")
-            .attr("class", "series")
-            .style("fill", function(d, i) { return colors[i % colors.length];  });
-        var update_sel = chart.g.selectAll("g.series").selectAll(".dot")
-            .data(function(d) { return d; });
-        update_sel.enter().append("circle")
-            //.filter(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
-            .attr("class", "dot")
-            .attr("clip-path", "url(#d3clip_" + id.toFixed() + ")")
-            .attr("r", 2.5)
-        update_sel.exit().remove();
-            
-        chart.g.selectAll("g.series .dot")
-          .each(function(d,i) {
-            var xp = x(d[0]),
-                unplottable_xp = (!isFinite(xp) || d[0] == null || xp == null)
-                yp = y(d[1]),
-                unplottable_yp = (!isFinite(yp) || d[1] == null || yp == null);
-            d3.select(this)
-              .attr("cx", unplottable_xp ? null : xp) // isFinite(xp)?function(d) { var xp = x(d[0]); return isFinite(xp) ? xp : null })
-              .attr("cy", unplottable_yp ? null : yp) //function(d) { var yp = y(d[1]); return isFinite(yp) ? yp : null });
-              .style("visibility", (unplottable_xp || unplottable_yp) ? "hidden" : "visible");
-          });
-      }
+      chart.g.selectAll("g.series")
+        .data(filterShowOption('show_points', data))
+        .enter().append("g")
+          .attr("class", "series")
+          .style("fill", function(d, i) { return colors[i % colors.length];  });
+      var update_sel = chart.g.selectAll("g.series").selectAll(".dot")
+          .data(function(d) { return d; });
+      update_sel.enter().append("circle")
+          //.filter(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
+          .attr("class", "dot")
+          .attr("clip-path", "url(#d3clip_" + id.toFixed() + ")")
+          .attr("r", 2.5)
+      update_sel.exit().remove();
+          
+      chart.g.selectAll("g.series .dot")
+        .each(function(d,i) {
+          var xp = x(d[0]),
+              unplottable_xp = (!isFinite(xp) || d[0] == null || xp == null)
+              yp = y(d[1]),
+              unplottable_yp = (!isFinite(yp) || d[1] == null || yp == null);
+          d3.select(this)
+            .attr("cx", unplottable_xp ? null : xp) // isFinite(xp)?function(d) { var xp = x(d[0]); return isFinite(xp) ? xp : null })
+            .attr("cy", unplottable_yp ? null : yp) //function(d) { var yp = y(d[1]); return isFinite(yp) ? yp : null });
+            .style("visibility", (unplottable_xp || unplottable_yp) ? "hidden" : "visible");
+        });
     }
     
     //************************************************************
     // Draw error bars on SVG object based on the data given
     //************************************************************
     chart.draw_errorbars = function(data) {
-      if (options.show_errorbars) {
-        chart.g.selectAll(".errorbars")
-         .data(data)
-         .enter().append("g")
-            .attr("class", "errorbars")
-            .style("fill", function(d, i) { return colors[i % colors.length];  })
-            .style("stroke", function(d, i) { return colors[i % colors.length];  })
-        var update_sel = chart.g.selectAll(".errorbars").selectAll(".errorbar")
-            .data(function(d) { return d; })
-        update_sel.enter().append("path")
-            .attr("class", "errorbar")
-            .attr("stroke-width", "1.5px")
-        update_sel.exit().remove();
-            
-        chart.g.selectAll(".errorbars path.errorbar")
+      chart.g.selectAll(".errorbars")
+       .data(filterShowOption('show_errorbars', data))
+       .enter().append("g")
+          .classed("errorbars", true)
+          .style("stroke", function(d, i) { return colors[i % colors.length];  })
+          .style("stroke-width", "1.5px")
+      var update_sel = chart.g.selectAll(".errorbars").selectAll(".errorbar")
+          .data(function(d,i) { return d; })
+      update_sel.enter().append("path")
+          .classed("errorbar", true)
+      update_sel.exit().remove();
+          
+      chart.g.selectAll(".errorbars").selectAll("path.errorbar")
           .attr("d", errorbar_generator);
-      }
     }	
       
     //************************************************************
@@ -548,8 +540,16 @@ function xyChart(options_override) {
       chart.svg.select(".y.axis").call(yAxis);
     }
     
-    
-    
+    function filterShowOption(optname, data) { 
+      return data.map(function(d,i) {
+        var localopt = (((options || {}).series || [])[i] || {});
+        if (localopt[optname] == false || (localopt[optname] === undefined && !options[optname])) {
+          return []
+        } else {
+          return d;
+        }
+      })
+    }
     
     
     function errorbar_generator(d) {
