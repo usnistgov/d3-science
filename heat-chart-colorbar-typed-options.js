@@ -660,7 +660,7 @@ function heatChart(options_override) {
     var new_min_max = {min: existing_min, max: existing_max};
     for (var i=0; i<array.length; i++) {
       var subarr = array[i];
-      if (subarr == null) { return {min: existing_min, max: existing_max} }
+      if (subarr == null) { continue }
       if (!subarr.hasOwnProperty('length')) {
         var t_el = transform(subarr);
         if (isFinite(t_el)) {
