@@ -197,7 +197,6 @@ function heatChart(options_override) {
       var esvg = svg.enter()
         .append("svg")
           .attr("class", "mainplot")
-          .call(zoom)
           .on("dblclick.zoom", null)
           .on("dblclick.resetzoom", null)
           .on("dblclick.resetzoom", resetzoom);
@@ -241,7 +240,8 @@ function heatChart(options_override) {
       svg.selectAll("g.y")
         .attr("transform", "translate(" + options.margin.left + ",0)"); 
         
-      chart.svg = svg;  
+      chart.svg = svg;
+      svg.call(zoom) 
     });
     selection.call(chart.colorbar);
   }
