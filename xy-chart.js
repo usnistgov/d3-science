@@ -212,7 +212,7 @@ function xyChart(options_override) {
         .attr("class", "mainplot")
         //.call(zoom) // call this from zoomScroll setter
         .on("dblclick.zoom", null)
-        .on("dblclick.resetzoom", null)
+        //.on("dblclick.resetzoom", null)
         .on("dblclick.resetzoom", resetzoom)
           
       var axes = svg.append("g")

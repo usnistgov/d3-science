@@ -30,6 +30,9 @@ function heatChart(options_override) {
   }
   var options = jQuery.extend(true, {}, options_defaults); // copy
   jQuery.extend(true, options, options_override); // process any overrides from creation;
+  
+  //var zoomRect = false;
+  var zoomScroll = false;
   var interactors = [];
   var plotdata, source_data;
   var z = d3.scale[options.ztransform]();
@@ -51,9 +54,7 @@ function heatChart(options_override) {
   var zoomed = function() {
     _redraw_main = true;
   }
-  var zoom = d3.behavior.zoom()
-    .on("zoom.heatmap", null)
-    .on("zoom.heatmap", zoomed);
+  var zoom = d3.behavior.zoom().on("zoom.heatmap", zoomed);
   var resetzoom = function() {
     zoom.translate([0,0]).scale(1);
     zoomed.call(this);
@@ -167,8 +168,6 @@ function heatChart(options_override) {
       var container = d3.select(this).selectAll("div.heatmap-container").data([0]);
       
       zoom.x(x).y(y);
-      chart.resetzoom = resetzoom;
-      chart.zoom = zoom;
       
       // if inner container doesn't exist, build it.
       container.enter().append("div")
@@ -197,8 +196,6 @@ function heatChart(options_override) {
       var esvg = svg.enter()
         .append("svg")
           .attr("class", "mainplot")
-          .on("dblclick.zoom", null)
-          .on("dblclick.resetzoom", null)
           .on("dblclick.resetzoom", resetzoom);
       esvg.append("g")
         .attr("class", "x axis")
@@ -241,7 +238,7 @@ function heatChart(options_override) {
         .attr("transform", "translate(" + options.margin.left + ",0)"); 
         
       chart.svg = svg;
-      svg.call(zoom) 
+      //svg.call(zoom); // moved to zoomScroll function
     });
     selection.call(chart.colorbar);
   }
@@ -425,7 +422,26 @@ function heatChart(options_override) {
     }
   }
   
-
+  //chart.zoomRect = function(_) {
+  //  if (!arguments.length) return zoomRect;
+  //  zoomRect = _;
+  //  return chart;
+  //};
+  
+  chart.zoomScroll = function(_) {
+    if (!arguments.length) return zoomScroll;
+    zoomScroll = _;
+    if (zoomScroll == true) {
+      chart.svg.call(zoom).on("dblclick.zoom", null);
+    }
+    else if (zoomScroll == false) {
+      chart.svg.on(".zoom", null);
+    }
+    return chart;
+  };
+  
+  chart.resetzoom = resetzoom;
+  
   chart.x = function(_) {
     if (!arguments.length) return x;
     x = _;
