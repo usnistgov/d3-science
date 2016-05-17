@@ -104,6 +104,16 @@ function xyChart(options_override) {
     min_y = y.invert(y(min_y) - (dy * base_zoom_offset)); 
     max_y = y.invert(y(max_y) + (dy * base_zoom_offset));
     */
+    var xav= max_x - min_x,
+        yrange = max_y - min_y;
+    if (max_x == min_x) {
+      max_x += (max_x * 0.1) || 0.1;
+      min_x -= (min_x * 0.1) || 0.1;
+    }
+    if (max_y == min_y) {
+      max_y += (max_y * 0.1) || 0.1;
+      min_y -= (min_y * 0.1) || 0.1;
+    }
     return {min_x: min_x, max_x: max_x, min_y: min_y, max_y: max_y}
   }
   this.do_autoscale = do_autoscale;
