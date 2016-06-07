@@ -29,6 +29,7 @@ function xyChart(options_override) {
       xaxis: {label: "x-axis"},
       yaxis: {label: "y-axis"}
     },
+    point_size: 2.5,
     series: new Array()
   }
     
@@ -491,7 +492,7 @@ function xyChart(options_override) {
           //.filter(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
           .attr("class", "dot")
           .attr("clip-path", "url(#d3clip_" + id.toFixed() + ")")
-          .attr("r", 2.5)
+          .attr("r", options.point_size)
       update_sel.exit().remove();
           
       chart.g.selectAll("g.series .dot")
