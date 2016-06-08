@@ -48,9 +48,11 @@ function lineLineIntersect(line1, line2, calculate_reflection) {
     // slopes match when denom is zero; return value should remain null. 
     var u = (dx1x2*dy2 - dy1y2*dx2)/denom;
     var v = (dx1x2*dy1 - dy1y2*dx1)/denom;
+    
     if (u >= 0 && u <=1 && v >= 0 && v <= 1) {
       ret = {x: v*dx2 + line2[0].x, y: v*dy2 + line2[0].y, u: u, v: v, outer: Math.sign(denom)}
       if (calculate_reflection) {
+        ret.rel_angle = Math.acos((dx1*dx2 + dy1*dy2) / Math.sqrt((dx1*dx1 + dy1*dy1)*(dx2*dx2 + dy2*dy2)));
         ret.reflection = reflect(dx1, dy1, dx2, dy2);
       }
     }
