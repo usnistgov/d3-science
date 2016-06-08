@@ -6,6 +6,9 @@
   <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
   <script src="linePolygonIntersect.js"></script>
   <style type="text/css">
+    svg {
+      margin: 0px;
+    }
     svg circle.neutron {
       fill: blue;
     }
@@ -36,7 +39,7 @@
       "name": "sample",
       "cx": 480,
       "cy": yOffset,
-      "r": 0,
+      "r": 7.5,
       "angle": Math.PI*(0.5 - 1/30),
       "thickness": 15,
       "width": 125,
@@ -137,32 +140,6 @@
     var render_slit_above = render_slit_blade(true);
     var render_slit_below = render_slit_blade(false);
     
-    /*
-    slit.append("polygon")
-      .attr("points", function(d) {
-        var s = Math.sin(d.angle), 
-            c = Math.cos(d.angle),
-            x = d.cx + c * d.r,
-            y = d.cy + s * d.r,
-            dax =  s*d.aperture/2.0,
-            day = -c*d.aperture/2.0,
-            dbx =  s*d.blade_width,
-            dby = -c*d.blade_width;
-            points = "";
-        points += (x + dax + (c*d.thickness/2.0)).toFixed() + ",";
-        points += (y + day + (s*d.thickness/2.0)).toFixed() + " ";
-        
-        points += (x + dax - (c*d.thickness/2.0)).toFixed() + ",";
-        points += (y + day - (s*d.thickness/2.0)).toFixed() + " ";
-        
-        points += (x + dax + dbx - (c*d.thickness/2.0)).toFixed() + ",";
-        points += (y + day + dby - (s*d.thickness/2.0)).toFixed() + " ";
-        
-        points += (x + dax + dbx + (c*d.thickness/2.0)).toFixed() + ",";
-        points += (y + day + dby + (s*d.thickness/2.0)).toFixed() + " ";
-        return points
-      })
-    */
     slit.append("polygon")
       .classed("above", true)
       .attr("points", render_slit_above)
@@ -170,32 +147,6 @@
     slit.append("polygon")
       .classed("below", true)
       .attr("points", render_slit_below)
-    /*
-    slit.append("polygon")
-      .attr("points", function(d) {
-        var s = Math.sin(d.angle), 
-            c = Math.cos(d.angle),
-            x = d.cx + c * d.r,
-            y = d.cy + s * d.r,
-            dax = -s*d.aperture/2.0,
-            day =  c*d.aperture/2.0,
-            dbx = -s*d.blade_width,
-            dby =  c*d.blade_width;
-            points = "";
-        points += (x + dax + (c*d.thickness/2.0)).toFixed() + ",";
-        points += (y + day + (s*d.thickness/2.0)).toFixed() + " ";
-        
-        points += (x + dax - (c*d.thickness/2.0)).toFixed() + ",";
-        points += (y + day - (s*d.thickness/2.0)).toFixed() + " ";
-        
-        points += (x + dax + dbx - (c*d.thickness/2.0)).toFixed() + ",";
-        points += (y + day + dby - (s*d.thickness/2.0)).toFixed() + " ";
-        
-        points += (x + dax + dbx + (c*d.thickness/2.0)).toFixed() + ",";
-        points += (y + day + dby + (s*d.thickness/2.0)).toFixed() + " ";
-        return points
-      })
-    */
     
     function render_detector(d){
       var s = Math.sin(d.angle), 
@@ -255,6 +206,7 @@
         .attr("points", render_detector)
     var drag_sample = d3.behavior.drag()
       .on("drag", dragmove_sample)
+      .on("dragend", function(d) {d.ref_angle = null}) 
       .origin(function(d) { 
         var s = Math.sin(d.angle), 
             c = Math.cos(d.angle),
@@ -265,8 +217,14 @@
       
     function dragmove_sample(d) {
       //if (!d3.select(this).classed("draggable")) {return}
-      var new_angle = Math.atan2(d3.event.y - d.cy, d3.event.x - d.cx)
-      d.angle = new_angle;
+      var new_angle = Math.atan2(d3.event.y - d.cy, d3.event.x - d.cx);
+      if (d.ref_angle == null) { 
+        d.ref_angle = new_angle - d.angle; 
+        console.log("setting reference angle: ", new_angle*180/Math.PI, d.angle*180/Math.PI);
+        return 
+      }
+      console.log(new_angle*180/Math.PI, d.angle*180/Math.PI, d.ref_angle*180/Math.PI);
+      d.angle = new_angle - d.ref_angle;
       d3.select(this).attr("points", render_detector);
     }
     
