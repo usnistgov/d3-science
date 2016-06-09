@@ -14,9 +14,11 @@
     }
     svg polygon.detector {
       fill: LightGrey;
+      cursor: move;
     }
     svg polygon.sample {
       fill: green;
+      cursor: move;
     }
     
   </style>
@@ -24,21 +26,24 @@
 <body>
   <script>
     var width = 960,
-      height = 500,
+      height = 800,
 			xOffset = 0,
-			yOffset = 130,
+			yOffset = 400,
       apertureHeight = 40,
 			r = 2,
       rate = 0.5, // per second
       speed = 0.25,
       wavelength = 5.0,
       k_0 = 2*Math.PI/wavelength,
-      max_angle = 2.0 * Math.PI/180.0; // 5 degree
+      max_angle = 2.0 * Math.PI/180.0, // 5 degree
+      cx = 480,
+      cy = yOffset;
+      
 
     var sample_def = [{
       "name": "sample",
-      "cx": 480,
-      "cy": yOffset,
+      "cx": cx,
+      "cy": cy,
       "r": 7.5,
       "angle": Math.PI*(0.5 - 1/30),
       "thickness": 15,
@@ -48,20 +53,21 @@
     
     var detector_def = [{
       "name": "detector",
-      "cx": sample_def[0].cx, // center of rotation
-      "cy": sample_def[0].cy,
+      "cx": cx, // center of rotation
+      "cy": cy,
       "r": 450,
       "angle": Math.PI/8.0,
+      "max_angle": Math.PI/3.0,
       "thickness": 30,
       "width": 75
-    }];
+    }];    
     
     var slits_def = [
       {
         "name": "slit1",
         "aperture": 10,
-        "cx": sample_def[0].cx, // center of rotation
-        "cy": sample_def[0].cy,
+        "cx": cx, // center of rotation
+        "cy": cy,
         "r": 400, // distance from center of rot.
         "angle": Math.PI,
         "thickness": 5,
@@ -70,8 +76,8 @@
       {
         "name": "slit2",
         "aperture": 10,
-        "cx": sample_def[0].cx, // center of rotation
-        "cy": sample_def[0].cy,
+        "cx": cx, // center of rotation
+        "cy": cy,
         "r": 125, // distance from center of rot.
         "angle": Math.PI,
         "thickness": 5,
@@ -80,8 +86,8 @@
       {
         "name": "slit3",
         "aperture": 10,
-        "cx": sample_def[0].cx, // center of rotation
-        "cy": sample_def[0].cy,
+        "cx": cx, // center of rotation
+        "cy": cy,
         "r": 125, // distance from center of rot.
         "angle": detector_def[0].angle,
         "thickness": 5,
@@ -90,14 +96,15 @@
       {
         "name": "slit4",
         "aperture": 10,
-        "cx": sample_def[0].cx, // center of rotation
-        "cy": sample_def[0].cy,
+        "cx": cx, // center of rotation
+        "cy": cy,
         "r": 400, // distance from center of rot.
         "angle": detector_def[0].angle,
         "thickness": 5,
         "blade_width": 75
       }
     ];
+    
     
     var svg = d3.select("body").append("svg")
       .attr({
@@ -188,6 +195,9 @@
     function dragmove_detector(d) {
       //if (!d3.select(this).classed("draggable")) {return}
       var new_angle = Math.atan2(d3.event.y - d.cy, d3.event.x - d.cx)
+      if (d.max_angle != null) {
+        new_angle = Math.max(-d.max_angle, Math.min(new_angle, d.max_angle));
+      } 
       d.angle = new_angle;
       slits_def[2].angle = slits_def[3].angle = new_angle;
       d3.select(this).attr("points", render_detector);
@@ -207,23 +217,14 @@
     var drag_sample = d3.behavior.drag()
       .on("drag", dragmove_sample)
       .on("dragend", function(d) {d.ref_angle = null}) 
-      .origin(function(d) { 
-        var s = Math.sin(d.angle), 
-            c = Math.cos(d.angle),
-            x = d.cx + c * d.r,
-            y = d.cy + s * d.r;
-        return {x: x, y: y}
-      })  
       
     function dragmove_sample(d) {
       //if (!d3.select(this).classed("draggable")) {return}
       var new_angle = Math.atan2(d3.event.y - d.cy, d3.event.x - d.cx);
       if (d.ref_angle == null) { 
         d.ref_angle = new_angle - d.angle; 
-        console.log("setting reference angle: ", new_angle*180/Math.PI, d.angle*180/Math.PI);
         return 
       }
-      console.log(new_angle*180/Math.PI, d.angle*180/Math.PI, d.ref_angle*180/Math.PI);
       d.angle = new_angle - d.ref_angle;
       d3.select(this).attr("points", render_detector);
     }
@@ -315,38 +316,69 @@
       })
 
     var slits_poly = svg.selectAll("g.slit polygon")[0];
-    var det_poly = svg.select("polygon.detector")[0][0];
-    var sample_poly = svg.select("polygon.sample")[0][0];
+    var slits_bb = slits_poly.map(function(p) {return p.getBBox()});
+    var det_poly = svg.selectAll("polygon.detector")[0];
+    var detector_bb = det_poly.map(function(p) {return p.getBBox()});
+    var sample_poly = svg.selectAll("polygon.sample")[0];
+    var sample_bb = sample_poly.map(function(p) {return p.getBBox()});
+    //for (var p=0; p<particles.length; p++) {
     neutrons.each(function(d) {
+      //var d = particles[p];
       if (d.y > height || d.x > width) {d.reap = true; return}
+      var step_x = Math.abs(d.x - d.old_x);
+      var step_y = Math.abs(d.y - d.old_y);
       var line = [{x: d.old_x, y: d.old_y}, {x: d.x, y: d.y}];
       for (var p=0; p<slits_poly.length; p++) {
         var poly_points = slits_poly[p].points;
-        var slit_intersects = linePolygonIntersects(line, poly_points, true);
-        if (slit_intersects.length > 0) {
-          d.reap = true;
-          return
+        var bb = slits_bb[p];
+        if (d.x > (bb.x - step_x) &&
+            d.x < (bb.x + bb.width + step_x) &&
+            d.y > (bb.y - step_y) &&
+            d.y < (bb.y + bb.height + step_y)) {
+          var slit_intersects = linePolygonIntersects(line, poly_points, true);
+          if (slit_intersects.length > 0) {
+            d.reap = true;
+            continue
+          }
         }
       }
-      var detector_intersect = linePolygonIntersects(line, det_poly.points, true);
-      if (detector_intersect.length > 0) {
-        d.reap = true;
-        detection_handler(elapsed);
-        return;
-      }
-      var sample_intersect = linePolygonIntersects(line, sample_poly.points, true, true);
-      if (sample_intersect.length > 0) { 
-        var intersect = sample_intersect[0];
-        var sld = sample_def[0].sld;
-        var prob = reflection_probability(intersect.rel_angle, intersect.outer, sld, k_0);
-        if (Math.random() < prob) {
-          d.x_start = intersect.x;
-          d.y_start = intersect.y;
-          d.t0 = elapsed;
-          d.vx = intersect.reflection.x * d.speed;
-          d.vy = intersect.reflection.y * d.speed;
+      for (var det=0; det<det_poly.length; det++) {
+        var bb = detector_bb[det];
+        if (d.x > (bb.x - step_x) &&
+            d.x < (bb.x + bb.width + step_x) &&
+            d.y > (bb.y - step_y) &&
+            d.y < (bb.y + bb.height + step_y)) {
+          var detector_intersect = linePolygonIntersects(line, det_poly[det].points, true);
+          if (detector_intersect.length > 0) {
+            d.reap = true;
+            detection_handler(elapsed);
+            continue;
+          }
         }
-        return;
+      }
+      for (var sam=0; sam<sample_poly.length; sam++) {
+        var bb = sample_bb[sam];
+        if (d.x > (bb.x - step_x) &&
+            d.x < (bb.x + bb.width + step_x) &&
+            d.y > (bb.y - step_y) &&
+            d.y < (bb.y + bb.height + step_y)) {
+          var sample_intersect = linePolygonIntersects(line, sample_poly[sam].points, true, true);
+          if (sample_intersect.length > 0) { 
+            var intersect = sample_intersect[0];
+            var sld = sample_def[0].sld;
+            var prob = reflection_probability(intersect.rel_angle, intersect.outer, sld, k_0);
+            if (Math.random() < prob) {
+              d.x_start = intersect.x;
+              d.y_start = intersect.y;
+              d.t0 = elapsed;
+              d.vx = intersect.reflection.x * d.speed;
+              d.vy = intersect.reflection.y * d.speed;
+              d.x = intersect.x + d.vx * (1-intersect.v) * d.speed;
+              d.y = intersect.y + d.vy * (1-intersect.v) * d.speed;
+            }
+            continue;
+          }
+        }
       }
     })
     //console.log("before: ", particles.length)
