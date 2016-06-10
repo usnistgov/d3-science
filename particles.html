@@ -2,9 +2,10 @@
 <html lang="en-us">
 <head>
   <meta charset="UTF-8">
-  <title>Easing Test</title>
+  <title>Reflectometer alignment</title>
   <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
   <script src="linePolygonIntersect.js"></script>
+  <script src="jquery-extend.js"></script>
   <style type="text/css">
     svg {
       margin: 0px;
@@ -18,6 +19,11 @@
     }
     svg polygon.sample {
       fill: green;
+      cursor: move;
+    }
+    svg polygon.sample-translate {
+      fill: green;
+      fill-opacity: 0;
       cursor: move;
     }
     
@@ -237,7 +243,9 @@
     }
     
     detector.call(drag_detector);
+    
     var show_rotators = function(d) {
+      if (d._translating) {return}
       var s = Math.sin(d.angle), 
           c = Math.cos(d.angle),
           dw = (d.width + 30)/2;
@@ -288,13 +296,15 @@
         .on("mouseout", function(d) {svg.selectAll("path.rotator").remove()})
         
     var dragr_sample = d3.behavior.drag()
-      .on("drag", dragmove_sample)
+      .on("drag", dragrotate_sample)
+      .on("dragstart", function(d) {d._rotating = true})
       .on("dragend", function(d) {
         d.ref_angle = null;
+        d._rotating = false;
         svg.selectAll("path.rotator").remove();
       }) 
       
-    function dragmove_sample(d) {
+    function dragrotate_sample(d) {
       //if (!d3.select(this).classed("draggable")) {return}
       var new_angle = Math.atan2(d3.event.y - d.cy, d3.event.x - d.cx);
       if (d.ref_angle == null) { 
@@ -303,11 +313,87 @@
       }
       d.angle = new_angle - d.ref_angle;
       d3.select(this).attr("points", render_detector);
+      svg.select("polygon.sample-translate").attr("points", render_sample_smaller);
       svg.selectAll("path.rotator").remove();
       show_rotators(d);
     }
     
     sample.call(dragr_sample);
+    
+    var sample_translator = svg.selectAll(".sample-translate")
+      .data(sample_def)
+      .enter().append("polygon")
+        .classed("sample-translate", true)
+        .attr("points", render_sample_smaller)
+        .on("mouseover", show_translators)
+        .on("mouseout", function(d) {svg.selectAll("path.translator").remove()})
+    
+    function render_sample_smaller(d) {
+      var dd = jQuery.extend(true, {}, d);
+      dd.width -= 75;
+      return render_detector(dd);
+    }
+    
+    var dragt_sample = d3.behavior.drag()
+      .on("drag", dragtranslate_sample)
+      .on("dragstart", function(d) {d._translating = true})
+      .on("dragend", function(d) {
+        svg.selectAll("path.translator").remove();
+        d._translating = false;
+      }) 
+      
+    function dragtranslate_sample(d) {
+      //if (!d3.select(this).classed("draggable")) {return}
+      var s = Math.sin(d.angle), 
+          c = Math.cos(d.angle),
+          new_r = s*(d3.event.y - d.cy) + c*(d3.event.x - d.cx);
+
+      d.r = new_r;
+      svg.select("polygon.sample").attr("points", render_detector);
+      svg.select("polygon.sample-translate").attr("points", render_sample_smaller);
+      svg.selectAll("path.translator").remove();
+      show_translators(d);
+    }
+    
+    sample_translator.call(dragt_sample);
+    
+    function show_translators(d) {
+      if (d._rotating) { return }
+      var s = Math.sin(d.angle), 
+          c = Math.cos(d.angle),
+          x = d.cx + c * d.r,
+          y = d.cy + s * d.r;
+          dw = (d.width + 30)/2;
+          
+      var path = "M";
+      path += (x + c*(d.thickness/2 + 30)).toFixed() + " ";
+      path += (y + s*(d.thickness/2 + 30)).toFixed() + " ";
+      path += "L ";
+      path += (x + c*(d.thickness/2 + 130)).toFixed() + " ";
+      path += (y + s*(d.thickness/2 + 130)).toFixed() + " ";
+      var indicator1 = svg.append("path")
+        .classed("translator", true)
+        .attr("d", function() {return path})
+        .attr("marker-end", "url(#marker-arrow-end)")
+        .style("stroke-width", "5")
+        .style("stroke", "lightGrey")
+        .style("fill", "none")
+      
+      var path = "M";
+      path += (x - c*(d.thickness/2 + 30)).toFixed() + " ";
+      path += (y - s*(d.thickness/2 + 30)).toFixed() + " ";
+      path += "L ";
+      path += (x - c*(d.thickness/2 + 130)).toFixed() + " ";
+      path += (y - s*(d.thickness/2 + 130)).toFixed() + " ";
+      var indicator2 = svg.append("path")
+        .classed("translator", true)
+        .attr("d", function() {return path})
+        .attr("marker-end", "url(#marker-arrow-end)")
+        .style("stroke-width", "5")
+        .style("stroke", "lightGrey")
+        .style("fill", "none")
+      
+    }
     
     function reflection_probability(angle, outer, sld, k_0) {
       var k_0z = Math.sin(angle) * k_0,
@@ -406,9 +492,7 @@
     var detector_bb = det_poly.map(function(p) {return p.getBBox()});
     var sample_poly = svg.selectAll("polygon.sample")[0];
     var sample_bb = sample_poly.map(function(p) {return p.getBBox()});
-    //for (var p=0; p<particles.length; p++) {
     neutrons.each(function(d) {
-      //var d = particles[p];
       if (d.y > height || d.x > width) {d.reap = true; return}
       var step_x = Math.abs(d.x - d.old_x);
       var step_y = Math.abs(d.y - d.old_y);
@@ -473,13 +557,9 @@
       .data(particles, function(d) {return d.id})
       .exit().remove();
     
-    svg.selectAll("circle.center-point").remove()
-    svg.append("circle")
-      .classed("center-point", true)
-      .attr("r", r)
-      .attr("cx", cx)
-      .attr("cy", cy)
-      .style("fill", "red")
+    // remove and re-add the center point to the svg (so it is on top)
+    var center_point = svg.select("circle.center-point").node()
+    svg.node().appendChild(svg.node().removeChild(center_point));
     
   }
   </script>
