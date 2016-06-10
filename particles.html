@@ -112,6 +112,35 @@
         height: height
       });
     
+    var defs = svg.append("defs")
+    defs.append("marker")
+      .attr("id", "marker-arrow-end")
+      .attr("markerWidth", 5)
+      .attr("markerHeight", 5)
+      .attr("markerUnits", "strokeWidth")
+      .attr("refx", 0)
+      .attr("refy", 0)
+      .attr("orient", "auto")
+      .attr('viewBox', '-5 -5 10 10')
+      .append("path")
+        .attr("d", "M 0,0 m -5,-5 L 5,0 L -5,5 Z")
+        .classed("marker", true)
+        .attr("fill", "lightGrey")
+        
+    defs.append("marker")
+      .attr("id", "marker-arrow-start")
+      .attr("markerWidth", 5)
+      .attr("markerHeight", 5)
+      .attr("markerUnits", "strokeWidth")
+      .attr("refx", 0)
+      .attr("refy", 0)
+      .attr("orient", "auto")
+      .attr('viewBox', '-5 -5 10 10')
+      .append("path")
+        .attr("d", "M 0,0 m 5,-5 L -5,0 L 5,5 Z")
+        .classed("marker", true)
+        .attr("fill", "lightGrey")
+
     var slit = svg.selectAll("g.slit")
       .data(slits_def)
       .enter().append("g")
@@ -208,15 +237,62 @@
     }
     
     detector.call(drag_detector);
+    var show_rotators = function(d) {
+      var s = Math.sin(d.angle), 
+          c = Math.cos(d.angle),
+          dw = (d.width + 30)/2;
+          
+      var path = "M";
+      path += (d.cx - s*dw + c*dw*0.75).toFixed() + " ";
+      path += (d.cy + c*dw + s*dw*0.75).toFixed() + " ";
+      path += "A ";
+      path += dw.toFixed() + " ";
+      path += dw.toFixed() + " ";
+      path += "0 0 1 ";
+      path += (d.cx - s*dw - c*dw*0.75).toFixed() + " ";
+      path += (d.cy + c*dw - s*dw*0.75).toFixed() + " ";
+      var indicator1 = svg.append("path")
+        .classed("rotator", true)
+        .attr("d", function() {return path})
+        .attr("marker-start", "url(#marker-arrow-start)")
+        .attr("marker-end", "url(#marker-arrow-end)")
+        .style("stroke-width", "5")
+        .style("stroke", "lightGrey")
+        .style("fill", "none")
+        
+      var path = "M";
+      path += (d.cx + s*dw - c*dw*0.75).toFixed() + " ";
+      path += (d.cy - c*dw - s*dw*0.75).toFixed() + " ";
+      path += "A ";
+      path += dw.toFixed() + " ";
+      path += dw.toFixed() + " ";
+      path += "0 0 1 ";
+      path += (d.cx + s*dw + c*dw*0.75).toFixed() + " ";
+      path += (d.cy - c*dw + s*dw*0.75).toFixed() + " ";
+      var indicator2 = svg.append("path")
+        .classed("rotator", true)
+        .attr("d", function() {return path})
+        .attr("marker-start", "url(#marker-arrow-start)")
+        .attr("marker-end", "url(#marker-arrow-end)")
+        .style("stroke-width", "5")
+        .style("stroke", "lightGrey")
+        .style("fill", "none")
+    }
     
     var sample = svg.selectAll(".sample")
       .data(sample_def)
       .enter().append("polygon")
         .classed("sample", true)
         .attr("points", render_detector)
-    var drag_sample = d3.behavior.drag()
+        .on("mouseover", show_rotators)
+        .on("mouseout", function(d) {svg.selectAll("path.rotator").remove()})
+        
+    var dragr_sample = d3.behavior.drag()
       .on("drag", dragmove_sample)
-      .on("dragend", function(d) {d.ref_angle = null}) 
+      .on("dragend", function(d) {
+        d.ref_angle = null;
+        svg.selectAll("path.rotator").remove();
+      }) 
       
     function dragmove_sample(d) {
       //if (!d3.select(this).classed("draggable")) {return}
@@ -227,9 +303,11 @@
       }
       d.angle = new_angle - d.ref_angle;
       d3.select(this).attr("points", render_detector);
+      svg.selectAll("path.rotator").remove();
+      show_rotators(d);
     }
     
-    sample.call(drag_sample);
+    sample.call(dragr_sample);
     
     function reflection_probability(angle, outer, sld, k_0) {
       var k_0z = Math.sin(angle) * k_0,
@@ -252,6 +330,13 @@
         return r*r;
       }
     }
+    
+    svg.append("circle")
+      .classed("center-point", true)
+      .attr("r", r)
+      .attr("cx", cx)
+      .attr("cy", cy)
+      .style("fill", "red")
         
   var gauss = d3.random.normal(0,1);
   var t = d3.timer(tick);
@@ -387,6 +472,14 @@
     svg.selectAll("circle.neutron")
       .data(particles, function(d) {return d.id})
       .exit().remove();
+    
+    svg.selectAll("circle.center-point").remove()
+    svg.append("circle")
+      .classed("center-point", true)
+      .attr("r", r)
+      .attr("cx", cx)
+      .attr("cy", cy)
+      .style("fill", "red")
     
   }
   </script>
