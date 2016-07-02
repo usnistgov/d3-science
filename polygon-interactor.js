@@ -32,46 +32,43 @@ function polygonInteractor(state, x, y) {
     var group = selection.append("g")
       .classed("interactors interactor-" + name, true)
       .style("cursor", cursor)
-    var edges = group.append("g")
+    var edge_group = group.append("g")
           .attr("class", "edges")
           .style("stroke", state.color1)
           .style("stroke-linecap", "round")
-          .selectAll(".edge")
-        .data([state.points])
-          .enter().append("path")
-          .classed("edge", true)
-          .attr("side", function(d,i) { return i.toFixed()})
-          .attr("fill", "none")
-          .attr("stroke-width", "4px")
-          .attr("d", line)
     //if (!fixed) edges.call(drag_edge);
       
-    var corners = group.append("g")
+    var corner_group = group.append("g")
       .classed("corners", true)
       .attr("fill", state.color1)
-      .selectAll("corner")
-      .data(state.points)
-        .enter().append("circle")
-        .classed("corner", true)
-        .attr("vertex", function(d,i) { return i.toFixed()})
-        .attr("r", radius)
-        .attr("cx", function(d) {return x(d[0])})
-        .attr("cy", function(d) {return y(d[1])})
-    if (!fixed) corners.call(drag_corner);
-    
 
     interactor.update = function() {
         
-      group.selectAll('.corner').data(state.points)
+      var corners = corner_group.selectAll('.corner').data(state.points)
+      var new_corners = corners.enter().append("circle")
+        .classed("corner", true)
+        .attr("vertex", function(d,i) { return i.toFixed()})
+        .attr("r", radius);
+      if (!fixed) new_corners.call(drag_corner);
+      corners
         .attr("cx", function(d) { return x(d[0]); })
         .attr("cy", function(d) { return y(d[1]); });
+      corners.exit().remove();
         
-      group.selectAll('.edge').data([state.points])
-        .attr("d", line);
+      var edges = edge_group.selectAll('.edge').data([state.points]);
+      edges.enter().append("path")
+        .classed("edge", true)
+        .attr("side", function(d,i) { return i.toFixed()})
+        .attr("fill", "none")
+        .attr("stroke-width", "4px");
+      edges.attr("d", line);
+      edges.exit().remove();
         
       // fire!
       dispatch.update();
     }
+    
+    interactor.update();
   }
   
   function dragmove_corner(d,i) {
@@ -80,6 +77,9 @@ function polygonInteractor(state, x, y) {
     var sp = state.points;
     if (prevent_crossing && sp[i+1] != null && sp[i+1][0] <= new_x) {
       new_x = sp[i+1][0]
+    }
+    if (prevent_crossing && sp[i-1] != null && sp[i-1][0] >= new_x) {
+      new_x = sp[i-1][0]
     }
     state.points[i] = [new_x, new_y];
     interactor.update();
