@@ -78,6 +78,8 @@ var opts1 = {
       name:'roi_polygon',
       color1: '#ff0000',
       color2: '#ff0000',
+      interpolation: 'linear',
+      prevent_crossing: true,
       fill: "none",
       showcenter: true,
       show: false,
@@ -118,7 +120,6 @@ var ft = function() {
     var k = Math.PI * 2.0 / 10.0 * ii;
     ft_out[i] = fc(k, poly1.state.points).magsq(); // .toFixed(4);
   }
-  console.log((ft_out));
   return ft_out;
 }
 

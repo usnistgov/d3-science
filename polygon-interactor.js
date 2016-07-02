@@ -10,6 +10,8 @@ function polygonInteractor(state, x, y) {
   var dispatch = d3.dispatch("update");
   var x = x || d3.scale.linear();
   var y = y || d3.scale.linear();
+  var interpolation = (state.interpolation == null) ? 'linear' : state.interpolation;
+  var prevent_crossing = (state.prevent_crossing == null) ? false : state.prevent_crossing;
   var show_points = (state.show_points == null) ? true : state.show_points;
   var show_lines = (state.show_lines == null) ? true : state.show_lines;
   var close_path = (state.close_path == null) ? false : state.close_path;
@@ -18,7 +20,8 @@ function polygonInteractor(state, x, y) {
 
   var line = d3.svg.line()
     .x(function(d) { return x(d[0]); })
-    .y(function(d) { return y(d[1]); });
+    .y(function(d) { return y(d[1]); })
+    .interpolate(interpolation);
          
   
   var drag_corner = d3.behavior.drag()
@@ -74,8 +77,10 @@ function polygonInteractor(state, x, y) {
   function dragmove_corner(d,i) {
     var new_x = x.invert(d3.event.x),
         new_y = y.invert(d3.event.y);
-    var vertex = parseInt(d3.select(this).attr("vertex"));  
-    //console.log(this, d, i);
+    var sp = state.points;
+    if (prevent_crossing && sp[i+1] != null && sp[i+1][0] <= new_x) {
+      new_x = sp[i+1][0]
+    }
     state.points[i] = [new_x, new_y];
     interactor.update();
   }
