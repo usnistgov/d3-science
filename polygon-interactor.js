@@ -36,6 +36,8 @@ function polygonInteractor(state, x, y) {
           .attr("class", "edges")
           .style("stroke", state.color1)
           .style("stroke-linecap", "round")
+          .style("stroke-width", "4px")
+          .style("fill", "none")
     //if (!fixed) edges.call(drag_edge);
       
     var corner_group = group.append("g")
@@ -58,9 +60,7 @@ function polygonInteractor(state, x, y) {
       var edges = edge_group.selectAll('.edge').data([state.points]);
       edges.enter().append("path")
         .classed("edge", true)
-        .attr("side", function(d,i) { return i.toFixed()})
-        .attr("fill", "none")
-        .attr("stroke-width", "4px");
+        .attr("side", function(d,i) { return i.toFixed()})        
       edges.attr("d", line);
       edges.exit().remove();
         
