@@ -630,6 +630,10 @@ function xyChart(options_override) {
     chart.source_data = function(_) {
       if (!arguments.length) return source_data;
       source_data = _;
+      do_autoscale();
+      x.domain([min_x, max_x]);
+      y.domain([min_y, max_y]);
+      chart.resetzoom();
       return chart;
     };
     
