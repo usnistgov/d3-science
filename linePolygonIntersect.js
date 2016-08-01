@@ -1,3 +1,5 @@
+"use-strict";
+
 function linePolygonIntersects(line, polygonPoints, closePath, calculate_reflection, ordered) {
   // line is coordinate list of length 2 e.g. [(x1,y1), (x2,y2)]
   // polygonPoints is coordinate list of length N
