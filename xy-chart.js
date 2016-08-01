@@ -717,7 +717,8 @@ function xyChart(options_override) {
       dsvg.selectAll(".axis path, .axis line").style("stroke", "black"); //.css("stroke-width", "1.5px");
       dsvg.selectAll(".grid .tick").style("stroke", "lightgrey")
         .style("opacity", "0.7");
-      dsvg.selectAll(".grid path").style("stroke-width", "0");                  
+      dsvg.selectAll(".grid path").style("stroke-width", "0");    
+      dsvg.selectAll("text.position-cursor").remove();              
       return dsvg.node(); // user outerHTML of this
     }
   
