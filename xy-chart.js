@@ -714,7 +714,7 @@ function xyChart(options_override) {
       dsvg.selectAll(".mainview>rect").style("fill", "none");
       dsvg.selectAll("clippath rect").style("fill", "none");
       dsvg.selectAll(".axis-label").style("font-size", "18px");
-      dsvg.selectAll(".axis path,line").style("stroke", "black"); //.css("stroke-width", "1.5px");
+      dsvg.selectAll(".axis path, .axis line").style("stroke", "black"); //.css("stroke-width", "1.5px");
       dsvg.selectAll(".grid .tick").style("stroke", "lightgrey")
         .style("opacity", "0.7");
       dsvg.selectAll(".grid path").style("stroke-width", "0");                  
