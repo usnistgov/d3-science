@@ -259,7 +259,7 @@ function xyChart(options_override) {
             })
             .on("dragend.zoomRect", function() {
               //d3.select(window).on("mousemove.zoomRect", null).on("mouseup.zoomRect", null);
-              drag.on("drag.zoomRect", null).on("drag.zoomRect", null);
+              drag.on("drag.zoomRect", null).on("dragend.zoomRect", null);
               d3.select("body").classed("noselect", false);
               var m = d3.mouse(e);
               m[0] = Math.max(0, Math.min(width, m[0]));
