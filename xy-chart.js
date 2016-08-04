@@ -236,6 +236,7 @@ function xyChart(options_override) {
 
       var drag = d3.behavior.drag();
       svg.call(drag);
+      chart.drag = drag;
       
       drag
         .on("dragstart.zoomRect", function() {
@@ -679,6 +680,7 @@ function xyChart(options_override) {
       x.domain([min_x, max_x]).range(old_range);
       xAxis.scale(x);
       xAxisGrid.scale(x);
+      interactors.forEach(function(d) {d.x(x)});
       chart.resetzoom();
       return chart;
     };
@@ -693,6 +695,7 @@ function xyChart(options_override) {
       y.domain([min_y, max_y]).range(old_range);
       yAxis.scale(y);
       yAxisGrid.scale(y);
+      interactors.forEach(function(d) {d.y(y)});
       chart.resetzoom();
       return chart;
     };
