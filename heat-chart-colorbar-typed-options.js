@@ -11,6 +11,7 @@ function heatChart(options_override) {
     cb_margin: {top: 10, right: 50, bottom: 50, left: 10},
     show_grid: true,
     show_colorbar: true,
+    position_cursor: true,
     colorbar_width: 120,
     numberOfTicks: 4,
     aspect_ratio: null,
@@ -188,6 +189,7 @@ function heatChart(options_override) {
           .style("height", height + "px")
           .style("padding-left", options.margin.left + "px")
           .style("padding-right", options.margin.right + "px")
+          .style("padding-top", options.margin.top + "px")
           .call(drawImage);
                 
       chart.mainCanvas = mainCanvas;
@@ -214,13 +216,14 @@ function heatChart(options_override) {
 	      .attr("x", -height/2)
 	    
       esvg.append("g")
-        .attr("class", "y axis");
-      esvg.append("g")
         .attr("class", "x grid");           
       esvg.append("g")
         .attr("class", "y grid");
       esvg.append("g")
         .attr("class", "y interactors")
+      var mainview = esvg.append("g")
+        .attr("class", "mainview")
+        .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");  
       
       svg.select(".x.axis").call(xAxis);
       svg.select(".y.axis").call(yAxis);
@@ -233,12 +236,50 @@ function heatChart(options_override) {
           .attr("height", height + options.margin.top + options.margin.bottom);
                 
       svg.selectAll("g.x")
-        .attr("transform", "translate(" + options.margin.left + "," + height + ")");
+        .attr("transform", "translate(" + options.margin.left + "," + (height + options.margin.top) + ")");
       svg.selectAll("g.y")
-        .attr("transform", "translate(" + options.margin.left + ",0)"); 
+        .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")"); 
         
       chart.svg = svg;
       //svg.call(zoom); // moved to zoomScroll function
+      
+      //************************************************************
+      // Position cursor (shows position of mouse in data coords)
+      //************************************************************
+      if (options.position_cursor) {
+        var position_cursor = mainview.selectAll(".position-cursor")
+          .data([0])
+        position_cursor
+          .enter().append("text")
+            .attr("class", "position-cursor")
+            .attr("x", width - 10)
+            .attr("y", height + 35)
+            .style("text-anchor", "end");
+          
+        var follow = function (){  
+          if (source_data == null || source_data[0] == null) { return }
+          var mouse = d3.mouse(mainview.node());
+          var x_coord = x.invert(mouse[0]),
+              y_coord = y.invert(mouse[1]),
+              xdim = source_data[0].length,
+              ydim = source_data.length;
+          var x_bin = Math.floor((x_coord - dims.xmin) / (dims.xmax - dims.xmin) * xdim),
+              y_bin = Math.floor((y_coord - dims.ymin) / (dims.ymax - dims.ymin) * ydim);
+          var z_coord = (x_bin >= 0 && x_bin < xdim && y_bin >= 0 && y_bin < ydim) ? source_data[y_bin][x_bin] : NaN;
+          position_cursor.text(
+            x_coord.toPrecision(5) + 
+            ", " + 
+            y_coord.toPrecision(5) + 
+            ", " + 
+            z_coord.toPrecision(5));
+        }
+          
+          esvg
+            .on("mousemove.position_cursor", null)
+            .on("mouseover.position_cursor", null)
+            .on("mousemove.position_cursor", follow)
+            .on("mouseover.position_cursor", follow);
+      }
     });
     selection.call(chart.colorbar);
   }
@@ -292,6 +333,7 @@ function heatChart(options_override) {
           .style("height", height + "px")
           .style("padding-left", offset_left + "px")
           .style("padding-right", options.cb_margin.right + "px")
+          .style("padding-top", options.cb_margin.top + "px")
           .call(drawScale);
                 
       chart.colorbar.colorbarCanvas = colorbarCanvas;
@@ -313,7 +355,7 @@ function heatChart(options_override) {
           .attr("height", height + options.cb_margin.top + options.cb_margin.bottom);
       
       svg.selectAll("g.z")
-        .attr("transform", "translate(" + width + ",0)");
+        .attr("transform", "translate(" + width + "," + options.cb_margin.top + ")");
         
       chart.colorbar.svg = svg;
     });
