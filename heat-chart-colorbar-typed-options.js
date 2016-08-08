@@ -809,9 +809,9 @@ function heatChart(options_override) {
           .attr("height", height + options.margin.top + options.margin.bottom);
     
     chart.svg.selectAll("g.x")
-        .attr("transform", "translate(" + options.margin.left + "," + height + ")");
+        .attr("transform", "translate(" + options.margin.left + "," + (height + options.margin.top) + ")");
     chart.svg.selectAll("g.y")
-        .attr("transform", "translate(" + options.margin.left + ",0)");
+        .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")"); 
     
     chart.svg.selectAll("g.x.axis text").attr("x", width/2.0);
     chart.svg.selectAll("g.y.axis text").attr("x", -height/2.0);
@@ -840,8 +840,8 @@ function heatChart(options_override) {
       .attr("height", height + options.cb_margin.top + options.cb_margin.bottom);
       
     chart.colorbar.svg.selectAll("g.z")
-        .attr("transform", "translate(" + width + ",0)");
-        
+        .attr("transform", "translate(" + width + "," + options.cb_margin.top + ")");
+
     _redraw_main = true;
   }
   
