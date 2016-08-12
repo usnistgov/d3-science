@@ -40,6 +40,7 @@ dataflow.module_defs = dataflow.module_defs || {};
 dataflow.editor = function(data) {
   var data = data || [];
   var module_defs = module_defs || {};
+  var wirecurve = 1.0;
   var svg, container;
   var dispatch = d3.dispatch("update", "draw_wires");
   dispatch.on("update", update);
@@ -188,11 +189,11 @@ dataflow.editor = function(data) {
     var dx = Math.abs(+(pt1.x) - +(pt2.x)),
         dy = Math.abs(+(pt1.y) - +(pt2.y));
     d  = "M" + pt1.x + "," + pt1.y + " ";
-    d += "C" + (+(pt1.x) + dx).toFixed() + "," + pt1.y + " ";
-    d +=       (+(pt2.x) - dx).toFixed() + "," + pt2.y + " ";
+    d += "C" + (+(pt1.x) + wirecurve*dx).toFixed() + "," + pt1.y + " ";
+    d +=       (+(pt2.x) - wirecurve*dx).toFixed() + "," + pt2.y + " ";
     d +=       pt2.x + "," + pt2.y;
     return d;
-  }  
+  }
   
   function editor(selection) {
     container = selection; // store for later use
@@ -211,6 +212,15 @@ dataflow.editor = function(data) {
       .enter().append(wire)
    
     dispatch.update();
+  }
+  
+  // wirecurve is usually between 0 and 1
+  // if 0, gives a straight-line wire connector
+  // if 1, a cubic curve vertical in the middle
+  editor.wirecurve = function(_) {
+    if (!arguments.length) { return wirecurve }
+    wirecurve = _;
+    return editor;
   }
   
   editor.data = function(_) {
