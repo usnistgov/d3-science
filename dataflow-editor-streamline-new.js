@@ -40,7 +40,7 @@ dataflow.module_defs = dataflow.module_defs || {};
 dataflow.editor = function(data) {
   var data = data || [];
   var module_defs = module_defs || {};
-  var wirecurve = 1.0;
+  var wirecurve = 0.67;
   var svg, container;
   var dispatch = d3.dispatch("update", "draw_wires");
   dispatch.on("update", update);
