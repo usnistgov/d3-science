@@ -347,8 +347,8 @@ dataflow.editor = function(data) {
     // look up terminals from module definition if not in module_data:
     //var terminals = module_data.terminals || dataflow.module_defs[module_data.module].terminals;
     var module_name = module_data.module;
-    // lookup first from editor instance, then from dataflow library.
-    var module_def = module_defs[module_name] || dataflow.module_defs[module_name] || {};
+    // lookup first from module_data, then editor instance, then from dataflow library.
+    var module_def = module_data.module_def || module_defs[module_name] || dataflow.module_defs[module_name] || {};
     var input_terminals = module_data.inputs || module_def.inputs || [],
         output_terminals = module_data.outputs || module_def.outputs || [];
 
