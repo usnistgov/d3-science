@@ -335,52 +335,10 @@ function xyChart(options_override) {
       chart.g = svg.selectAll("g.mainview");
       resetzoom(); // set to 10% zoom out.
 	
-      //************************************************************
-      // Create D3 legend
-      //************************************************************
-      if (options.legend && options.legend.show) {
-	      var el = svg.select("g.legend");
-	      el.selectAll('g').data(data)
-          .enter()
-            .append('g')
-            .each(function(d, i) {
-              var g = d3.select(this);
-              g.append("rect")
-                .attr("x", -options.legend.left)
-                .attr("y", i*25 + 15)
-                .attr("width", 10)
-                .attr("height", 10)
-                .style("fill", colors[i%colors.length])
-                .on("mouseover", function() {
-                  d3.selectAll('.line')[0][i].classList.add('highlight');
-                })
-                .on("mouseout", function() {
-                  d3.selectAll('.line')[0][i].classList.remove('highlight');
-                });
-              
-              g.append("text")
-                .attr("x", 15-options.legend.left)
-                .attr("y", i * 25 + 25)
-                .attr("height",30)
-                .attr("width",100)
-                .style("text-anchor", "start")
-                .style("fill", colors[i%colors.length])
-                .on("mouseover", function() {
-                  d3.selectAll('.line')[0][i].classList.add('highlight');
-                })
-                .on("mouseout", function() {
-                  d3.selectAll('.line')[0][i].classList.remove('highlight');
-                });
-            });
-          el.selectAll("text")
-            .each(function(d, i) {
-              d3.select(this).text((options.series[i] && options.series[i].label != null) ? options.series[i].label : i+1)
-            });
-      }
-	
       chart.draw_lines(data);
       chart.draw_points(data);
       chart.draw_errorbars(data);
+      chart.draw_legend(data);
 	  
       //************************************************************
       // Position cursor (shows position of mouse in data coords)
@@ -455,6 +413,48 @@ function xyChart(options_override) {
     });
   }
     
+    //************************************************************
+    // Create D3 legend
+    //************************************************************
+    chart.draw_legend = function(data) {
+      var el = chart.svg.select("g.legend");
+      el.selectAll('g').data(data)
+        .enter()
+          .append('g')
+          .each(function(d, i) {
+            var g = d3.select(this);
+            g.append("rect")
+              .attr("x", -options.legend.left)
+              .attr("y", i*25 + 15)
+              .attr("width", 10)
+              .attr("height", 10)
+              .style("fill", colors[i%colors.length])
+              .on("mouseover", function() {
+                d3.selectAll('.line')[0][i].classList.add('highlight');
+              })
+              .on("mouseout", function() {
+                d3.selectAll('.line')[0][i].classList.remove('highlight');
+              });
+            
+            g.append("text")
+              .attr("x", 15-options.legend.left)
+              .attr("y", i * 25 + 25)
+              .attr("height",30)
+              .attr("width",100)
+              .style("text-anchor", "start")
+              .style("fill", colors[i%colors.length])
+              .on("mouseover", function() {
+                d3.selectAll('.line')[0][i].classList.add('highlight');
+              })
+              .on("mouseout", function() {
+                d3.selectAll('.line')[0][i].classList.remove('highlight');
+              });
+          });
+        el.selectAll("text")
+          .each(function(d, i) {
+            d3.select(this).text((options.series[i] && options.series[i].label != null) ? options.series[i].label : i+1)
+          });
+    }
     
     var line = d3.svg.line()
       .defined(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
@@ -545,6 +545,7 @@ function xyChart(options_override) {
       chart.draw_lines(source_data);
       chart.draw_points(source_data);
       chart.draw_errorbars(source_data);
+      chart.draw_legend(source_data);
       
       chart.interactors().forEach(function(d,i) { if (d.update) {d.update();}});
     }
@@ -649,6 +650,18 @@ function xyChart(options_override) {
     chart.y = function(_) {
       if (!arguments.length) return y;
       y = _;
+      return chart;
+    };
+    
+    chart.xmin = function(_) {
+      if (!arguments.length) return min_x;
+      min_x = _;
+      return chart;
+    };
+    
+    chart.xmax = function(_) {
+      if (!arguments.length) return max_x;
+      max_x = _;
       return chart;
     };
     

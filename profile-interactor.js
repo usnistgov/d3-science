@@ -1,0 +1,200 @@
+"use strict";
+
+function profileInteractor(state, x, y) {
+  // x, y are d3.scale objects (linear, log, etc) from parent
+  // dispatch is the d3 event dispatcher: should have event "update" register
+  //var state = options;
+  var name = state.name;
+  var radius = ( state.radius == null ) ? 5 : state.radius;
+  var event_name = "profile." + state.name;
+  var dispatch = d3.dispatch("update","changed");
+  var x = x || d3.scale.linear();
+  var y = y || d3.scale.linear();
+  var interpolation = (state.interpolation == null) ? 'step-before' : state.interpolation;
+  var prevent_crossing = (state.prevent_crossing == null) ? false : state.prevent_crossing;
+  var show_points = (state.show_points == null) ? true : state.show_points;
+  var show_lines = (state.show_lines == null) ? true : state.show_lines;
+  var close_path = (state.close_path == null) ? false : state.close_path;
+  var fixed = (state.fixed == null) ? false : state.fixed;
+  var cursor = (fixed) ? "auto" : "move";
+  var series = state.series || [];
+  var constraints = [];
+
+  var line = d3.svg.line()
+    .x(function(d) { return x(d[0]); })
+    .y(function(d) { return y(d[1]); })
+    .interpolate(interpolation);
+         
+  
+  function data_to_pairs(data, column) {
+    var x = 0;    
+    return data.map(function(d, i) { return [x+=d.thickness, d[column], column] });
+  }
+  
+  function data_to_arrays(data) {
+    //var columns = ["sld_n", "sld_m", "theta_m"];
+    return series.map(function(s) { return data_to_pairs(data, s.id) });
+  }
+  
+  function arrays_to_data(arrays) {
+    var columns = series.map(function(s) { return s.id });
+    var x = 0;
+    var output_array = [];
+    // assume all arrays are the same length:
+    arrays[0].forEach(function(a,i) {
+      var d = {};
+      columns.forEach(function(c, ci) {
+        d[c] = arrays[ci][i][1];
+      });
+      d.thickness = a[0] - x;
+      if (d.thickness < 0) {
+        d.thickness = 0;
+      } else {
+        x = a[0];
+      }
+      output_array[i] = d;
+    });
+    return output_array;
+  }
+  
+  var colors = [
+      "#4bb2c5", 
+      "#EAA228", 
+      "#c5b47f", 
+      "#579575", 
+      "#839557", 
+      "#958c12", 
+      "#953579", 
+      "#4b5de4", 
+      "#d8b83f", 
+      "#ff5800", 
+      "#0085cc", 
+      "#c747a3", 
+      "#cddf54", 
+      "#FBD178", 
+      "#26B4E3", 
+      "#bd70c7"
+  ] 
+  
+  var drag_corner = d3.behavior.drag()
+    .on("drag", dragmove_corner)
+    .on("dragstart", function() { d3.event.sourceEvent.stopPropagation(); });
+  
+  function interactor(selection) {
+    var group = selection.append("g")
+      .classed("interactors interactor-" + name, true)
+      .style("cursor", cursor)
+
+    interactor.update = function() {
+      var edge_groups_sel = group.selectAll("g.edges")
+        .data(data_to_arrays(state.profile_data))
+      edge_groups_sel
+        .enter().append("g")
+            .attr("class", "edges")
+            .style("stroke", function(d,i) {return (series[i] || {}).color1 || colors[i] })
+            .style("stroke-linecap", "round")
+            .style("stroke-width", "4px")
+            .style("fill", "none")
+      edge_groups_sel
+        .exit().remove()
+      //if (!fixed) edges.call(drag_edge);
+        
+      var corner_groups_sel = group.selectAll("g.corners")
+        .data(data_to_arrays(state.profile_data))
+      corner_groups_sel
+        .enter().append("g")
+        .classed("corners", true)
+        .attr("fill", function(d,i) {return (series[i] || {}).color1 || colors[i] });
+      corner_groups_sel
+        .exit().remove()
+        
+      corner_groups_sel.each(function(d,i) {
+        var corners = d3.select(this).selectAll('.corner').data(d)
+        var new_corners = corners.enter().append("circle")
+          .classed("corner", true)
+          .attr("vertex", function(dd,ii) { return ii.toFixed()})
+          .attr("r", radius);
+        if (!fixed) new_corners.call(drag_corner);
+        corners
+          .attr("cx", function(dd) { return x(dd[0]); })
+          .attr("cy", function(dd) { return y(dd[1]); });
+        corners.exit().remove();
+      });
+        
+      edge_groups_sel.each(function(d,i) {
+        var edges = d3.select(this).selectAll('.edge').data([d]);
+        edges.enter().append("path")
+          .classed("edge", true)
+          .attr("side", function(dd,ii) { return ii.toFixed()})       
+        edges.attr("d", line)
+        edges.exit().remove();
+      });
+        
+      // fire!
+      dispatch.update();
+    }
+    
+    interactor.update();
+  }
+  
+  function dragmove_corner(d,i) {
+    var new_x = x.invert(d3.event.x),
+        new_y = y.invert(d3.event.y);
+    var new_dx = x.invert(x(0) + d3.event.dx),
+        new_dy = y.invert(y(0) + d3.event.dy);
+    state.profile_data[i].thickness += new_dx; //= Math.max(0, state.profile_data[i].thickness + new_dx);
+    state.profile_data[i][d[2]] = new_y;
+    constraints.forEach(function(constraint) {
+      constraint(state.profile_data, d, i);
+    });
+    dispatch.changed(state.profile_data);
+    interactor.update();
+  }
+  
+  function handle_line_dblclick(d,i) {
+    var xi = x.invert(d3.mouse(this)[0]);
+    console.log(xi, d, i);
+    /*
+    var new_xlist = d.map(function(dd) {return dd[0]});
+    
+    new_xlist.push(xi);
+    new_xlist = new_xlist.sort(function(a,b) {return Math.sign(a-b)});
+    var new_index = new_xlist.indexOf(xi);
+    var index_below = Math.max(new_index - 1, 0);
+    var x_below = d[index_below][0];
+    var old_thickness = source_data[new_index].thickness;
+    var new_thickness_below = Math.max(xi - x_below, 0);
+    var new_thickness_above = old_thickness - new_thickness_below;
+    var new_layer = jQuery.extend(true, {}, source_data[new_index]);
+    new_layer.thickness = new_thickness_above;
+    source_data[new_index].thickness = new_thickness_below;
+    source_data.splice(new_index+1, 0, new_layer);
+    zoomed();
+    d3.event.preventDefault();
+    d3.event.stopPropagation();
+    */
+  }
+  
+  interactor.x = function(_) {
+    if (!arguments.length) return x;
+    x = _;
+    return interactor;
+  };
+
+  interactor.y = function(_) {
+    if (!arguments.length) return y;
+    y = _;
+    return interactor;
+  };
+  
+  interactor.constraints = function(_) {
+    if (!arguments.length) return constraints;
+    constraints = _;
+    return interactor;
+  };
+  
+  interactor.state = state;
+  interactor.dispatch = dispatch;
+  
+  return interactor
+}
