@@ -251,19 +251,24 @@ function magProfileChart(options_override) {
         .on("dblclick.zoom", null)
         //.on("dblclick.resetzoom", null)
         .on("dblclick.resetzoom", function() {do_autoscale(); resetzoom()});
-          
-      var axes = svg.append("g")
-        .attr("class", "axes")
-        .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");
         
       var mainview = svg.append("g")
         .attr("class", "mainview")
         .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");  
       
+      mainview.append("rect")
+        .attr("width", width)
+        .attr("height", height)
+        .classed("background", true);
+        
       mainview.append("g")
         .attr("class", "legend")
         .attr("transform", "translate(" + (width-65) + ",25)");
-          //.call(zoom);
+      
+      var axes = svg.append("g")
+        .attr("class", "axes")
+        .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");
+            
       axes.append("g")
         .attr("class", "x axis")
         .append("text")
@@ -310,6 +315,12 @@ function magProfileChart(options_override) {
       chart.svg = svg;
       chart.g = svg.selectAll("g.mainview");
       
+      function apply_constraints(d, i, series, pd) {
+        if (i==0) { d[0] = 0.0; }
+        // fix mu for last point to be zero:
+        if (i == (pd[0].length - 1) && series == 1) { d[1]=0; }
+      }
+      
       var point_drag = d3.behavior.drag();
       point_drag
         .on("dragstart.point", function() {d3.event.sourceEvent.stopPropagation()})
@@ -317,14 +328,21 @@ function magProfileChart(options_override) {
             var xi = x.invert(x(d[0]) + d3.event.dx);
             var yi = y.invert(y(d[1]) + d3.event.dy);
             var pd = d3.select(this.parentNode).data();
+            var series = parseInt(d3.select(this.parentNode).attr("series"));
+            var arrays = svg.selectAll("g.series").data();
             d[0] = xi;
             d[1] = yi;
+            apply_constraints(d, i, series, arrays);
+            xi = d[0];
+            yi = d[1];
             pd[0][i][1] = yi;
-            var arrays = svg.selectAll("g.series").data();
             arrays[0][i][0] = xi; // set the x value of the first array
             var new_sourcedata = arrays_to_data(arrays);
-            source_data = new_sourcedata;
-            console.log(source_data);
+            //source_data = new_sourcedata;
+            // go to some lengths to avoid destroying the original data object:
+            // just empty it then fill it up again.
+            source_data.splice(0, source_data.length);
+            source_data.push.apply(source_data, new_sourcedata);
             zoomed();
             d3.event.sourceEvent.stopPropagation();
             //chart.update();
@@ -467,6 +485,7 @@ function magProfileChart(options_override) {
         .enter()
           .append("path")
           .attr("class", "line")
+          .attr("series", function(d,i) {return i.toFixed()})
           .attr('stroke', function(d,i){
             return colors[i%colors.length];
           })
@@ -484,11 +503,11 @@ function magProfileChart(options_override) {
         .data(filterShowOption('show_points', data_to_arrays(data)))
         .enter().append("g")
           .attr("class", "series")
+          .attr("series", function(d,i) {return i.toFixed()})
           .style("fill", function(d, i) { return colors[i % colors.length];  });
       var update_sel = chart.g.selectAll("g.series").selectAll(".dot")
           .data(function(d) { return d; });
       update_sel.enter().append("circle")
-          //.filter(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
           .attr("class", "dot")
           .attr("clip-path", "url(#d3clip_" + id.toFixed() + ")")
           .attr("r", options.point_size)
@@ -528,7 +547,6 @@ function magProfileChart(options_override) {
       chart.draw_points(source_data);
       
       chart.interactors().forEach(function(d,i) { if (d.update) {d.update()}});
-      console.log("zoomed");
       chart.dispatch.zoomed(source_data);
     }
     
@@ -737,7 +755,7 @@ function magProfileChart(options_override) {
         
       chart.svg.attr("width", width + options.margin.left + options.margin.right)
         .attr("height", height + options.margin.top + options.margin.bottom);
-      chart.svg.select("clipPath rect").attr("width", width).attr("height", height);
+      chart.svg.selectAll("clipPath rect, rect.background").attr("width", width).attr("height", height);
       chart.svg.selectAll("g.axes g.x").attr("transform", "translate(0," + height + ")");
       
       chart.svg.selectAll("g.x.axis text").attr("x", width/2.0);
