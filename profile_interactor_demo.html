@@ -16,6 +16,16 @@ svg .interactors {
   cursor: move;
 }
 
+svg circle.corner {
+  stroke-width: 0px;
+}
+
+svg circle.corner.selected {
+  stroke: DarkOrange;
+  stroke-width: 8px;
+}
+
+
 </style>
 <body>
 <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
@@ -58,6 +68,7 @@ var profile_data2 = [
 var opts1 = { 
       type:'Profile', 
       name:'profile_1',
+      radius: 5,
       series: [
         {"id": "sld"},
         {"id": "mu"}

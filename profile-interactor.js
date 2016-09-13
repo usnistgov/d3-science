@@ -17,6 +17,7 @@ function profileInteractor(state, x, y) {
   var close_path = (state.close_path == null) ? false : state.close_path;
   var fixed = (state.fixed == null) ? false : state.fixed;
   var cursor = (fixed) ? "auto" : "move";
+  var draw_extensions = (state.draw_extensions == null) ? true : false;
   var series = state.series || [];
   var constraints = [];
 
@@ -27,14 +28,28 @@ function profileInteractor(state, x, y) {
          
   
   function data_to_pairs(data, column) {
-    var x = 0;    
-    return data.map(function(d, i) { return [x+=d.thickness, d[column], column] });
+    var xi = 0;    
+    return data.map(function(d, i) { return [xi+=d.thickness, d[column], column] });
   }
   
   function data_to_arrays(data) {
     //var columns = ["sld_n", "sld_m", "theta_m"];
     return series.map(function(s) { return data_to_pairs(data, s.id) });
   }
+  
+  function data_to_edges(data) {
+    return series.map(function(s) { 
+      var xi = 0,
+          column = s.id,
+          yi = data[0][column],
+          edges = [];
+      data.forEach(function(d) {
+        edges.push([[xi, yi, column, 'v'], [xi, yi=d[column], column, 'v']])
+        edges.push([[xi, yi, column, 'h'], [xi+=d.thickness, yi, column, 'h']])
+      });
+      return edges;
+    })
+  } 
   
   function arrays_to_data(arrays) {
     var columns = series.map(function(s) { return s.id });
@@ -87,7 +102,7 @@ function profileInteractor(state, x, y) {
 
     interactor.update = function() {
       var edge_groups_sel = group.selectAll("g.edges")
-        .data(data_to_arrays(state.profile_data))
+        .data(data_to_edges(state.profile_data))
       edge_groups_sel
         .enter().append("g")
             .attr("class", "edges")
@@ -98,7 +113,6 @@ function profileInteractor(state, x, y) {
       edge_groups_sel
         .exit().remove()
       //if (!fixed) edges.call(drag_edge);
-        
       var corner_groups_sel = group.selectAll("g.corners")
         .data(data_to_arrays(state.profile_data))
       corner_groups_sel
@@ -117,17 +131,37 @@ function profileInteractor(state, x, y) {
         if (!fixed) new_corners.call(drag_corner);
         corners
           .attr("cx", function(dd) { return x(dd[0]); })
-          .attr("cy", function(dd) { return y(dd[1]); });
+          .attr("cy", function(dd) { return y(dd[1]); })
+          .on("click", function() { 
+            corner_groups_sel.selectAll("circle.corner")
+              .attr("r", radius)
+              .classed("selected", false);
+            d3.select(this).attr("r", radius*2).classed("selected", true);
+          })
+            
         corners.exit().remove();
       });
         
       edge_groups_sel.each(function(d,i) {
-        var edges = d3.select(this).selectAll('.edge').data([d]);
+        var edges = d3.select(this).selectAll('.edge').data(d);
         edges.enter().append("path")
           .classed("edge", true)
-          .attr("side", function(dd,ii) { return ii.toFixed()})       
-        edges.attr("d", line)
+          .attr("side", function(dd,ii) { return ii.toFixed()})
+          .attr("direction", function(d) { console.log(d); return d[0][3] })
+          .on("dblclick", function(dd, ii) { console.log(d, i, "dblclick!"); })    
         edges.exit().remove();
+        if (!draw_extensions) {
+          var left_ext = d3.select(this).selectAll('.left.extension')
+            .data([[[x.invert(-10) , d[0][1]], d[0]]])
+            .enter().append("path")
+            .classed("left extension", true)
+          var right_ext = d3.select(this).selectAll('.right.extension')
+            .data([[[x.invert(x.range()[1]+10) , d.slice(-1)[0][1]], d.slice(-1)[0]]])
+            .enter().append("path")
+            .classed("right extension", true)
+        }
+        d3.select(this).selectAll(".edge, .extension").attr("d", line);
+        
       });
         
       // fire!
