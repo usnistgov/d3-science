@@ -94,6 +94,10 @@ function profileInteractor(state, x, y) {
   var drag_corner = d3.behavior.drag()
     .on("drag", dragmove_corner)
     .on("dragstart", function() { d3.event.sourceEvent.stopPropagation(); });
+    
+  var drag_edge = d3.behavior.drag()
+    .on("drag", dragmove_edge)
+    .on("dragstart", function() { d3.event.sourceEvent.stopPropagation(); });
   
   function interactor(selection) {
     var group = selection.append("g")
@@ -112,7 +116,7 @@ function profileInteractor(state, x, y) {
             .style("fill", "none")
       edge_groups_sel
         .exit().remove()
-      //if (!fixed) edges.call(drag_edge);
+      
       var corner_groups_sel = group.selectAll("g.corners")
         .data(data_to_arrays(state.profile_data))
       corner_groups_sel
@@ -136,7 +140,7 @@ function profileInteractor(state, x, y) {
             corner_groups_sel.selectAll("circle.corner")
               .attr("r", radius)
               .classed("selected", false);
-            d3.select(this).attr("r", radius*2).classed("selected", true);
+            d3.select(this).attr("r", radius*1.2).classed("selected", true);
           })
             
         corners.exit().remove();
@@ -144,19 +148,44 @@ function profileInteractor(state, x, y) {
         
       edge_groups_sel.each(function(d,i) {
         var edges = d3.select(this).selectAll('.edge').data(d);
-        edges.enter().append("path")
+        var new_edges = edges.enter().append("path")
           .classed("edge", true)
           .attr("side", function(dd,ii) { return ii.toFixed()})
           .attr("direction", function(d) { return d[0][3] })
-          .on("dblclick", function(dd, ii) { console.log(d, i, "dblclick!"); })    
+        if (!fixed) new_edges.call(drag_edge);
+        d3.select(this).selectAll('.edge').on("dblclick", function(dd, ii) {
+          var direction = d3.select(this).attr("direction"),
+              old_row_index = Math.floor(ii/2),
+              old_row = state.profile_data[old_row_index],
+              new_row = jQuery.extend(true, {}, old_row); 
+          if (direction == "h") {
+            var xi = x.invert(d3.mouse(this)[0]),
+                thickness_below = xi - d[ii][0][0],
+                thickness_above = d[ii][1][0] - xi;
+            new_row.thickness = thickness_below;
+            old_row.thickness = thickness_above;
+          }
+          else if (direction == "v") {
+            var yi = y.invert(d3.mouse(this)[1]),
+                col = state.series[i].id;
+            new_row.thickness = 0;
+            new_row[col] = yi;
+          }            
+          state.profile_data.splice(old_row_index, 0, new_row); 
+          d3.event.preventDefault();
+          d3.event.stopPropagation();
+          dispatch.changed(state.profile_data);
+          interactor.update();
+        })
+                
         edges.exit().remove();
-        if (!draw_extensions) {
+        if (draw_extensions) {
           var left_ext = d3.select(this).selectAll('.left.extension')
-            .data([[[x.invert(-10) , d[0][1]], d[0]]])
+            .data([[[x.invert(-10) , d[0][0][1]], d[0][0]]])
             .enter().append("path")
             .classed("left extension", true)
           var right_ext = d3.select(this).selectAll('.right.extension')
-            .data([[[x.invert(x.range()[1]+10) , d.slice(-1)[0][1]], d.slice(-1)[0]]])
+            .data([[[x.invert(x.range()[1]+10) , d.slice(-1)[0][0][1]], d.slice(-1)[0][0]]])
             .enter().append("path")
             .classed("right extension", true)
         }
@@ -185,28 +214,28 @@ function profileInteractor(state, x, y) {
     interactor.update();
   }
   
-  function handle_line_dblclick(d,i) {
-    var xi = x.invert(d3.mouse(this)[0]);
-    console.log(xi, d, i);
-    /*
-    var new_xlist = d.map(function(dd) {return dd[0]});
-    
-    new_xlist.push(xi);
-    new_xlist = new_xlist.sort(function(a,b) {return Math.sign(a-b)});
-    var new_index = new_xlist.indexOf(xi);
-    var index_below = Math.max(new_index - 1, 0);
-    var x_below = d[index_below][0];
-    var old_thickness = source_data[new_index].thickness;
-    var new_thickness_below = Math.max(xi - x_below, 0);
-    var new_thickness_above = old_thickness - new_thickness_below;
-    var new_layer = jQuery.extend(true, {}, source_data[new_index]);
-    new_layer.thickness = new_thickness_above;
-    source_data[new_index].thickness = new_thickness_below;
-    source_data.splice(new_index+1, 0, new_layer);
-    zoomed();
-    d3.event.preventDefault();
-    d3.event.stopPropagation();
-    */
+  function dragmove_edge(d,i) {
+    var new_x = x.invert(d3.event.x),
+        new_y = y.invert(d3.event.y);
+    var new_dx = x.invert(x(0) + d3.event.dx),
+        new_dy = y.invert(y(0) + d3.event.dy);
+    var direction = d3.select(this).attr("direction"),
+        old_row_index = Math.floor(i/2);
+    if (direction == "h") {
+      state.profile_data[old_row_index][d[0][2]] = new_y;
+    }
+    else if (direction == "v") {
+      var new_thickness = new_x - d[0][0];
+      old_row_index -= 1;
+      if (old_row_index >= 0) {
+        state.profile_data[old_row_index].thickness += new_dx;
+      }
+    }
+    constraints.forEach(function(constraint) {
+      constraint(state.profile_data, d, old_row_index);
+    });
+    dispatch.changed(state.profile_data);
+    interactor.update();
   }
   
   interactor.x = function(_) {
