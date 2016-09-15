@@ -40,10 +40,10 @@ function xyChart(options_override) {
   var interactors = [];
   
   this.options = options;
-  var max_y = -Infinity;
-  var min_y = Infinity;
-  var max_x = -Infinity;
-  var min_x = Infinity;
+  var max_y = (options.max_y == null) ? -Infinity : options.max_y;
+  var min_y = (options.min_y == null) ? Infinity : options.min_y;
+  var max_x = (options.max_x == null) ? -Infinity : options.max_x;
+  var min_x = (options.min_x == null) ? Infinity : options.min_x;
   var zoomRect = false;
   var zoomScroll = false;
     
@@ -676,6 +676,7 @@ function xyChart(options_override) {
       zoomScroll = _;
       if (zoomScroll == true) {
         chart.svg.call(zoom);
+        chart.svg.on("dblclick.zoom", null);
       }
       else if (zoomScroll == false) {
         chart.svg.on(".zoom", null);

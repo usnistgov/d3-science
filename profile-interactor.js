@@ -147,7 +147,7 @@ function profileInteractor(state, x, y) {
         edges.enter().append("path")
           .classed("edge", true)
           .attr("side", function(dd,ii) { return ii.toFixed()})
-          .attr("direction", function(d) { console.log(d); return d[0][3] })
+          .attr("direction", function(d) { return d[0][3] })
           .on("dblclick", function(dd, ii) { console.log(d, i, "dblclick!"); })    
         edges.exit().remove();
         if (!draw_extensions) {
