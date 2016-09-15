@@ -653,15 +653,27 @@ function xyChart(options_override) {
       return chart;
     };
     
-    chart.xmin = function(_) {
+    chart.min_x = function(_) {
       if (!arguments.length) return min_x;
       min_x = _;
       return chart;
     };
     
-    chart.xmax = function(_) {
+    chart.max_x = function(_) {
       if (!arguments.length) return max_x;
       max_x = _;
+      return chart;
+    };
+    
+    chart.min_y = function(_) {
+      if (!arguments.length) return min_y;
+      min_y = _;
+      return chart;
+    };
+    
+    chart.max_y = function(_) {
+      if (!arguments.length) return max_y;
+      max_y = _;
       return chart;
     };
     
