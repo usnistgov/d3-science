@@ -428,12 +428,12 @@ function xyChart(options_override) {
               .attr("y", i*25 + 15)
               .attr("width", 10)
               .attr("height", 10)
-              .style("fill", colors[i%colors.length])
+              .style("fill", get_series_color(null, i))
               .on("mouseover", function() {
-                d3.selectAll('.line')[0][i].classList.add('highlight');
+                chart.svg.selectAll('path.line').classed('highlight', function(d,ii) {return ii == i});
               })
               .on("mouseout", function() {
-                d3.selectAll('.line')[0][i].classList.remove('highlight');
+                chart.svg.selectAll('path.line').classed('highlight', false);
               });
             
             g.append("text")
@@ -442,12 +442,12 @@ function xyChart(options_override) {
               .attr("height",30)
               .attr("width",100)
               .style("text-anchor", "start")
-              .style("fill", colors[i%colors.length])
+              .style("fill", get_series_color(null, i))
               .on("mouseover", function() {
-                d3.selectAll('.line')[0][i].classList.add('highlight');
+                chart.svg.selectAll('path.line').classed('highlight', function(d,ii) {return ii == i});
               })
               .on("mouseout", function() {
-                d3.selectAll('.line')[0][i].classList.remove('highlight');
+                chart.svg.selectAll('path.line').classed('highlight', false);
               });
           });
         el.selectAll("text")
@@ -470,9 +470,7 @@ function xyChart(options_override) {
         .enter()
           .append("path")
           .attr("class", "line")
-          .attr('stroke', function(d,i){
-            return colors[i%colors.length];
-          })
+          .attr('stroke', get_series_color)
       
       chart.g.selectAll('path.line')
         .attr("d", line);
@@ -486,7 +484,7 @@ function xyChart(options_override) {
         .data(filterShowOption('show_points', data))
         .enter().append("g")
           .attr("class", "series")
-          .style("fill", function(d, i) { return colors[i % colors.length];  });
+          .style("fill", get_series_color);
       var update_sel = chart.g.selectAll("g.series").selectAll(".dot")
           .data(function(d) { return d; });
       update_sel.enter().append("circle")
@@ -517,7 +515,7 @@ function xyChart(options_override) {
        .data(filterShowOption('show_errorbars', data))
        .enter().append("g")
           .classed("errorbars", true)
-          .style("stroke", function(d, i) { return colors[i % colors.length];  })
+          .style("stroke", get_series_color)
           .style("stroke-width", "1.5px")
       var update_sel = chart.g.selectAll(".errorbars").selectAll(".errorbar")
           .data(function(d,i) { return d; })
@@ -566,6 +564,11 @@ function xyChart(options_override) {
       })
     }
     
+    function get_series_color(_, i) {
+      // use color specified in options.series, if it exists
+      // otherwise grab from the default colors list:
+      return (options.series[i] || {}).color || colors[i % colors.length];
+    }
     
     function errorbar_generator(d) {
       var errorbar_width = options.errorbar_width;
