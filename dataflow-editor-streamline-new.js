@@ -398,7 +398,7 @@ dataflow.editor = function(data) {
         .text(function(d) {return d.title || d.module})
         .attr("x", padding)
         .attr("y", padding)
-        .style("dominant-baseline", "text-before-edge")
+        .attr("dy", "1em")
         .style("height", height)
         .style("padding", padding)
         .style("width", width)
@@ -411,9 +411,9 @@ dataflow.editor = function(data) {
       inputs
           .append("text")
             .classed("input label", true)
-            .style("dominant-baseline", "text-before-edge")
             .attr("x", padding)
             .attr("y", padding)
+            .attr("dy", "1em")
             .style("padding", padding)
             .text(function(d) { return d.label; });
       
@@ -449,9 +449,9 @@ dataflow.editor = function(data) {
       outputs
           .append("text")
             .classed("output label", true)
-            .style("dominant-baseline", "text-before-edge")
             .attr("x", padding)
             .attr("y", padding)
+            .style("dy", "1em")
             .style("padding", padding)
             .text(function(d) { return d.label; });
             
