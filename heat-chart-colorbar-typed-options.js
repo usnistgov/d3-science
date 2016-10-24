@@ -444,6 +444,22 @@ function heatChart(options_override) {
     return chart;
   };
   
+  chart.xlabel = function(_) {
+    if (!arguments.length) return options.xlabel;
+    options.xlabel = xlabel;
+    options.axes.xaxis.label = xlabel;
+    chart.svg.select(".x.axis .x.axis-label").text(xlabel);
+    return chart;
+  }
+  
+  chart.ylabel = function(_) {
+    if (!arguments.length) return options.ylabel;
+    options.ylabel = ylabel;
+    options.axes.yaxis.label = ylabel;
+    chart.svg.select(".y.axis .y.axis-label").text(ylabel);
+    return chart;
+  }
+  
   // drop all the other options into the chart namespace,
   // making objects update rather than overwrite
   for (var attr in options) {
