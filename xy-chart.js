@@ -794,5 +794,7 @@ function xyChart(options_override) {
     
     chart.resetzoom = resetzoom;
     
+    chart.type = "xy";
+    
     return chart;
 }

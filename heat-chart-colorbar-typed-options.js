@@ -845,6 +845,8 @@ function heatChart(options_override) {
     _redraw_main = true;
   }
   
+  chart.type = "heatmap_2d";
+  
   return chart
   
 }
