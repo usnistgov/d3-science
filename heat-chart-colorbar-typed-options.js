@@ -450,7 +450,9 @@ function heatChart(options_override) {
     if (options.axes && options.axes.xaxis) {
       options.axes.xaxis.label = _;
     }
-    chart.svg.select(".x.axis .x.axis-label").text(_);
+    if (chart.svg && chart.svg.select) {
+      chart.svg.select(".x.axis .x.axis-label").text(_);
+    }
     return chart;
   }
   
@@ -460,7 +462,9 @@ function heatChart(options_override) {
     if (options.axes && options.axes.yaxis) {
       options.axes.yaxis.label = _;
     }
-    chart.svg.select(".y.axis .y.axis-label").text(_);
+    if (chart.svg && chart.svg.select) {
+      chart.svg.select(".y.axis .y.axis-label").text(_);
+    }
     return chart;
   }
   
