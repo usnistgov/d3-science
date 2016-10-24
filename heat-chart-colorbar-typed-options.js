@@ -446,17 +446,17 @@ function heatChart(options_override) {
   
   chart.xlabel = function(_) {
     if (!arguments.length) return options.xlabel;
-    options.xlabel = xlabel;
-    options.axes.xaxis.label = xlabel;
-    chart.svg.select(".x.axis .x.axis-label").text(xlabel);
+    options.xlabel = _;
+    options.axes.xaxis.label = _;
+    chart.svg.select(".x.axis .x.axis-label").text(_);
     return chart;
   }
   
   chart.ylabel = function(_) {
     if (!arguments.length) return options.ylabel;
-    options.ylabel = ylabel;
-    options.axes.yaxis.label = ylabel;
-    chart.svg.select(".y.axis .y.axis-label").text(ylabel);
+    options.ylabel = _;
+    options.axes.yaxis.label = _;
+    chart.svg.select(".y.axis .y.axis-label").text(_);
     return chart;
   }
   
