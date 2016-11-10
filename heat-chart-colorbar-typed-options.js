@@ -253,7 +253,7 @@ function heatChart(options_override) {
           .enter().append("text")
             .attr("class", "position-cursor")
             .attr("x", width - 10)
-            .attr("y", height + 35)
+            .attr("y", height + options.margin.bottom)
             .style("text-anchor", "end");
           
         var follow = function (){  
