@@ -216,7 +216,10 @@
       .enter().append("polygon")
         .classed("detector", true)
         .attr("points", render_detector)
-     
+    
+    var detector_bb = svg.selectAll("polygon.detector")[0].map(function(p) {return p.getBBox()});
+    var slits_bb = svg.selectAll("g.slit polygon")[0].map(function(p) {return p.getBBox()});
+    
     var drag_detector = d3.behavior.drag()
       .on("drag", dragmove_detector)
       .origin(function(d) { 
@@ -240,6 +243,8 @@
         .attr("points", render_slit_above)
       svg.selectAll("g.slit polygon.below")
         .attr("points", render_slit_below)
+      detector_bb = svg.selectAll("polygon.detector")[0].map(function(p) {return p.getBBox()});
+      slits_bb = svg.selectAll("g.slit polygon")[0].map(function(p) {return p.getBBox()});
     }
     
     detector.call(drag_detector);
@@ -294,6 +299,8 @@
         .attr("points", render_detector)
         .on("mouseover", show_rotators)
         .on("mouseout", function(d) {svg.selectAll("path.rotator").remove()})
+    
+    var sample_bb = svg.selectAll("polygon.sample")[0].map(function(p) {return p.getBBox()});
         
     var dragr_sample = d3.behavior.drag()
       .on("drag", dragrotate_sample)
@@ -316,6 +323,7 @@
       svg.select("polygon.sample-translate").attr("points", render_sample_smaller);
       svg.selectAll("path.rotator").remove();
       show_rotators(d);
+      sample_bb = svg.selectAll("polygon.sample")[0].map(function(p) {return p.getBBox()});
     }
     
     sample.call(dragr_sample);
@@ -353,6 +361,7 @@
       svg.select("polygon.sample-translate").attr("points", render_sample_smaller);
       svg.selectAll("path.translator").remove();
       show_translators(d);
+      sample_bb = svg.selectAll("polygon.sample")[0].map(function(p) {return p.getBBox()});
     }
     
     sample_translator.call(dragt_sample);
@@ -426,16 +435,34 @@
         
   var gauss = d3.random.normal(0,1);
   var t = d3.timer(tick);
+  var td = d3.timer(draw);
   var ticker; // = setInterval(tick, 20);
   var particles = [];
   var part_id = 0,
       prev_elapsed = 0,
       detected = [];
+  
+  function draw(elapsed) {
+    var neutrons = svg.selectAll("circle.neutron");
+     neutrons  
+      .attr("cx", function(d) { return d.x })
+      .attr("cy", function(d) { return d.y })
+  }
+  
   function detection_handler(elapsed) {
     detected.push(elapsed);
-  }    
+  }
   function tick(elapsed) {
     //var elapsed = elapsed || (new Date()).getTime();
+    var neutrons = svg.selectAll("circle.neutron");
+    neutrons.each(function(d) {
+      var newx = d.x_start + (elapsed - d.t0) * d.vx;
+        d.old_x = d.x;
+        d.x = newx;
+      var newy = d.y_start + (elapsed - d.t0) * d.vy;
+        d.old_y = d.y;
+        d.y = newy;
+    })
     var dt = 1000.0/60.0;
     var number = Math.ceil(1000.0/dt * rate);
     for (var i=0; i<number; i++) {
@@ -443,7 +470,7 @@
         y_start: (Math.random() - 0.5)*apertureHeight + yOffset,
         x_start: (gauss() - 1.0) * speed * 20 * dt,
         angle: (Math.random() - 0.5) * max_angle,
-        speed: speed,
+        speed: speed, //*(1.0 + 0.03*(Math.random() - 0.5)),
         t0: elapsed,
         id: part_id++
       }
@@ -469,7 +496,8 @@
         .attr("r", r)
         //.attr("fill", "blue")
     
-    var neutrons = svg.selectAll("circle.neutron")
+    //var neutrons = svg.selectAll("circle.neutron")
+    /*
     neutrons  
       .attr("cx", function(d) {
         var newx = d.x_start + (elapsed - d.t0) * d.vx;
@@ -485,18 +513,21 @@
         //if (newy > height) {d.reap = true};
         return newy; 
       })
-
+    */
+    
     var slits_poly = svg.selectAll("g.slit polygon")[0];
-    var slits_bb = slits_poly.map(function(p) {return p.getBBox()});
+    //var slits_bb = slits_poly.map(function(p) {return p.getBBox()});
     var det_poly = svg.selectAll("polygon.detector")[0];
-    var detector_bb = det_poly.map(function(p) {return p.getBBox()});
+    //var detector_bb = det_poly.map(function(p) {return p.getBBox()});
     var sample_poly = svg.selectAll("polygon.sample")[0];
-    var sample_bb = sample_poly.map(function(p) {return p.getBBox()});
+    //var sample_bb = sample_poly.map(function(p) {return p.getBBox()});
+    
     neutrons.each(function(d) {
       if (d.y > height || d.x > width) {d.reap = true; return}
       var step_x = Math.abs(d.x - d.old_x);
       var step_y = Math.abs(d.y - d.old_y);
       var line = [{x: d.old_x, y: d.old_y}, {x: d.x, y: d.y}];
+      
       for (var p=0; p<slits_poly.length; p++) {
         var poly_points = slits_poly[p].points;
         var bb = slits_bb[p];
@@ -511,6 +542,7 @@
           }
         }
       }
+      
       for (var det=0; det<det_poly.length; det++) {
         var bb = detector_bb[det];
         if (d.x > (bb.x - step_x) &&
@@ -525,6 +557,7 @@
           }
         }
       }
+      
       for (var sam=0; sam<sample_poly.length; sam++) {
         var bb = sample_bb[sam];
         if (d.x > (bb.x - step_x) &&
@@ -549,7 +582,9 @@
           }
         }
       }
+      
     })
+    
     //console.log("before: ", particles.length)
     particles = particles.filter(function(d,i) {return (d.reap != true)});
     //console.log("after: ", particles.length)
