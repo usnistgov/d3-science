@@ -1,6 +1,18 @@
 // requires: 
 //   - jquery-extend.js (or jQuery, to get jQuery.extend)
 //   - d3.js
+// adding requireJS pattern (amdWeb.js):
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD. Register as an anonymous module.
+        define(['d3', 'jquery'], factory);
+    } else {
+        // Browser globals
+        root.xyChart = factory(root.d3, root.jQuery);
+    }
+}(this, function (d3, jQuery) {    
+
+//define(["d3", "jquery"], function(d3, jQuery) {
 
 if (!d3.hasOwnProperty("id")) {
   d3.id = (function(){var a = 0; return function(){return a++}})();
@@ -46,6 +58,7 @@ function xyChart(options_override) {
   var min_x = (options.min_x == null) ? Infinity : options.min_x;
   var zoomRect = false;
   var zoomScroll = false;
+  var zoomed = false; // zoomed state.
     
   var labels = options.series.map(function(d, i) { return d.label || i });
   var x = d3.scale[options.xtransform]();
@@ -55,7 +68,7 @@ function xyChart(options_override) {
       xAxisGrid = d3.svg.axis(),
       yAxisGrid = d3.svg.axis();
   
-  var zoom = d3.behavior.zoom().x(x).y(y).on("zoom", zoomed);
+  var zoom = d3.behavior.zoom().x(x).y(y).on("zoom", function() { zoomed = true; update() });
   var base_zoom_offset = 0.05; // zoom out 5% from min and max by default;
   var resetzoom = function() {
     var xoffset = (x.range()[1] - x.range()[0]) * base_zoom_offset,
@@ -63,7 +76,8 @@ function xyChart(options_override) {
     zoom.x(x.domain([min_x, max_x]))
         .y(y.domain([min_y, max_y]))
         .scale(1.0 - (2.0 * base_zoom_offset)).translate([xoffset, yoffset]);
-    zoomed();
+    zoomed = false;
+    update();
     //.call(this);
   }
   var source_data;
@@ -165,7 +179,7 @@ function xyChart(options_override) {
       chart.outercontainer = outercontainer;
       source_data = data;
       //chart.update = function() { outercontainer.transition().call(chart); };   
-      chart.update = zoomed;
+      chart.update = update;
       if (options.autoscale) {
         do_autoscale();
       }
@@ -279,7 +293,8 @@ function xyChart(options_override) {
                 */
               }
               rect.remove();
-              zoomed();
+              zoomed = true;
+              update();
             }, true);
           d3.event.sourceEvent.stopPropagation();
         });
@@ -530,7 +545,7 @@ function xyChart(options_override) {
     //************************************************************
     // Zoom specific updates
     //************************************************************
-    function zoomed() {
+    function update() {
       var svg = chart.svg;
       svg.select(".x.axis").call(xAxis);
       svg.select(".y.axis").call(yAxis); 
@@ -638,9 +653,9 @@ function xyChart(options_override) {
       if (!arguments.length) return source_data;
       source_data = _;
       do_autoscale();
-      x.domain([min_x, max_x]);
-      y.domain([min_y, max_y]);
-      chart.resetzoom();
+      //x.domain([min_x, max_x]);
+      //y.domain([min_y, max_y]);
+      if (!zoomed && options.autofit) { chart.resetzoom(); }
       return chart;
     };
     
@@ -789,7 +804,7 @@ function xyChart(options_override) {
       chart.svg.select(".position-cursor").attr("x", width-10).attr("y", height-10);
       chart.svg.select("g.legend").attr("transform", "translate(" + (width-65) + ",25)");
       
-      zoomed();
+      update();
     }
     
     chart.resetzoom = resetzoom;
@@ -798,3 +813,10 @@ function xyChart(options_override) {
     
     return chart;
 }
+
+
+    // Just return a value to define the module export.
+    // This example returns an object, but the module
+    // can return a function as the exported value.
+    return xyChart;
+}));
