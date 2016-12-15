@@ -124,7 +124,7 @@ rect.zoom {
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
   <script src="jquery-extend.js"></script>
-  <script src="xy-chart.js" charset="utf-8"></script>
+  <script src="lib/xy-chart.js" charset="utf-8"></script>
   <script src="rectangle-interactor.js"></script>
   <script src="ellipse-interactor.js"></script>
   <script src="angle-slice-interactor.js"></script>
@@ -135,7 +135,7 @@ rect.zoom {
 <script>
 var rectangle;
 window.onload = function() {    
-  chart = xyChart({show_line: true, show_errorbars: true, ytransform: 'linear', legend: {show: true}})
+  chart = xyChart.default({show_line: true, show_errorbars: true, ytransform: 'linear', legend: {show: true}})
   var opts1 = { 
       type:'Rectangle', 
       name:'roi_rectangle',
