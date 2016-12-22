@@ -1,7 +1,8 @@
 import * as d3 from 'd3';
-import {extend} from 'jQuery';
+import {extend} from './jquery-extend';
 
 //var extend = jQuery.extend;
+export default xyChart;
 
 if (!d3.hasOwnProperty("id")) {
   d3.id = (function(){var a = 0; return function(){return a++}})();
@@ -815,5 +816,3 @@ function xyChart(options_override) {
     
     return chart;
 }
-
-export default xyChart;

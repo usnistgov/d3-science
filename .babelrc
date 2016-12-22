@@ -1,4 +1,9 @@
 {
   "presets": ["latest"],
+  //"moduleId": "D3Science",
+  //"moduleIds": true,
   "plugins": ["transform-es2015-modules-umd"]
 }
+//"./dataflow-editor-streamline-new.js": "dataflow",
+//"./xy-chart.js": "D3Science",
+//"./profile-interactor.js": "D3Science"

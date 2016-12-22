@@ -125,14 +125,14 @@ canvas {
     }
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
-  <script src="jquery-extend.js"></script>
-  <script src="xy-chart.js" charset="utf-8"></script>
+  <script src="../lib/jquery-extend.js"></script>
+  <script src="../lib/xy-chart.js" charset="utf-8"></script>
 </head>
 <body>
 <!--<script src="d3.v3.min.js"></script>-->
 <script>
 window.onload = function() {    
-  chart = xyChart({show_line: true, show_errorbars: true, ytransform: 'log'})
+  chart = xyChart.default({show_line: true, show_errorbars: true, ytransform: 'log'})
   d3.json("sample_data/pbr_live_data.json", function(error, data) {
       mydata = data;
       c = d3.select("#plot1")

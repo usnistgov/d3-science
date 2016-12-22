@@ -1,6 +1,7 @@
 "use strict";
 import * as d3 from 'd3';
-import extend from 'jquery';
+import {event as currentEvent} from 'd3';
+import {extend} from './jquery-extend';
 
   
 if (!d3.hasOwnProperty("id")) {

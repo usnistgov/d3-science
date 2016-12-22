@@ -123,12 +123,12 @@ rect.zoom {
 }
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
-  <script src="jquery-extend.js"></script>
-  <script src="lib/xy-chart.js" charset="utf-8"></script>
-  <script src="rectangle-interactor.js"></script>
-  <script src="ellipse-interactor.js"></script>
-  <script src="angle-slice-interactor.js"></script>
-  <script src="x-slice-interactor.js"></script>
+  <script src="../lib/jquery-extend.js"></script>
+  <script src="../lib/xy-chart.js" charset="utf-8"></script>
+  <script src="../lib/rectangle-interactor.js"></script>
+  <script src="../lib/ellipse-interactor.js"></script>
+  <script src="../lib/angle-slice-interactor.js"></script>
+  <script src="../lib/x-slice-interactor.js"></script>
 </head>
 <body>
 <!--<script src="d3.v3.min.js"></script>-->
@@ -207,11 +207,11 @@ window.onload = function() {
       c = d3.select("#plot1")
         .data([data[0].data])
         .call(chart);
-      rectangle = new rectangleInteractor(opts1);
-      ellipse_1 = new ellipseInteractor(opts2);
-      ellipse_2 = new ellipseInteractor(opts3);
-      angle_slice = new angleSliceInteractor(opts4);
-      x_slice = new xSliceInteractor(optsx);
+      rectangle = new rectangleInteractor.default(opts1);
+      ellipse_1 = new ellipseInteractor.default(opts2);
+      ellipse_2 = new ellipseInteractor.default(opts3);
+      angle_slice = new angleSliceInteractor.default(opts4);
+      x_slice = new xSliceInteractor.default(optsx);
       chart
         .options(data[0].options)
         .interactors(x_slice)
