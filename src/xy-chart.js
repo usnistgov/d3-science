@@ -50,22 +50,24 @@ function xyChart(options_override) {
   var zoomed = false; // zoomed state.
     
   var labels = options.series.map(function(d, i) { return d.label || i });
-  var x = d3.scale[options.xtransform]();
-  var y = d3.scale[options.ytransform]();
-  var xAxis = d3.svg.axis(),
-      yAxis = d3.svg.axis(),
-      xAxisGrid = d3.svg.axis(),
-      yAxisGrid = d3.svg.axis();
+  var scaleMap = {'linear': d3.scaleLinear, 'log': d3.scaleLog, 'pow': d3.scalePow, 'sqrt': d3.scaleSqrt}
+  var x = scaleMap[options.xtransform]();
+  var y = scaleMap[options.ytransform]();
+  var xAxis = d3.axisBottom(x),
+      yAxis = d3.axisLeft(y),
+      xAxisGrid = d3.axisBottom(x),
+      yAxisGrid = d3.axisLeft(y);
   
-  var zoom = d3.behavior.zoom().x(x).y(y).on("zoom", function() { zoomed = true; update() });
+  var zoom = d3.zoom().on("zoom", function() { zoomed = true; update() });
   var base_zoom_offset = 0.05; // zoom out 5% from min and max by default;
-  var resetzoom = function(ev) {
+  var resetzoom = function() {
     var xoffset = (x.range()[1] - x.range()[0]) * base_zoom_offset,
         yoffset = (y.range()[1] + y.range()[0]) * base_zoom_offset;
-    zoom.x(x.domain([min_x, max_x]))
-        .y(y.domain([min_y, max_y]))
-        .scale(1.0 - (2.0 * base_zoom_offset)).translate([xoffset, yoffset]);
+    //zoom.x(x.domain([min_x, max_x]))
+    //    .y(y.domain([min_y, max_y]))
+    //    .scale(1.0 - (2.0 * base_zoom_offset)).translate([xoffset, yoffset]);
     zoomed = false;
+    
     update();
     //.call(this);
   }
@@ -190,8 +192,6 @@ function xyChart(options_override) {
 	      .tickSize(-height)
 	      .ticks(options.numberOfTicks)
 	      .tickPadding(10)	
-	      .tickSubdivide(true)	
-        .orient("bottom")
         .tickFormat("");	
 	
       yAxisGrid
@@ -199,25 +199,19 @@ function xyChart(options_override) {
 	      .tickPadding(10)
 	      .ticks(options.numberOfTicks)
 	      .tickSize(-width)
-	      .tickSubdivide(true)	
-        .orient("left")
         .tickFormat("");
         
       xAxis
         .scale(x)
         .ticks(options.numberOfTicks)
-        .tickPadding(10)	
-        .tickSubdivide(true)	
-        .orient("bottom");
+        .tickPadding(10);
       
       yAxis
         .scale(y)
         .ticks(options.numberOfTicks)
-        .tickPadding(10)	
-        .tickSubdivide(true)
-        .orient("left");
-    
-      zoom.x(x).y(y);
+        .tickPadding(10);
+            
+      //zoom.x(x).y(y);
 
       //************************************************************
       // Generate our SVG object
@@ -237,12 +231,12 @@ function xyChart(options_override) {
         .attr("class", "mainview")
         .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");  
 
-      var drag = d3.behavior.drag();
+      var drag = d3.drag();
       svg.call(drag);
       chart.drag = drag;
       
       drag
-        .on("dragstart.zoomRect", function() {
+        .on("start.zoomRect", function() {
           if (!zoomRect) return;
           var e = mainview.node(),
             origin = d3.mouse(e),
@@ -261,9 +255,9 @@ function xyChart(options_override) {
                 .attr("width", Math.abs(m[0] - origin[0]))
                 .attr("height", Math.abs(m[1] - origin[1]));
             })
-            .on("dragend.zoomRect", function() {
+            .on("end.zoomRect", function() {
               //d3.select(window).on("mousemove.zoomRect", null).on("mouseup.zoomRect", null);
-              drag.on("drag.zoomRect", null).on("dragend.zoomRect", null);
+              drag.on("drag.zoomRect", null).on("end.zoomRect", null);
               d3.select("body").classed("noselect", false);
               var m = d3.mouse(e);
               m[0] = Math.max(0, Math.min(width, m[0]));
@@ -462,7 +456,7 @@ function xyChart(options_override) {
         });
     }
     
-    var line = d3.svg.line()
+    var line = d3.line()
       .defined(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
       .x(function(d) { return x(d[0]); })
       .y(function(d) { return y(d[1]); });

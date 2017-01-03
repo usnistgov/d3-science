@@ -11,12 +11,12 @@ function ellipseInteractor(state, x, y) {
   var name = state.name;
   var point_radius = ( state.point_radius == null ) ? 5 : state.point_radius;
   var dispatch = d3.dispatch("update");
-  var x = x || d3.scale.linear();
-  var y = y || d3.scale.linear();
-  if (x.name != 'i' || y.name != 'i') {
-    throw "circle only defined for linear scales";
-    return
-  }
+  var x = x || d3.scaleLinear();
+  var y = y || d3.scaleLinear();
+  //if (x.name != 'i' || y.name != 'i') {
+  //  throw "circle only defined for linear scales";
+  //  return
+  //}
   if (!('ry' in state)) {
     state.ry = Math.abs(state.rx);
   }
@@ -61,17 +61,17 @@ function ellipseInteractor(state, x, y) {
     }
   }
   
-  var drag_corner = d3.behavior.drag()
+  var drag_corner = d3.drag()
     .on("drag", dragmove_corner)
-    .on("dragstart", function() { currentEvent.sourceEvent.stopPropagation(); });
+    .on("start", function() { currentEvent.sourceEvent.stopPropagation(); });
   
-  var drag_center = d3.behavior.drag()
+  var drag_center = d3.drag()
     .on("drag", dragmove_center)
-    .on("dragstart", function() { currentEvent.sourceEvent.stopPropagation(); });  
+    .on("start", function() { currentEvent.sourceEvent.stopPropagation(); });  
     
-  var drag_edge = d3.behavior.drag()
+  var drag_edge = d3.drag()
     .on("drag", dragmove_edge)
-    .on("dragstart", function() { currentEvent.sourceEvent.stopPropagation(); });
+    .on("start", function() { currentEvent.sourceEvent.stopPropagation(); });
   
 
   function interactor(selection) {
@@ -136,7 +136,7 @@ function ellipseInteractor(state, x, y) {
         
       // fire!
       if (!preventPropagation) {
-        dispatch.update();
+        dispatch.call("update");
       }
     }
   }

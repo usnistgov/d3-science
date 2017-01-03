@@ -13,15 +13,15 @@ function rectangleInteractor(state, x, y) {
   var radius = ( state.radius == null ) ? 5 : state.radius;
   var event_name = "rectangle." + state.name;
   var dispatch = d3.dispatch("update");
-  var x = x || d3.scale.linear();
-  var y = y || d3.scale.linear();
+  var x = x || d3.scaleLinear();
+  var y = y || d3.scaleLinear();
   var show_points = (state.show_points == null) ? true : state.show_points;
   var show_lines = (state.show_lines == null) ? true : state.show_lines;
   var show_center = (state.show_center == null) ? true : state.show_center;
   var fixed = (state.fixed == null) ? false : state.fixed;
   var cursor = (fixed) ? "auto" : "move";
 
-  var line = d3.svg.line()
+  var line = d3.line()
     .x(function(d) { return x(d[0]); })
     .y(function(d) { return y(d[1]); });
          
@@ -66,17 +66,17 @@ function rectangleInteractor(state, x, y) {
     }
   }
   
-  var drag_corner = d3.behavior.drag()
+  var drag_corner = d3.drag()
     .on("drag", dragmove_corner)
-    .on("dragstart", function() { currentEvent.sourceEvent.stopPropagation(); });
+    .on("start", function() { currentEvent.sourceEvent.stopPropagation(); });
   
-  var drag_center = d3.behavior.drag()
+  var drag_center = d3.drag()
     .on("drag", dragmove_center)
-    .on("dragstart", function() { currentEvent.sourceEvent.stopPropagation(); });  
+    .on("start", function() { currentEvent.sourceEvent.stopPropagation(); });  
     
-  var drag_edge = d3.behavior.drag()
+  var drag_edge = d3.drag()
     .on("drag", dragmove_edge)
-    .on("dragstart", function() { currentEvent.sourceEvent.stopPropagation(); });
+    .on("start", function() { currentEvent.sourceEvent.stopPropagation(); });
   
 
   function interactor(selection) {
@@ -135,7 +135,7 @@ function rectangleInteractor(state, x, y) {
         .attr("d", line);
         
       // fire!
-      dispatch.update();
+      dispatch.call("update");
     }
   }
   

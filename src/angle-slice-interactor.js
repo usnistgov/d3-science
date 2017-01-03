@@ -11,12 +11,10 @@ function angleSliceInteractor(state, x, y) {
   var name = state.name;
   var point_radius = ( state.point_radius == null ) ? 5 : state.point_radius;
   var dispatch = d3.dispatch("update");
-  var x = x || d3.scale.linear();
-  var y = y || d3.scale.linear();
-  if (x.name != 'i' || y.name != 'i') {
-    throw "angles only defined for linear scales";
-    return
-  }
+  var x = x || d3.scaleLinear();
+  var y = y || d3.scaleLinear();
+  
+  // TODO: need to check for linear scale somehow - doesn't work otherwise
 
   var show_points = (state.show_points == null) ? true : state.show_points;
   var show_lines = (state.show_lines == null) ? true : state.show_lines;
@@ -97,13 +95,13 @@ function angleSliceInteractor(state, x, y) {
     }
   }
   
-  var drag_center = d3.behavior.drag()
+  var drag_center = d3.drag()
     .on("drag", dragmove_center)
-    .on("dragstart", function() { currentEvent.sourceEvent.stopPropagation(); });  
+    .on("start", function() { currentEvent.sourceEvent.stopPropagation(); });  
     
-  var drag_lines = d3.behavior.drag()
+  var drag_lines = d3.drag()
     .on("drag", dragmove_lines)
-    .on("dragstart", function() { currentEvent.sourceEvent.stopPropagation(); });
+    .on("start", function() { currentEvent.sourceEvent.stopPropagation(); });
   
 
   function interactor(selection) {
@@ -153,7 +151,7 @@ function angleSliceInteractor(state, x, y) {
         
       // fire!
       if (!preventPropagation) {
-        dispatch.update();
+        dispatch.call("update");
       }
     }
   }
