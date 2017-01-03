@@ -60,17 +60,7 @@ function xyChart(options_override) {
   
   var zoom = d3.zoom().on("zoom", function() { zoomed = true; update() });
   var base_zoom_offset = 0.05; // zoom out 5% from min and max by default;
-  var resetzoom = function() {
-    var xoffset = (x.range()[1] - x.range()[0]) * base_zoom_offset,
-        yoffset = (y.range()[1] + y.range()[0]) * base_zoom_offset;
-    //zoom.x(x.domain([min_x, max_x]))
-    //    .y(y.domain([min_y, max_y]))
-    //    .scale(1.0 - (2.0 * base_zoom_offset)).translate([xoffset, yoffset]);
-    zoomed = false;
-    
-    update();
-    //.call(this);
-  }
+  
   var source_data;
   
   function do_autoscale() {
@@ -221,7 +211,7 @@ function xyChart(options_override) {
         //.call(zoom) // call this from zoomScroll setter
         .on("dblclick.zoom", null)
         //.on("dblclick.resetzoom", null)
-        .on("dblclick.resetzoom", resetzoom)
+        .on("dblclick.resetzoom", chart.resetzoom)
           
       var axes = svg.append("g")
         .attr("class", "axes")
@@ -232,8 +222,6 @@ function xyChart(options_override) {
         .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");  
 
       var drag = d3.drag();
-      svg.call(drag);
-      chart.drag = drag;
       
       drag
         .on("start.zoomRect", function() {
@@ -263,8 +251,12 @@ function xyChart(options_override) {
               m[0] = Math.max(0, Math.min(width, m[0]));
               m[1] = Math.max(0, Math.min(height, m[1]));
               if (m[0] !== origin[0] && m[1] !== origin[1]) {
-                zoom.x(x.domain([origin[0], m[0]].map(x.invert).sort(function(a,b) {return a-b})))
-                    .y(y.domain([origin[1], m[1]].map(y.invert).sort(function(a,b) {return a-b})));
+                var x_domain = [origin[0], m[0]].map(x.invert).sort(function(a,b) {return a-b}),
+                    y_domain = [origin[1], m[1]].map(y.invert).sort(function(a,b) {return a-b});
+                console.log(x_domain, y_domain);
+                zoom.extent([[x_domain[0], y_domain[0]], [x_domain[1], y_domain[1]]]); 
+                //zoom.x(x.domain([origin[0], m[0]].map(x.invert).sort(function(a,b) {return a-b})))
+                //    .y(y.domain([origin[1], m[1]].map(y.invert).sort(function(a,b) {return a-b})));
               } 
               else {
                 // reset zoom on single click? No!
@@ -280,6 +272,8 @@ function xyChart(options_override) {
               update();
             }, true);
         });
+      svg.call(drag);
+      chart.drag = drag;
       
       mainview.append("g")
         .attr("class", "legend")
@@ -330,7 +324,7 @@ function xyChart(options_override) {
        
       chart.svg = svg;
       chart.g = svg.selectAll("g.mainview");
-      resetzoom(); // set to 10% zoom out.
+      chart.resetzoom(); // set to 10% zoom out.
 	
       chart.draw_lines(data);
       chart.draw_points(data);
@@ -540,6 +534,10 @@ function xyChart(options_override) {
     //************************************************************
     function update() {
       var svg = chart.svg;
+      svg.transition()
+        .duration(750)
+        // .call(zoom.translate(translate).scale(scale).event); // not in d3 v4
+        //.call( zoom.transform, d3.zoomIdentity.translate(translate[0],translate[1]).scale(scale) ); // updated for d3 v4
       svg.select(".x.axis").call(xAxis);
       svg.select(".y.axis").call(yAxis); 
       svg.select(".x.axis .x.axis-label").text(options.axes.xaxis.label);
@@ -634,6 +632,21 @@ function xyChart(options_override) {
       }
       
       return pathstring;
+    }
+    
+    chart.resetzoom = function() {
+      var xoffset = (x.range()[1] - x.range()[0]) * base_zoom_offset,
+          yoffset = (y.range()[1] + y.range()[0]) * base_zoom_offset;
+      //zoom.x(x.domain([min_x, max_x]))
+      //    .y(y.domain([min_y, max_y]))
+      //    .scale(1.0 - (2.0 * base_zoom_offset)).translate([xoffset, yoffset]);
+      zoomed = false;
+      chart.svg.transition()
+        .duration(750)
+        // .call( zoom.transform, d3.zoomIdentity.translate(0, 0).scale(1) ); // not in d3 v4
+        .call( zoom.transform, d3.zoomIdentity ); // updated for d3 v4
+      update();
+      //.call(this);
     }
     
     chart.options = function(_, clear) {
@@ -804,7 +817,7 @@ function xyChart(options_override) {
       update();
     }
     
-    chart.resetzoom = resetzoom;
+    //chart.resetzoom = resetzoom;
     
     chart.type = "xy";
     
