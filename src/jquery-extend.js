@@ -2,7 +2,7 @@
 'use strict';
 
 export default extend;
-export {extend};
+export {extend, type};
 
 var toString = Object.prototype.toString,
     hasOwn = Object.prototype.hasOwnProperty,
@@ -20,6 +20,10 @@ var toString = Object.prototype.toString,
       "[object RegExp]": "regexp",
       "[object Object]": "object"
     };
+    
+function type(obj) {
+  return obj == null ? String(obj) : class2type[toString.call(obj)] || "object"
+}
 
 var jQuery = {
   isFunction: function (obj) {
@@ -35,9 +39,7 @@ var jQuery = {
   isNumeric: function (obj) {
     return !isNaN(parseFloat(obj)) && isFinite(obj)
   },
-  type: function (obj) {
-    return obj == null ? String(obj) : class2type[toString.call(obj)] || "object"
-  },
+  type: type,
   isPlainObject: function (obj) {
     if (!obj || jQuery.type(obj) !== "object" || obj.nodeType) {
       return false

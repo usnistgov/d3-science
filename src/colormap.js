@@ -10,7 +10,7 @@ export const colormap_names = Object.keys(colormap_data);
 var x = d3.range(256);
 
 export function get_colormap(cmap_name) {
-  var cmap = d3.scale.linear()
+  var cmap = d3.scaleLinear()
     .domain(x)
     .range(colormap_data[cmap_name])
   return cmap
