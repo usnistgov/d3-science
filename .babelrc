@@ -1,5 +1,5 @@
 {
-  "presets": ["latest"],
+  "presets": ["es2015"],
   //"moduleId": "D3Science",
   //"moduleIds": true,
   "plugins": ["transform-es2015-modules-umd"]
