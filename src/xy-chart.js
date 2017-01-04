@@ -112,7 +112,7 @@ function xyChart(options_override) {
     }
     return {min_x: min_x, max_x: max_x, min_y: min_y, max_y: max_y}
   }
-  this.do_autoscale = do_autoscale;
+  chart.do_autoscale = do_autoscale;
     
   // make it possible to show single data points:
   if (min_x == max_x) {
@@ -632,11 +632,8 @@ function xyChart(options_override) {
     chart.resetzoom = function() {
       var xoffset = (x.range()[1] - x.range()[0]) * base_zoom_offset,
           yoffset = (y.range()[1] + y.range()[0]) * base_zoom_offset;
-      var dx = (max_x - min_x) || 0.1,
-          dy = (max_y - min_y) || 0.1;
-      x.domain([min_x, max_x]);
-      y.domain([min_y, max_y]);
-      update();
+      chart.g //.transition().duration(250)
+        .call(zoom.transform, d3.zoomIdentity.translate(xoffset, yoffset).scale(1.0 - 2*base_zoom_offset) );
       zoomed = false;
     }
     
@@ -789,7 +786,7 @@ function xyChart(options_override) {
       x.range([0, width]);
       y.range([height, 0]);
       
-      zoom.x(x).y(y);
+      //zoom.x(x).y(y);
       xAxis.scale(x);
       yAxis.scale(y);
       xAxisGrid.scale(x).tickSize(-height);
