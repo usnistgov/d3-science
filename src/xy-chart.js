@@ -58,7 +58,7 @@ function xyChart(options_override) {
       xAxisGrid = d3.axisBottom(x),
       yAxisGrid = d3.axisLeft(y);
   
-  var zoom = d3.zoom().on("zoom", function() { console.log(d3.event.transform); zoomed = true; update() });
+  var zoom = d3.zoom().on("zoom", function() { zoomed = true; update() });
   var base_zoom_offset = 0.05; // zoom out 5% from min and max by default;
   
   var source_data;
@@ -253,14 +253,9 @@ function xyChart(options_override) {
             x.domain(x_domain);
             y.domain(y_domain);
             update();
-            //chart.g //.transition().duration(750)
-            //.call(zoom.transform, d3.zoomIdentity
-            //  .scale(width / (x(x_domain[1]) - x(x_domain[0])))
-            //  .translate(-x(x_domain[0]), 0));
           }
           rect.remove();
           zoomed = true;
-          //update();
         }
       }
       
@@ -529,8 +524,10 @@ function xyChart(options_override) {
       var svg = chart.svg;
       if (d3.event && d3.event.transform) {
         // emulating old zoom behavior:
-        var new_x = d3.event.transform.rescaleX(x),
-            new_y = d3.event.transform.rescaleY(y);
+        var orig_x = x.copy().domain([min_x, max_x]),
+            orig_y = y.copy().domain([min_y, max_y]);
+        var new_x = d3.event.transform.rescaleX(orig_x),
+            new_y = d3.event.transform.rescaleY(orig_y);
         
         x.domain(new_x.domain()).range(new_x.range());
         y.domain(new_y.domain()).range(new_y.range());
