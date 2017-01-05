@@ -301,6 +301,8 @@ function xyChart(options_override) {
       axes.select(".y.axis").call(yAxis);
       axes.select(".x.grid").call(xAxisGrid);
       axes.select(".y.grid").call(yAxisGrid);
+      // remove added attr that blocks styling:
+      axes.selectAll(".grid .tick line").attr("stroke", null);
       axes.select(".x.axis-label").text(((options.axes || {}).xaxis || {}).label || "x-axis");
       axes.select(".y.axis-label").text(((options.axes || {}).yaxis || {}).label || "y-axis");
       
@@ -539,6 +541,8 @@ function xyChart(options_override) {
       svg.select(".y.axis .y.axis-label").text(options.axes.yaxis.label);
       svg.select(".x.grid").call(xAxisGrid);
       svg.select(".y.grid").call(yAxisGrid);
+      // remove added attr that blocks styling:
+      svg.selectAll(".grid .tick line").attr("stroke", null);
       svg.selectAll("rect.zoom").remove();
 
       chart.draw_lines(source_data);
