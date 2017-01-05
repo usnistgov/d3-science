@@ -261,6 +261,8 @@ export default function heatChart(options_override) {
       mainview.select(".y.axis").call(yAxis);
       mainview.select(".x.grid").call(xAxisGrid);
       mainview.select(".y.grid").call(yAxisGrid);
+      // remove added attr that blocks styling:
+      mainview.selectAll(".grid .tick line").attr("stroke", null);
       mainview.select(".x.axis-label").text(options.xlabel);
       mainview.select(".y.axis-label").text(options.ylabel);
         
@@ -387,6 +389,8 @@ export default function heatChart(options_override) {
       mainview.select(".y.axis").call(yAxis);
       mainview.select(".grid.x").call(xAxisGrid);
       mainview.select(".grid.y").call(yAxisGrid);
+      // remove added attr that blocks styling:
+      mainview.selectAll(".grid .tick line").attr("stroke", null);
 
       chart.mainCanvas.call(drawImage);
       
