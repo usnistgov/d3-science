@@ -427,6 +427,7 @@ export default function heatChart(options_override) {
     z = getScale(options.ztransform);
     do_autoscale();
     z.domain([zdims.zmin, zdims.zmax]).range(old_range);
+    orig_z = z.copy();
     zAxis.scale(z);
     //cb_zoom.y(z);
     cb_resetzoom.call(chart.colorbar.svg.node());
