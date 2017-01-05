@@ -70,7 +70,8 @@ export default function heatChart(options_override) {
   }
   var zoom = d3.zoom().on("zoom.heatmap", zoomed);
   var resetzoom = function() {
-    chart.mainview.call(zoom.transform, d3.zoomIdentity);
+    var zoombox = chart.mainview.select("rect.zoom.box");
+    zoombox.call(zoom.transform, d3.zoomIdentity);
   }
   
   var cb_zoomed = function() {
@@ -249,14 +250,12 @@ export default function heatChart(options_override) {
       mainview.append("g")
         .attr("class", "y interactors")
       
-      /*mainview.append("rect")
-        .classed("zoomlayer", true)
-        .style("fill", "none")
-        .attr("x", 0)
-        .attr("y", 0)
+      mainview.append("rect")
+        .attr("class", "zoom box")
         .attr("width", width)
         .attr("height", height)
-        */
+        .style("visibility", "hidden")
+        .attr("pointer-events", "all")
       
       mainview.select(".x.axis").call(xAxis);
       mainview.select(".y.axis").call(yAxis);
@@ -268,10 +267,7 @@ export default function heatChart(options_override) {
       chart.svg = svg;
       chart.mainview = mainview;
       
-      //************************************************************
-      // Position cursor (shows position of mouse in data coords)
-      //************************************************************
-      
+      chart.position_cursor(options.position_cursor);
     });
     selection.call(chart.colorbar);
   }
@@ -344,7 +340,6 @@ export default function heatChart(options_override) {
         .attr("transform", "translate(" + width + "," + options.cb_margin.top + ")");
         
       chart.colorbar.svg = svg;
-      chart.position_cursor(options.position_cursor);
     });
   }
   chart.colorbar.update = function() { chart.colorbar.colorbarCanvas.call(drawScale); _redraw_colorbar = true; };   
@@ -554,12 +549,12 @@ export default function heatChart(options_override) {
     if (!arguments.length) return zoomScroll;
     zoomScroll = _;
     //var scrollLayer = chart.svg.select("g.mainview rect");
-    var mainview = chart.svg.select("g.mainview");
+    var zoombox = chart.svg.select("g.mainview rect.zoom.box");
     if (zoomScroll == true) {
-      chart.mainview.call(zoom).on("dblclick.zoom", null);
+      zoombox.call(zoom).on("dblclick.zoom", null);
     }
     else if (zoomScroll == false) {
-      chart.mainview.on(".zoom", null);
+      zoombox.on(".zoom", null);
     }
     return chart;
   };
