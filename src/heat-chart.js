@@ -480,11 +480,16 @@ export default function heatChart(options_override) {
     if (options.position_cursor) {
       var svg = chart.svg,
           mainview = chart.mainview;
-      var position_cursor = mainview.append("text")
-        .attr("class", "position-cursor")
+      var position_cursor = mainview.select("text.position-cursor");
+      if (position_cursor.empty()) {
+        position_cursor = mainview.append("text")
+          .attr("class", "position-cursor")
+          .style("text-anchor", "end");
+      }
+       
+      position_cursor
         .attr("x", parseFloat(mainview.attr("width")) - 10)
         .attr("y", parseFloat(mainview.attr("height")) + options.margin.bottom)
-        .style("text-anchor", "end");
         
       var follow = function (){  
         if (source_data == null || source_data[0] == null) { return }
@@ -503,12 +508,9 @@ export default function heatChart(options_override) {
           ", " + 
           z_coord.toPrecision(5));
       }
-        
-        svg
-          .on("mousemove.position_cursor", null)
-          .on("mouseover.position_cursor", null)
-          .on("mousemove.position_cursor", follow)
-          .on("mouseover.position_cursor", follow);
+      svg
+        .on("mousemove.position_cursor", follow)
+        .on("mouseover.position_cursor", follow);
     }
     else {
       chart.mainview.selectAll(".position-cursor").remove();
@@ -888,13 +890,14 @@ export default function heatChart(options_override) {
     chart.svg.attr("width", width + options.margin.left + options.margin.right)
           .attr("height", height + options.margin.top + options.margin.bottom);
     
-    chart.svg.selectAll("g.x")
-        .attr("transform", "translate(" + options.margin.left + "," + (height + options.margin.top) + ")");
-    chart.svg.selectAll("g.y")
-        .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")"); 
+    chart.mainview
+      .attr("width", width)
+      .attr("height", height)
+      .selectAll("g.x")
+        .attr("transform", "translate(0, " + height + ")");
     
-    chart.svg.selectAll("g.x.axis text").attr("x", width/2.0);
-    chart.svg.selectAll("g.y.axis text").attr("x", -height/2.0);
+    chart.svg.selectAll(".x.axis-label").attr("x", width/2.0);
+    chart.svg.selectAll(".y.axis-label").attr("x", -height/2.0);
           
     var innerwidth = options.colorbar_width,
         width = innerwidth - options.cb_margin.right,
@@ -922,6 +925,7 @@ export default function heatChart(options_override) {
     chart.colorbar.svg.selectAll("g.z")
         .attr("transform", "translate(" + width + "," + options.cb_margin.top + ")");
 
+    chart.position_cursor(options.position_cursor);
     _redraw_main = true;
   }
   
