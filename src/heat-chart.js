@@ -329,19 +329,13 @@ export default function heatChart(options_override) {
         .scale(z)
         .ticks(options.numberOfTicks)
         .tickPadding(10);
-                
-      // we will bind data to the container div, a slightly non-standard
-      // arrangement.
      
-      //cb_zoom.y(z);
       chart.colorbar.resetzoom = cb_resetzoom;
       chart.colorbar.zoom = cb_zoom;
       
       // if inner container doesn't exist, build it.
       var colorbarCanvas;
-      var container = outercontainer.select(".colorbar-container");
-      if (container.empty()) {
-        container = outercontainer.append("div")
+      var container = outercontainer.append("div")
         .attr("class", "colorbar-container")
         .attr("width", innerwidth)
         .attr("height", innerheight)
@@ -349,19 +343,16 @@ export default function heatChart(options_override) {
         .style("width", innerwidth + "px")
         .style("height", innerheight + "px");
         
-        colorbarCanvas = container.append("canvas");
-        colorbarCanvas
-          .attr("width", width)
-          .attr("height", height)
-          .attr("class", "colorbar")
-          .style("width", width + "px")
-          .style("height", height + "px")
-          .style("padding-left", offset_left + "px")
-          .style("padding-right", options.cb_margin.right + "px")
-          .style("padding-top", options.cb_margin.top + "px")
-      } else {
-        colorbarCanvas = container.select("canvas.colorbar");
-      }
+      var colorbarCanvas = container.append("canvas")
+        .attr("width", width)
+        .attr("height", height)
+        .attr("class", "colorbar")
+        .style("width", width + "px")
+        .style("height", height + "px")
+        .style("padding-left", offset_left + "px")
+        .style("padding-right", options.cb_margin.right + "px")
+        .style("padding-top", options.cb_margin.top + "px")
+
       colorbarCanvas.call(drawScale);
                 
       chart.colorbar.colorbarCanvas = colorbarCanvas;
@@ -373,8 +364,8 @@ export default function heatChart(options_override) {
           .on("dblclick.zoom", null)
           .on("dblclick.resetzoom", null)
           .on("dblclick.resetzoom", cb_resetzoom);
-      var esvg = svg;
-      esvg.append("g")
+
+      svg.append("g")
           .attr("class", "z axis");
     
       svg.select(".z.axis").call(zAxis);
