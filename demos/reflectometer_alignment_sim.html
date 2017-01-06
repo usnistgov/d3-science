@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Reflectometer alignment</title>
-  <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src="//d3js.org/d3.v4.js" charset="utf-8"></script>
   <script src="../lib/linePolygonIntersect.js"></script>
   <script src="../lib/jquery-extend.js"></script>
   <style type="text/css">
@@ -116,10 +116,8 @@
       
       
       var svg = d3.select("body").append("svg")
-        .attr({
-          width: width,
-          height: height
-        });
+        .attr("width", width)
+        .attr("height", height);
       
       var defs = svg.append("defs")
       defs.append("marker")
@@ -220,12 +218,12 @@
           .classed("detector", true)
           .attr("points", render_detector)
       
-      var detector_bb = svg.selectAll("polygon.detector")[0].map(function(p) {return p.getBBox()});
-      var slits_bb = svg.selectAll("g.slit polygon")[0].map(function(p) {return p.getBBox()});
+      var detector_bb = svg.selectAll("polygon.detector").nodes().map(function(p) {return p.getBBox()});
+      var slits_bb = svg.selectAll("g.slit polygon").nodes().map(function(p) {return p.getBBox()});
       
-      var drag_detector = d3.behavior.drag()
+      var drag_detector = d3.drag()
         .on("drag", dragmove_detector)
-        .origin(function(d) { 
+        .subject(function(d) { 
           var s = Math.sin(d.angle), 
               c = Math.cos(d.angle),
               x = d.cx + c * d.r,
@@ -246,8 +244,8 @@
           .attr("points", render_slit_above)
         svg.selectAll("g.slit polygon.below")
           .attr("points", render_slit_below)
-        detector_bb = svg.selectAll("polygon.detector")[0].map(function(p) {return p.getBBox()});
-        slits_bb = svg.selectAll("g.slit polygon")[0].map(function(p) {return p.getBBox()});
+        detector_bb = svg.selectAll("polygon.detector").nodes().map(function(p) {return p.getBBox()});
+        slits_bb = svg.selectAll("g.slit polygon").nodes().map(function(p) {return p.getBBox()});
       }
       
       detector.call(drag_detector);
@@ -303,12 +301,12 @@
           .on("mouseover", show_rotators)
           .on("mouseout", function(d) {svg.selectAll("path.rotator").remove()})
       
-      var sample_bb = svg.selectAll("polygon.sample")[0].map(function(p) {return p.getBBox()});
+      var sample_bb = svg.selectAll("polygon.sample").nodes().map(function(p) {return p.getBBox()});
           
-      var dragr_sample = d3.behavior.drag()
+      var dragr_sample = d3.drag()
         .on("drag", dragrotate_sample)
-        .on("dragstart", function(d) {d._rotating = true})
-        .on("dragend", function(d) {
+        .on("start", function(d) {d._rotating = true})
+        .on("end", function(d) {
           d.ref_angle = null;
           d._rotating = false;
           svg.selectAll("path.rotator").remove();
@@ -326,7 +324,7 @@
         svg.select("polygon.sample-translate").attr("points", render_sample_smaller);
         svg.selectAll("path.rotator").remove();
         show_rotators(d);
-        sample_bb = svg.selectAll("polygon.sample")[0].map(function(p) {return p.getBBox()});
+        sample_bb = svg.selectAll("polygon.sample").nodes().map(function(p) {return p.getBBox()});
       }
       
       sample.call(dragr_sample);
@@ -345,10 +343,10 @@
         return render_detector(dd);
       }
       
-      var dragt_sample = d3.behavior.drag()
+      var dragt_sample = d3.drag()
         .on("drag", dragtranslate_sample)
-        .on("dragstart", function(d) {d._translating = true})
-        .on("dragend", function(d) {
+        .on("start", function(d) {d._translating = true})
+        .on("end", function(d) {
           svg.selectAll("path.translator").remove();
           d._translating = false;
         }) 
@@ -364,7 +362,7 @@
         svg.select("polygon.sample-translate").attr("points", render_sample_smaller);
         svg.selectAll("path.translator").remove();
         show_translators(d);
-        sample_bb = svg.selectAll("polygon.sample")[0].map(function(p) {return p.getBBox()});
+        sample_bb = svg.selectAll("polygon.sample").nodes().map(function(p) {return p.getBBox()});
       }
       
       sample_translator.call(dragt_sample);
@@ -436,9 +434,9 @@
         .attr("cy", cy)
         .style("fill", "red")
           
-    var gauss = d3.random.normal(0,1);
+    var gauss = d3.randomNormal(0,1);
     var t = d3.timer(tick);
-    var td = d3.timer(draw);
+    //var td = d3.timer(draw);
     var ticker; // = setInterval(tick, 20);
     var particles = [];
     var part_id = 0,
@@ -453,7 +451,7 @@
     }
     
     function detection_handler(elapsed) {
-      detected.push(elapsed);
+      //detected.push(elapsed);
     }
     function tick(elapsed) {
       //var elapsed = elapsed || (new Date()).getTime();
@@ -518,60 +516,61 @@
         })
       */
       
-      var slits_poly = svg.selectAll("g.slit polygon")[0];
+      var slits_poly = svg.selectAll("g.slit polygon").nodes();
       //var slits_bb = slits_poly.map(function(p) {return p.getBBox()});
-      var det_poly = svg.selectAll("polygon.detector")[0];
+      var det_poly = svg.selectAll("polygon.detector").nodes();
       //var detector_bb = det_poly.map(function(p) {return p.getBBox()});
-      var sample_poly = svg.selectAll("polygon.sample")[0];
+      var sample_poly = svg.selectAll("polygon.sample").nodes();
       //var sample_bb = sample_poly.map(function(p) {return p.getBBox()});
       
+      var step_x, step_y, line, p, poly_points, bb, slit_intersects, det, detector_intersect, sam, sample_intersect, intersect, sld, prob;
       neutrons.each(function(d) {
         if (d.y > height || d.x > width) {d.reap = true; return}
-        var step_x = Math.abs(d.x - d.old_x);
-        var step_y = Math.abs(d.y - d.old_y);
-        var line = [{x: d.old_x, y: d.old_y}, {x: d.x, y: d.y}];
+        step_x = Math.abs(d.x - d.old_x);
+        step_y = Math.abs(d.y - d.old_y);
+        line = [{x: d.old_x, y: d.old_y}, {x: d.x, y: d.y}];
         
-        for (var p=0; p<slits_poly.length; p++) {
-          var poly_points = slits_poly[p].points;
-          var bb = slits_bb[p];
+        for (p=0; p<slits_poly.length; p++) {
+          poly_points = slits_poly[p].points;
+          bb = slits_bb[p];
           if (d.x > (bb.x - step_x) &&
               d.x < (bb.x + bb.width + step_x) &&
               d.y > (bb.y - step_y) &&
               d.y < (bb.y + bb.height + step_y)) {
-            var slit_intersects = linePolygonIntersects(line, poly_points, true);
+            slit_intersects = linePolygonIntersects(line, poly_points, true);
             if (slit_intersects.length > 0) {
               d.reap = true;
-              continue
+              return
             }
           }
         }
         
-        for (var det=0; det<det_poly.length; det++) {
-          var bb = detector_bb[det];
+        for (det=0; det<det_poly.length; det++) {
+          bb = detector_bb[det];
           if (d.x > (bb.x - step_x) &&
               d.x < (bb.x + bb.width + step_x) &&
               d.y > (bb.y - step_y) &&
               d.y < (bb.y + bb.height + step_y)) {
-            var detector_intersect = linePolygonIntersects(line, det_poly[det].points, true);
+            detector_intersect = linePolygonIntersects(line, det_poly[det].points, true);
             if (detector_intersect.length > 0) {
               d.reap = true;
               detection_handler(elapsed);
-              continue;
+              return;
             }
           }
         }
         
-        for (var sam=0; sam<sample_poly.length; sam++) {
-          var bb = sample_bb[sam];
+        for (sam=0; sam<sample_bb.length; sam++) {
+          bb = sample_bb[sam];
           if (d.x > (bb.x - step_x) &&
               d.x < (bb.x + bb.width + step_x) &&
               d.y > (bb.y - step_y) &&
               d.y < (bb.y + bb.height + step_y)) {
-            var sample_intersect = linePolygonIntersects(line, sample_poly[sam].points, true, true);
+            sample_intersect = linePolygonIntersects(line, sample_poly[sam].points, true, true);
             if (sample_intersect.length > 0) { 
-              var intersect = sample_intersect[0];
-              var sld = sample_def[0].sld;
-              var prob = reflection_probability(intersect.rel_angle, intersect.outer, sld, k_0);
+              intersect = sample_intersect[0];
+              sld = sample_def[0].sld;
+              prob = reflection_probability(intersect.rel_angle, intersect.outer, sld, k_0);
               if (Math.random() < prob) {
                 d.x_start = intersect.x;
                 d.y_start = intersect.y;
@@ -595,6 +594,7 @@
         .data(particles, function(d) {return d.id})
         .exit().remove();
       
+      draw();
       // remove and re-add the center point to the svg (so it is on top)
       var center_point = svg.select("circle.center-point").node()
       svg.node().appendChild(svg.node().removeChild(center_point));
