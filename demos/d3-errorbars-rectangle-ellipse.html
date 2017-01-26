@@ -130,6 +130,8 @@ rect.zoom {
   <script src="../lib/ellipse-interactor.js"></script>
   <script src="../lib/angle-slice-interactor.js"></script>
   <script src="../lib/x-slice-interactor.js"></script>
+  <script src="../lib/polygon-interactor.js"></script>
+  <script src="../lib/monotonic-function-interactor.js"></script>
 </head>
 <body>
 <!--<script src="d3.v3.min.js"></script>-->
@@ -203,6 +205,32 @@ window.onload = function() {
     x2: 0.025
   }
   
+  var opts_poly = { 
+    type:'Polygon',
+    radius: 5, 
+    name:'roi_polygon',
+    color1: 'purple',
+    color2: 'LightOrange',
+    interpolation: 'Cardinal',
+    prevent_crossing: false,
+    show_points: true,
+    show_lines: true,
+    close_path: true,
+    fill: "none",
+    //showcenter: true,
+    //show: true,
+    points: [[0.021,0], [0.0215,15],[0.023, 50], [0.02, 40], [0.0205,10]]
+  }
+  
+  var opts_functional = {
+    type: "Function",
+    name: "gaussian",
+    color1: "khaki",
+    functional: function(x) { return 80 * Math.exp(-Math.pow((x - 0.0225), 2) / (2 * Math.pow(0.001, 2))) + 5 }, 
+    show_lines: true, 
+    dx: 4
+  }
+  
   d3.json("sample_data/pbr_live_data.json", function(error, data) {
       mydata = data;
       c = d3.select("#plot1")
@@ -213,6 +241,8 @@ window.onload = function() {
       ellipse_2 = new ellipseInteractor.default(opts3);
       angle_slice = new angleSliceInteractor.default(opts4);
       x_slice = new xSliceInteractor.default(optsx);
+      polygon = new polygonInteractor.default(opts_poly);
+      functional = new monotonicFunctionInteractor.default(opts_functional);
       chart
         .options(data[0].options)
         .interactors(x_slice)
@@ -220,6 +250,8 @@ window.onload = function() {
         .interactors(ellipse_1)
         .interactors(ellipse_2)
         .interactors(angle_slice)
+        .interactors(polygon)
+        .interactors(functional)
         .zoomRect(true)
 
   });
