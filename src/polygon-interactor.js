@@ -1,6 +1,5 @@
 "use strict";
 import * as d3 from 'd3';
-import {event as currentEvent} from 'd3';
 
 export default polygonInteractor;
 
@@ -12,9 +11,9 @@ function polygonInteractor(state, x, y) {
   var radius = ( state.radius == null ) ? 5 : state.radius;
   var event_name = "polygon." + state.name;
   var dispatch = d3.dispatch("update");
-  var x = x || d3.scale.linear();
-  var y = y || d3.scale.linear();
-  var interpolation = (state.interpolation == null) ? 'linear' : state.interpolation;
+  var x = x || d3.scaleLinear();
+  var y = y || d3.scaleLinear();
+  var interpolation = (state.interpolation == null) ? 'Linear' : state.interpolation;
   var prevent_crossing = (state.prevent_crossing == null) ? false : state.prevent_crossing;
   var show_points = (state.show_points == null) ? true : state.show_points;
   var show_lines = (state.show_lines == null) ? true : state.show_lines;
@@ -22,15 +21,14 @@ function polygonInteractor(state, x, y) {
   var fixed = (state.fixed == null) ? false : state.fixed;
   var cursor = (fixed) ? "auto" : "move";
 
-  var line = d3.svg.line()
+  var line = d3.line()
     .x(function(d) { return x(d[0]); })
     .y(function(d) { return y(d[1]); })
-    .interpolate(interpolation);
+    .curve(d3["curve" + interpolation]);    
          
-  
-  var drag_corner = d3.behavior.drag()
+  var drag_corner = d3.drag()
     .on("drag", dragmove_corner)
-    .on("dragstart", function() { currentEvent.sourceEvent.stopPropagation(); });
+    .on("start", function() { d3.event.sourceEvent.stopPropagation(); });
   
   function interactor(selection) {
     var group = selection.append("g")
@@ -58,26 +56,30 @@ function polygonInteractor(state, x, y) {
       if (!fixed) new_corners.call(drag_corner);
       corners
         .attr("cx", function(d) { return x(d[0]); })
-        .attr("cy", function(d) { return y(d[1]); });
+        .attr("cy", function(d) { return y(d[1]); })
+        .attr("visibility", (state.show_points) ? "visible" : "hidden");
       corners.exit().remove();
-        
-      var edges = edge_group.selectAll('.edge').data([state.points]);
+      
+      var edge_data = (state.close_path && state.points.length > 1) ?  state.points.concat([state.points[0]]) : state.points;
+      var edges = edge_group.selectAll('.edge').data([edge_data]);  
       edges.enter().append("path")
         .classed("edge", true)
-        .attr("side", function(d,i) { return i.toFixed()})        
-      edges.attr("d", line);
+        .attr("side", function(d,i) { return i.toFixed()});
+      edges
+        .attr("d", line)
+        .attr("visibility", (state.show_lines) ? "visible" : "hidden"); 
       edges.exit().remove();
         
       // fire!
-      dispatch.update();
+      dispatch.call("update");
     }
     
     interactor.update();
   }
   
   function dragmove_corner(d,i) {
-    var new_x = x.invert(currentEvent.x),
-        new_y = y.invert(currentEvent.y);
+    var new_x = x.invert(d3.event.x),
+        new_y = y.invert(d3.event.y);
     var sp = state.points;
     if (prevent_crossing && sp[i+1] != null && sp[i+1][0] <= new_x) {
       new_x = sp[i+1][0]
