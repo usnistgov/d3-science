@@ -1,7 +1,5 @@
 "use strict";
-
 import * as d3 from "d3";
-import {event as currentEvent} from 'd3';
 
 export default rectangleInteractor;
 
@@ -68,15 +66,15 @@ function rectangleInteractor(state, x, y) {
   
   var drag_corner = d3.drag()
     .on("drag", dragmove_corner)
-    .on("start", function() { currentEvent.sourceEvent.stopPropagation(); });
+    .on("start", function() { d3.event.sourceEvent.stopPropagation(); });
   
   var drag_center = d3.drag()
     .on("drag", dragmove_center)
-    .on("start", function() { currentEvent.sourceEvent.stopPropagation(); });  
+    .on("start", function() { d3.event.sourceEvent.stopPropagation(); });  
     
   var drag_edge = d3.drag()
     .on("drag", dragmove_edge)
-    .on("start", function() { currentEvent.sourceEvent.stopPropagation(); });
+    .on("start", function() { d3.event.sourceEvent.stopPropagation(); });
   
 
   function interactor(selection) {
@@ -140,16 +138,16 @@ function rectangleInteractor(state, x, y) {
   }
   
   function dragmove_center() {
-    state.xmin = x.invert(x(state.xmin) + currentEvent.dx);
-    state.xmax = x.invert(x(state.xmax) + currentEvent.dx);
-    state.ymin = y.invert(y(state.ymin) + currentEvent.dy);
-    state.ymax = y.invert(y(state.ymax) + currentEvent.dy);
+    state.xmin = x.invert(x(state.xmin) + d3.event.dx);
+    state.xmax = x.invert(x(state.xmax) + d3.event.dx);
+    state.ymin = y.invert(y(state.ymin) + d3.event.dy);
+    state.ymax = y.invert(y(state.ymax) + d3.event.dy);
     interactor.update();
   }
   
   function dragmove_corner(d) {
-    var new_x = x.invert(currentEvent.x),
-        new_y = y.invert(currentEvent.y);
+    var new_x = x.invert(d3.event.x),
+        new_y = y.invert(d3.event.y);
     var vertex = parseInt(d3.select(this).attr("vertex"));  
     // enforce relationship between corners:
     switch (vertex) {
@@ -170,14 +168,14 @@ function rectangleInteractor(state, x, y) {
         state.ymax = new_y;
         break
       default:
-        console.log("default", currentEvent, d3.select(this));
+        console.log("default", d3.event, d3.select(this));
     }
     interactor.update();
   }
   
   function dragmove_edge() {
-    var new_x = x.invert(currentEvent.x),
-        new_y = y.invert(currentEvent.y);
+    var new_x = x.invert(d3.event.x),
+        new_y = y.invert(d3.event.y);
     var side = parseInt(d3.select(this).attr("side"));
     // enforce relationship between edges and corners:
     switch (side) {
@@ -194,7 +192,7 @@ function rectangleInteractor(state, x, y) {
         state.xmin = new_x;
         break
       default:
-        console.log("default", currentEvent, d3.select(this));
+        console.log("default", d3.event, d3.select(this));
     }
     interactor.update();
   }
