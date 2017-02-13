@@ -644,7 +644,9 @@ function xyChart(options_override) {
     chart.resetzoom = function() {
       var xoffset = (x.range()[1] - x.range()[0]) * base_zoom_offset,
           yoffset = (y.range()[1] + y.range()[0]) * base_zoom_offset;
-      chart.g //.transition().duration(250)
+      var zoombox = chart.mainview.select("rect.zoom-box");
+      //zoombox.call(zoom.transform, d3.zoomIdentity);
+      zoombox
         .call(zoom.transform, d3.zoomIdentity.translate(xoffset, yoffset).scale(1.0 - 2*base_zoom_offset) );
       zoomed = false;
     }
