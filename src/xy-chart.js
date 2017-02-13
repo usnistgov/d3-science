@@ -50,9 +50,9 @@ function xyChart(options_override) {
   var zoomed = false; // zoomed state.
     
   var labels = options.series.map(function(d, i) { return d.label || i });
-  var scaleMap = {'linear': d3.scaleLinear, 'log': d3.scaleLog, 'pow': d3.scalePow, 'sqrt': d3.scaleSqrt}
-  var x = scaleMap[options.xtransform]();
-  var y = scaleMap[options.ytransform]();
+
+  var x = getScale(options.xtransform);
+  var y = getScale(options.ytransform);
   var xAxis = d3.axisBottom(x),
       yAxis = d3.axisLeft(y),
       xAxisGrid = d3.axisBottom(x),
@@ -282,6 +282,7 @@ function xyChart(options_override) {
         .attr("transform", "rotate(-90)")
         .attr("y", -options.margin.left + 15 )
         .attr("x", -height/2)
+      
       mainview.append("defs").append("clipPath")
         .attr("id", "d3clip_" + id.toFixed()) // local def
         .append("rect")
@@ -290,13 +291,20 @@ function xyChart(options_override) {
 	      .attr("width", width)
 	      .attr("height", height);
 	      
-	    mainview.attr("clip-path", "url(#d3clip_" + id.toFixed() + ")");    
+	  mainview.attr("clip-path", "url(#d3clip_" + id.toFixed() + ")");    
 	    
       axes.append("g")
         .attr("class", "x grid");           
       axes.append("g")
         .attr("class", "y grid");
-      
+        
+      mainview.append("rect")
+        .classed("zoom-box", true)
+        .attr("width", width)
+        .attr("height", height)
+        .attr("pointer-events", "all")
+        .style("visibility", "hidden")
+        
       axes.select(".x.axis").call(xAxis);
       axes.select(".y.axis").call(yAxis);
       axes.select(".x.grid").call(xAxisGrid);
@@ -703,7 +711,7 @@ function xyChart(options_override) {
       return chart;
     };
     
-    chart.zoomScroll = function(_) {
+    chart.zoomScroll_old = function(_) {
       if (!arguments.length) return zoomScroll;
       zoomScroll = _;
       if (zoomScroll == true) {
@@ -716,12 +724,26 @@ function xyChart(options_override) {
       return chart;
     };
     
+    chart.zoomScroll = function(_) {
+      if (!arguments.length) return zoomScroll;
+      zoomScroll = _;
+      //var scrollLayer = chart.svg.select("g.mainview rect");
+      var zoombox = chart.svg.select("g.mainview rect.zoom-box");
+      if (zoomScroll == true) {
+        zoombox.call(zoom).on("dblclick.zoom", null);
+      }
+      else if (zoomScroll == false) {
+        zoombox.on(".zoom", null);
+      }
+      return chart;
+    };
+    
     chart.xtransform = function(_) {
     if (!arguments.length) return options.xtransform;
       options.xtransform = _;
       var old_range = x.range(),
           old_domain = x.domain();
-      x = d3.scale[options.xtransform]()
+      x = getScale(options.xtransform);
       do_autoscale();
       x.domain([min_x, max_x]).range(old_range);
       xAxis.scale(x);
@@ -736,7 +758,7 @@ function xyChart(options_override) {
       options.ytransform = _;
       var old_range = y.range(),
           old_domain = y.domain();
-      y = d3.scale[options.ytransform]()
+      y = getScale(options.ytransform);
       do_autoscale();
       y.domain([min_y, max_y]).range(old_range);
       yAxis.scale(y);
@@ -814,4 +836,8 @@ function xyChart(options_override) {
     chart.type = "xy";
     
     return chart;
+}
+
+function getScale(scalename) {
+  return d3['scale' + scalename.slice(0,1).toUpperCase() + scalename.slice(1).toLowerCase()]();
 }
