@@ -311,8 +311,8 @@ function xyChart(options_override) {
       axes.select(".y.grid").call(yAxisGrid);
       // remove added attr that blocks styling:
       axes.selectAll(".grid .tick line").attr("stroke", null);
-      axes.select(".x.axis-label").text(((options.axes || {}).xaxis || {}).label || "x-axis");
-      axes.select(".y.axis-label").text(((options.axes || {}).yaxis || {}).label || "y-axis");
+      axes.select(".x.axis-label").html(((options.axes || {}).xaxis || {}).label || "x-axis");
+      axes.select(".y.axis-label").html(((options.axes || {}).yaxis || {}).label || "y-axis");
       
       svg.attr("width", width + options.margin.left + options.margin.right)
           .attr("height", height + options.margin.top + options.margin.bottom);
@@ -420,10 +420,14 @@ function xyChart(options_override) {
               .attr("height", 10)
               .style("fill", get_series_color(null, i))
               .on("mouseover", function() {
-                chart.svg.selectAll('path.line').classed('highlight', function(d,ii) {return ii == i});
+                chart.svg.selectAll('path.line')
+                  .classed('highlight', function(d,ii) {return ii == i})
+                  .classed('unhighlight', function(d,ii) {return ii != i});
               })
               .on("mouseout", function() {
-                chart.svg.selectAll('path.line').classed('highlight', false);
+                chart.svg.selectAll('path.line')
+                  .classed('highlight', false)
+                  .classed('unhighlight', false);
               });
             
             g.append("text")
@@ -434,10 +438,14 @@ function xyChart(options_override) {
               .style("text-anchor", "start")
               .style("fill", get_series_color(null, i))
               .on("mouseover", function() {
-                chart.svg.selectAll('path.line').classed('highlight', function(d,ii) {return ii == i});
+                chart.svg.selectAll('path.line')
+                  .classed('highlight', function(d,ii) {return ii == i})
+                  .classed('unhighlight', function(d,ii) {return ii != i});
               })
               .on("mouseout", function() {
-                chart.svg.selectAll('path.line').classed('highlight', false);
+                chart.svg.selectAll('path.line')
+                  .classed('highlight', false)
+                  .classed('unhighlight', false);
               });
           });
       update_sel.exit().remove();
@@ -772,10 +780,18 @@ function xyChart(options_override) {
     
     chart.interactors = function(_) {
       if (!arguments.length) return interactors;
-      chart.svg.select("g.mainview").call(_);
-      _.x(x).y(y).update();
-      interactors.push(_);
-      return chart;
+      if ( _ == null ) {
+        // null passed intentionally: clear all
+        chart.svg.selectAll("g.interactors").remove();
+        interactors = [];
+        return chart;
+      }
+      else {
+        chart.svg.select("g.mainview").call(_);
+        _.x(x).y(y).update();
+        interactors.push(_);
+        return chart;
+      }
     };
     
     chart.export_svg = function() {
