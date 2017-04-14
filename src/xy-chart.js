@@ -26,7 +26,7 @@ function xyChart(options_override) {
     errorbar_width: 12,
     xtransform: "linear",
     ytransform: "linear",
-    legend: {show: false, left: 65},
+    legend: {show: false, left: 165, top: 15},
     axes: {
       xaxis: {label: "x-axis"},
       yaxis: {label: "y-axis"}
@@ -265,8 +265,8 @@ function xyChart(options_override) {
       
       mainview.append("g")
         .attr("class", "legend")
-        .attr("transform", "translate(" + (width-65) + ",25)");
-          //.call(zoom);
+        .attr("transform", "translate(" + [width-options.legend.left, options.legend.top] + ")");
+        //.call(zoom);
       axes.append("g")
         .attr("class", "x axis")
         .append("text")
@@ -291,7 +291,7 @@ function xyChart(options_override) {
 	      .attr("width", width)
 	      .attr("height", height);
 	      
-	  mainview.attr("clip-path", "url(#d3clip_" + id.toFixed() + ")");    
+	    mainview.attr("clip-path", "url(#d3clip_" + id.toFixed() + ")");    
 	    
       axes.append("g")
         .attr("class", "x grid");           
@@ -302,7 +302,7 @@ function xyChart(options_override) {
         .classed("zoom-box", true)
         .attr("width", width)
         .attr("height", height)
-        .attr("pointer-events", "all")
+        //.attr("pointer-events", "all")
         .style("visibility", "hidden")
         
       axes.select(".x.axis").call(xAxis);
@@ -401,7 +401,15 @@ function xyChart(options_override) {
       }
     });
   }
-    
+    var legend_offset = {x: 0, y: 0};
+    var drag_legend = d3.drag()
+      .on("drag", function(d,i) {
+        legend_offset.x += d3.event.dx;
+        legend_offset.y += d3.event.dy;
+        chart.draw_legend(source_data);
+        })
+      .on("start", function() { d3.event.sourceEvent.stopPropagation(); })
+
     //************************************************************
     // Create D3 legend
     //************************************************************
@@ -419,6 +427,7 @@ function xyChart(options_override) {
               .attr("width", 10)
               .attr("height", 10)
               .style("fill", get_series_color(null, i))
+              .style("cursor", "move")
               .on("mouseover", function() {
                 chart.svg.selectAll('path.line')
                   .classed('highlight', function(d,ii) {return ii == i})
@@ -428,7 +437,8 @@ function xyChart(options_override) {
                 chart.svg.selectAll('path.line')
                   .classed('highlight', false)
                   .classed('unhighlight', false);
-              });
+              })
+              .call(drag_legend);
             
             g.append("text")
               .attr("x", 15-options.legend.left)
@@ -436,6 +446,7 @@ function xyChart(options_override) {
               .attr("height",30)
               .attr("width",100)
               .style("text-anchor", "start")
+              .style("cursor", "move")
               .style("fill", get_series_color(null, i))
               .on("mouseover", function() {
                 chart.svg.selectAll('path.line')
@@ -446,11 +457,19 @@ function xyChart(options_override) {
                 chart.svg.selectAll('path.line')
                   .classed('highlight', false)
                   .classed('unhighlight', false);
-              });
+              })
+              .call(drag_legend)
+
           });
       update_sel.exit().remove();
       
+      el.selectAll("rect")
+        .attr("x", legend_offset.x)
+        .attr("y", function(d,i) {return i*25 + 15 + legend_offset.y});
+
       el.selectAll("text")
+        .attr("x", 15 + legend_offset.x)
+        .attr("y", function(d,i) { return i * 25 + 25 + legend_offset.y})
         .each(function(d, i) {
           d3.select(this).text((options.series[i] && options.series[i].label != null) ? options.series[i].label : i+1)
         });
@@ -553,8 +572,8 @@ function xyChart(options_override) {
       
       svg.select(".x.axis").call(xAxis);
       svg.select(".y.axis").call(yAxis); 
-      svg.select(".x.axis .x.axis-label").text(options.axes.xaxis.label);
-      svg.select(".y.axis .y.axis-label").text(options.axes.yaxis.label);
+      svg.select(".x.axis .x.axis-label").html(options.axes.xaxis.label);
+      svg.select(".y.axis .y.axis-label").html(options.axes.yaxis.label);
       svg.select(".x.grid").call(xAxisGrid);
       svg.select(".y.grid").call(yAxisGrid);
       // remove added attr that blocks styling:

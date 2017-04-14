@@ -3,13 +3,12 @@
 <meta charset="utf-8">
 <html>
 <head>
-  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans" />
 <style>
 
 html, body {
   position: relative;
   height: 100%;
-    font-family: 'Open Sans' !important;
+    font-family: Arial, Helvetica, sans-serif !important; 
 }
 
 #plot1 {
@@ -79,6 +78,10 @@ canvas {
     -moz-user-select: none;
 }
 
+text.axis-label tspan.sub, text.axis-label tspan.sup {
+    font-size: 50%;
+}
+
 .legend, .tick {
     user-select: none; 
     -webkit-user-select: none; 
@@ -122,8 +125,8 @@ rect.zoom {
   fill-opacity: 0.5;
 }
 </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.4.0/d3.min.js" charset="utf-8"></script>
-  <script src="https://d3js.org/d3-dispatch.v1.js"></script>  
+  <script src="//d3js.org/d3.v4.min.js" charset="utf-8"></script>
+  <script src="//d3js.org/d3-dispatch.v1.js"></script>  
   <script src="../lib/jquery-extend.js"></script>
   <script src="../lib/xy-chart.js" charset="utf-8"></script>
   <script src="../lib/rectangle-interactor.js"></script>
@@ -134,7 +137,6 @@ rect.zoom {
   <script src="../lib/monotonic-function-interactor.js"></script>
 </head>
 <body>
-<!--<script src="d3.v3.min.js"></script>-->
 <script>
 var rectangle;
 window.onload = function() {    
@@ -253,6 +255,7 @@ window.onload = function() {
         .interactors(polygon)
         .interactors(functional)
         .zoomRect(true)
+      chart.options({axes: {xaxis: {label: 'Q<tspan dy="2" class="sub">efgh</tspan><tspan dx="-2em" dy="-10" class="sub">1234abcg</tspan><tspan dy="8">(&#8491;)</tspan>'}}}).update()
 
   });
 }
