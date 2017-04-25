@@ -333,16 +333,16 @@ function xyChart(options_override) {
       // Position cursor (shows position of mouse in data coords)
       //************************************************************
       if (options.position_cursor) {
-        var position_cursor = mainview.selectAll(".position-cursor")
+        var pcurse_selection = mainview.selectAll(".position-cursor")
           .data([0])
-        position_cursor
+        var position_cursor = pcurse_selection
           .enter().append("text")
             .attr("class", "position-cursor")
             .attr("x", width - 10)
             .attr("y", height - 10)
             .style("text-anchor", "end");
           
-        var follow = function (){  
+        var follow = function (){
           var mouse = d3.mouse(mainview.node());
           position_cursor.text(
             x.invert(mouse[0]).toPrecision(5) + 
@@ -351,8 +351,6 @@ function xyChart(options_override) {
         }
           
           svg
-            .on("mousemove.position_cursor", null)
-            .on("mouseover.position_cursor", null)
             .on("mousemove.position_cursor", follow)
             .on("mouseover.position_cursor", follow);
       }
@@ -821,6 +819,7 @@ function xyChart(options_override) {
       dsvg.selectAll("path").style("fill", "none");
       dsvg.selectAll(".mainview>rect").style("fill", "none");
       dsvg.selectAll("clippath rect").style("fill", "none");
+      dsvg.selectAll(".axis text").style("font-size", "14px").style("fill", "black");
       dsvg.selectAll(".axis-label").style("font-size", "18px");
       dsvg.selectAll(".axis path, .axis line").style("stroke", "black"); //.css("stroke-width", "1.5px");
       dsvg.selectAll(".grid .tick").style("stroke", "lightgrey")
