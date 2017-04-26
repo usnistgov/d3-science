@@ -47,9 +47,9 @@ function profileInteractor(state, x, y) {
           column = s.id,
           yi = data[0][column],
           edges = [];
-      data.forEach(function(d) {
-        edges.push([[xi, yi, column, 'v'], [xi, yi=d[column], column, 'v']])
-        edges.push([[xi, yi, column, 'h'], [xi+=d.thickness, yi, column, 'h']])
+      data.forEach(function(d, i) {
+        edges.push([[xi, yi, column, i, 'v'], [xi, yi=d[column], column, i, 'v']])
+        edges.push([[xi, yi, column, i, 'h'], [xi+=d.thickness, yi, column, i, 'h']])
       });
       return edges;
     })
@@ -155,11 +155,11 @@ function profileInteractor(state, x, y) {
         var new_edges = edges.enter().append("path")
           .classed("edge", true)
           .attr("side", function(dd,ii) { return ii.toFixed()})
-          .attr("direction", function(d) { return d[0][3] })
+          .attr("direction", function(d) { return d[0][4] })
         if (!fixed) new_edges.call(drag_edge);
         d3.select(this).selectAll('.edge').on("dblclick", function(dd, ii) {
           var direction = d3.select(this).attr("direction"),
-              old_row_index = Math.floor(ii/2),
+              old_row_index = dd[0][3],
               old_row = state.profile_data[old_row_index],
               new_row = extend(true, {}, old_row); 
           if (direction == "h") {
@@ -184,14 +184,23 @@ function profileInteractor(state, x, y) {
                 
         edges.exit().remove();
         if (draw_extensions) {
+          var left_d = extend(true, [], d[0][0]);
+          left_d[0] = x.invert(-10);
           var left_ext = d3.select(this).selectAll('.left.extension')
-            .data([[[x.invert(-10) , d[0][0][1]], d[0][0]]])
+            .data([[left_d, d[0][0]]])
             .enter().append("path")
             .classed("left extension", true)
+            .attr("direction", "h");
+          if (!fixed) left_ext.call(drag_edge);
+          
+          var right_d = extend(true, [], d.slice(-1)[0][0]);
+          right_d[0] = x.invert(x.range()[1]+10);
           var right_ext = d3.select(this).selectAll('.right.extension')
-            .data([[[x.invert(x.range()[1]+10) , d.slice(-1)[0][0][1]], d.slice(-1)[0][0]]])
+            .data([[right_d, d.slice(-1)[0][0]]])
             .enter().append("path")
             .classed("right extension", true)
+            .attr("direction", "h");
+          if (!fixed) right_ext.call(drag_edge);
         }
         d3.select(this).selectAll(".edge, .extension").attr("d", line);
         
@@ -224,7 +233,7 @@ function profileInteractor(state, x, y) {
     var new_dx = x.invert(x(0) + d3.event.dx),
         new_dy = y.invert(y(0) + d3.event.dy);
     var direction = d3.select(this).attr("direction"),
-        old_row_index = Math.floor(i/2);
+        old_row_index = d[0][3];
     if (direction == "h") {
       state.profile_data[old_row_index][d[0][2]] = new_y;
     }
