@@ -47,7 +47,7 @@ function xyChart(options_override) {
   var min_x = (options.min_x == null) ? Infinity : options.min_x;
   var zoomRect = false;
   var zoomScroll = false;
-  var zoomed = false; // zoomed state.
+  var is_zoomed = false; // zoomed state.
     
   var labels = options.series.map(function(d, i) { return d.label || i });
 
@@ -59,8 +59,8 @@ function xyChart(options_override) {
       xAxisGrid = d3.axisBottom(x),
       yAxisGrid = d3.axisLeft(y);
   
-  var zoom = d3.zoom().on("zoom.xy", function() { 
-    zoomed = true; 
+  function zoomed() { 
+    is_zoomed = true;
     if (d3.event && d3.event.transform) {
       // emulating old zoom behavior:
       var new_x = d3.event.transform.rescaleX(orig_x),
@@ -70,7 +70,8 @@ function xyChart(options_override) {
       y.domain(new_y.domain());
     }
     update();
-  });
+  }
+  var zoom = d3.zoom().on("zoom.xy", zoomed);
   var base_zoom_offset = 0.05; // zoom out 5% from min and max by default;
   
   var source_data;
@@ -270,7 +271,7 @@ function xyChart(options_override) {
             update();
           }
           rect.remove();
-          zoomed = true;
+          is_zoomed = true;
         }
       }
       
@@ -678,10 +679,14 @@ function xyChart(options_override) {
       var xoffset = (x.range()[1] - x.range()[0]) * base_zoom_offset,
           yoffset = (y.range()[1] + y.range()[0]) * base_zoom_offset;
       var zoombox = chart.g.select("rect.zoom-box");
+      x.domain([min_x, max_x]);
+      y.domain([min_y, max_y]);
+      orig_x = x.copy();
+      orig_y = y.copy();
       //zoombox.call(zoom.transform, d3.zoomIdentity);
       zoombox
         .call(zoom.transform, d3.zoomIdentity.translate(xoffset, yoffset).scale(1.0 - 2*base_zoom_offset) );
-      zoomed = false;
+      is_zoomed = false;
     }
     
     chart.options = function(_, clear) {
@@ -698,11 +703,11 @@ function xyChart(options_override) {
       if (!arguments.length) return source_data;
       source_data = _;
       do_autoscale();
-      //x.domain([min_x, max_x]);
-      //y.domain([min_y, max_y]);
-      if (!zoomed && options.autoscale) { chart.resetzoom(); }
+      if (!is_zoomed && options.autoscale) { chart.resetzoom(); }
       return chart;
     };
+    
+    chart.is_zoomed = function() { return is_zoomed; }
     
     chart.x = function(_) {
       if (!arguments.length) return x;
@@ -781,6 +786,7 @@ function xyChart(options_override) {
       x = getScale(options.xtransform);
       do_autoscale();
       x.domain([min_x, max_x]).range(old_range);
+      orig_x = x.copy();
       xAxis.scale(x);
       xAxisGrid.scale(x);
       interactors.forEach(function(d) {d.x(x)});
@@ -796,6 +802,7 @@ function xyChart(options_override) {
       y = getScale(options.ytransform);
       do_autoscale();
       y.domain([min_y, max_y]).range(old_range);
+      orig_y = y.copy();
       yAxis.scale(y);
       yAxisGrid.scale(y);
       interactors.forEach(function(d) {d.y(y)});
