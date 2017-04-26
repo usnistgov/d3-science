@@ -85,6 +85,7 @@ function xSliceInteractor(state, x, y) {
     var fill = group.append("rect")
           .attr("class", "range-fill")
           .style("stroke", "none")
+          .style("pointer-events", "none")
           .datum(state_to_rect(state))   
     fill
       .style("fill", state.color1)
