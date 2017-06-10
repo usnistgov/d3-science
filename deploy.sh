@@ -21,7 +21,7 @@ SHA=`git rev-parse --verify HEAD`
 git clone $REPO out
 cd out
 git checkout $TARGET_BRANCH || git checkout --orphan $TARGET_BRANCH
-git checkout $SOURCE_BRANCH -- src
+git checkout origin/$SOURCE_BRANCH -- src
 
 # Run our compile script
 make
