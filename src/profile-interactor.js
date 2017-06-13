@@ -202,7 +202,7 @@ function profileInteractor(state, x, y) {
             .attr("direction", "h");
           if (!fixed) right_ext.call(drag_edge);
         }
-        d3.select(this).selectAll(".edge, .extension").attr("d", line);
+        d3.select(this).selectAll(".edge, .extension").attr("d", line).attr("visibility", (state.show_lines) ? "visible" : "hidden");
         
       });
         
