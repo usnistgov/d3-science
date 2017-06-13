@@ -4,7 +4,7 @@ before_script:
 script: bash ./deploy.sh
 env:
   global:
-  - ENCRYPTION_LABEL: ce4ca43dbbd7
+  - ENCRYPTION_LABEL: 2c4d9ad40ea6
 language: node_js
 node_js:
 - stable
