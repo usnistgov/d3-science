@@ -131,9 +131,6 @@ function rectangleInteractor(state, x, y) {
         
       group.selectAll('.edge').data(state_to_pairs(state))
         .attr("d", line);
-        
-      // fire!
-      dispatch.call("update");
     }
   }
   
@@ -143,6 +140,7 @@ function rectangleInteractor(state, x, y) {
     state.ymin = y.invert(y(state.ymin) + d3.event.dy);
     state.ymax = y.invert(y(state.ymax) + d3.event.dy);
     interactor.update();
+    dispatch.call("update");
   }
   
   function dragmove_corner(d) {
@@ -171,6 +169,7 @@ function rectangleInteractor(state, x, y) {
         console.log("default", d3.event, d3.select(this));
     }
     interactor.update();
+    dispatch.call("update");
   }
   
   function dragmove_edge() {
@@ -195,6 +194,7 @@ function rectangleInteractor(state, x, y) {
         console.log("default", d3.event, d3.select(this));
     }
     interactor.update();
+    dispatch.call("update");
   }
   
   interactor.x = function(_) {
