@@ -16,6 +16,7 @@ function xyChart(options_override) {
     show_points: true,
     show_line: true,
     show_errorbars: false,
+    show_grid: true,
     numberOfTicks: 4,
     position_cursor: true,
     vcursor: false,
@@ -708,6 +709,15 @@ function xyChart(options_override) {
     };
     
     chart.is_zoomed = function() { return is_zoomed; }
+    
+    chart.show_grid = function(_) {
+      if (!arguments.length) return options.show_grid;
+      options.show_grid = _;
+      chart.outercontainer.selectAll(".grid").style(
+        "display", (options.show_grid == true || options.show_grid == "true") ? "inline" : "none"
+      );
+      return chart;
+    };
     
     chart.x = function(_) {
       if (!arguments.length) return x;
