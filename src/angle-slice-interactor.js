@@ -25,32 +25,31 @@ function angleSliceInteractor(state, x, y) {
   var angle_to_path = function(cx, cy, angle) {
     var yd = y.range(),
         xd = x.range(),
-        y1 = y(cy) + (xd[0] - x(cx)) * Math.tan(angle),
-        y2 = y(cy) + (xd[1] - x(cx)) * Math.tan(angle);
+        rm = Math.sqrt(Math.pow(xd[1] - xd[0], 2) + Math.pow(yd[1] - yd[0], 2));        
         
-    var y1_rel = (y1 - yd[0]) / (yd[1] - yd[0]),
-        y2_rel = (y2 - yd[0]) / (yd[1] - yd[0]);
+    var s = Math.sin(angle),
+        c = Math.cos(angle),
+        cxp = x(cx),
+        cyp = y(cy);
         
-    if (y1_rel > 1) { y1 = yd[1] }
-    else if (y1_rel < 0) { y1 = yd[0] }
-    if (y2_rel > 1) { y2 = yd[1] }
-    else if (y2_rel < 0) { y2 = yd[0] }
-    
-    var x1 = x(cx) + (y1 - y(cy)) / Math.tan(angle),
-        x2 = x(cx) + (y2 - y(cy)) / Math.tan(angle);
+    var y1 = cyp - rm * s,
+        y2 = cyp + rm * s,
+        x1 = cxp + rm * c,
+        x2 = cxp - rm * c;
         
-    
     var pathstring = ""; 
     // start in the center and draw to the edge
-    pathstring += "M" + x(cx).toFixed();
-    pathstring += "," + y(cy).toFixed();
-    pathstring += "L" + x2.toFixed();
-    pathstring += "," + y2.toFixed();
-    // and back to the center to draw the other sector
-    pathstring += "M" + x(cx).toFixed();
-    pathstring += "," + y(cy).toFixed();
+    pathstring += "M" + cxp.toFixed();
+    pathstring += "," + cyp.toFixed();
     pathstring += "L" + x1.toFixed();
     pathstring += "," + y1.toFixed();
+    if (state.mirror) {
+      // and back to the center to draw the other sector
+      pathstring += "M" + cxp.toFixed();
+      pathstring += "," + cyp.toFixed();
+      pathstring += "L" + x2.toFixed();
+      pathstring += "," + y2.toFixed();
+    }
     return pathstring
   }
          
@@ -181,7 +180,7 @@ function angleSliceInteractor(state, x, y) {
   
   
   function dragmove_lines() {
-    var new_angle = Math.atan2(currentEvent.y - y(state.cy), currentEvent.x - x(state.cx))
+    var new_angle = Math.atan2(y(state.cy) - currentEvent.y, currentEvent.x - x(state.cx));
     if (d3.select(this).classed("centerline")) {
       state.angle_offset = new_angle;
     }
