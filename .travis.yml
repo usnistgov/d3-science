@@ -1,6 +1,6 @@
 before_script:
   - npm install -g babel-cli
-  - npm install babel-preset-es2015 babel-preset-latest babel-plugin-transform-es2015-modules-umd
+  - npm install babel-preset-es2015 babel-plugin-transform-es2015-modules-umd
 script: bash ./deploy.sh
 env:
   global:
