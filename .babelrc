@@ -1,8 +1,11 @@
 {
-  "presets": ["es2015"],
+  "presets": [["env", {
+    "targets": {"browsers": ["> 1%"]},
+    "modules": "umd"
+  }]],
   //"moduleId": "D3Science",
   //"moduleIds": true,
-  "plugins": ["transform-es2015-modules-umd"]
+  //"plugins": ["transform-es2015-modules-umd"]
 }
 //"./dataflow-editor-streamline-new.js": "dataflow",
 //"./xy-chart.js": "D3Science",

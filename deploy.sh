@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e # Exit with nonzero exit code if anything fails
 
-SOURCE_BRANCH="master"
+SOURCE_BRANCH="d3_v4"
 TARGET_BRANCH="gh-pages"
 
 # Pull requests and commits to other branches shouldn't try to deploy, just build to verify
@@ -31,10 +31,10 @@ git config user.name "Travis CI"
 git config user.email "brian.maranville@nist.gov"
 
 # If there are no changes (e.g. this is a README update) then just bail.
-if [ -z `git diff --exit-code` ]; then
-    echo "No changes to the spec on this push; exiting."
-    exit 0
-fi
+#if [ -z `git diff --exit-code` ]; then
+#    echo "No changes to the spec on this push; exiting."
+#    exit 0
+#fi
 
 # Commit the "changes", i.e. the new version.
 # The delta will show diffs between new and old versions.
