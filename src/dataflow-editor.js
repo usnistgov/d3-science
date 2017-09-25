@@ -55,7 +55,7 @@ function editor(options) {
   var svg, container;
   var wiredrag_cancelled = false;
   var exposed_wires = [];
-  var dispatch = d3.dispatch("update", "draw_wires");
+  var dispatch = d3.dispatch("update", "drag_module", "draw_wires");
   
   var wire_keyfn = function(d) {return "{source: " + d.source + "," + "target: " + d.target + "}"};
   var check_end = function(e) {
@@ -115,7 +115,10 @@ function editor(options) {
     outputs.forEach(reindex);
     fields.forEach(reindex);
     // remove exposed fields when the target module goes away...
-    datum.fields = fields.filter(function(f) { return f.target != null });
+    for (var i = fields.length - 1; i >= 0; i--){
+      // go through the array backwards to avoid renumbering problems
+      if (fields[i].target == null) { fields.splice(i, 1); }
+    }
   }
   
   function generate_exposed_wires() {
@@ -322,15 +325,15 @@ function editor(options) {
     }
     wiredrag_cancelled = false;
     var parent_el = this.parentNode.parentNode;
-    d3.select(this).classed("highlight", true);
+    d3.select(this).classed("active-wiring", true);
     var terminal_id = d3.select(this).attr("terminal_id");
     var module_index = d3.select(parent_el).attr("index");
     var address = [parseInt(module_index),  terminal_id];
     new_wiredata = {source: null, target: null}
     var dest_selector = (this.classList.contains("input")) ? ".wireable .output" : ".wireable .input";
     svg.selectAll(dest_selector)
-      .on("mouseenter", function() {d3.select(this).classed("highlight", true)})
-      .on("mouseleave", function() {d3.select(this).classed("highlight", false)})
+      .on("mouseenter", function() {d3.select(this).classed("active-wiring", true)})
+      .on("mouseleave", function() {d3.select(this).classed("active-wiring", false)})
     if (this.classList.contains("input")) {
       new_wiredata.target = address;
       new_wiredata.source = "cursor";        
@@ -347,18 +350,18 @@ function editor(options) {
     function wirestop() {
       currentEvent.sourceEvent.stopPropagation();
       if (wiredrag_cancelled) { return }
-      d3.select(this).classed("highlight", false);
+      d3.select(this).classed("active-wiring", false);
       var active_data = new_wiredata; // d3.select(active_wire).datum();
       var is_exposed = false;
       if (this.classList.contains("input")) {
-        var new_src = d3.select(".output.highlight");
+        var new_src = d3.select(".output.active-wiring");
         if (!new_src.empty()) {
           var module_index = d3.select(new_src.node().parentNode.parentNode).attr("index");
           active_data.source = [parseInt(module_index), new_src.attr("terminal_id")];
         }
       } 
       else if (this.classList.contains("output")) {
-        var new_tgt = d3.select(".input.highlight");
+        var new_tgt = d3.select(".input.active-wiring");
         if (!new_tgt.empty()) {
           var module_index = d3.select(new_tgt.node().parentNode.parentNode).attr("index");
           active_data.target = [parseInt(module_index), new_tgt.attr("terminal_id")];
@@ -393,7 +396,7 @@ function editor(options) {
       if (!active_wire) { svg.datum().wires.pop() }
       update();
       svg.selectAll(".terminal")
-        .classed("highlight", false)
+        .classed("active-wiring", false)
         .on("mouseenter", null)
         .on("mouseleave", null)
       active_wire = false;
@@ -425,14 +428,18 @@ function editor(options) {
     var active_wire, new_wiredata;
     
     var drag = d3.drag()
+      //.on("start", function() { orig_x = module_data.x; orig_y = module_data.y })
+      .clickDistance(grid_spacing)
       .on("drag", dragmove)
-      //.origin(function(a) { return {x: module_data.x, y: module_data.y} });
       
     function dragmove() {
       if (!d3.select(this).classed("draggable")) {return}
-      module_data.x = Math.round(currentEvent.x/grid_spacing) * grid_spacing;
-      module_data.y = Math.round(currentEvent.y/grid_spacing) * grid_spacing;
+      var dx = Math.round(currentEvent.x/grid_spacing) * grid_spacing - module_data.x;
+      var dy = Math.round(currentEvent.y/grid_spacing) * grid_spacing - module_data.y;
+      module_data.x += dx;
+      module_data.y += dy;
       group.attr("transform", "translate(" + module_data.x.toFixed() + "," + module_data.y.toFixed() + ")");
+      dispatch.call("drag_module", this, module_data, dx, dy);
       draw_wires();
     }
     
@@ -633,4 +640,3 @@ function editor(options) {
   
   return Editor;
 }
-
