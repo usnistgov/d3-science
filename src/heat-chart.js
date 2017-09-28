@@ -19,9 +19,11 @@ export default function heatChart(options_override) {
     numberOfTicks: 4,
     aspect_ratio: null,
     autoscale: false,
-    xlabel: "x-axis",
-    ylabel: "y-axis",
-    zlabel: "z-axis",
+    axes: {
+      xaxis: {label: "x-axis"},
+      yaxis: {label: "y-axis"},
+      zaxis: {label: "z-axis"}
+    },
     ztransform: "linear", 
     dims: {
       xmin: 0,
@@ -262,9 +264,9 @@ export default function heatChart(options_override) {
       mainview.select(".x.grid").call(xAxisGrid);
       mainview.select(".y.grid").call(yAxisGrid);
       // remove added attr that blocks styling:
+      mainview.select(".x.axis-label").html(((options.axes || {}).xaxis || {}).label || "x-axis");
+      mainview.select(".y.axis-label").html(((options.axes || {}).yaxis || {}).label || "y-axis");
       mainview.selectAll(".grid .tick line").attr("stroke", null);
-      mainview.select(".x.axis-label").text(options.xlabel);
-      mainview.select(".y.axis-label").text(options.ylabel);
         
       chart.svg = svg;
       chart.mainview = mainview;
@@ -387,6 +389,8 @@ export default function heatChart(options_override) {
       var container = chart.outercontainer;
       mainview.select(".x.axis").call(xAxis);
       mainview.select(".y.axis").call(yAxis);
+      mainview.select(".x.axis .x.axis-label").html(options.axes.xaxis.label);
+      mainview.select(".y.axis .y.axis-label").html(options.axes.yaxis.label);
       mainview.select(".grid.x").call(xAxisGrid);
       mainview.select(".grid.y").call(yAxisGrid);
       // remove added attr that blocks styling:
@@ -596,10 +600,18 @@ export default function heatChart(options_override) {
   
   chart.interactors = function(_) {
     if (!arguments.length) return interactors;
-    chart.svg.select("g.interactors").call(_);
-    _.x(x).y(y).update();
-    interactors.push(_);
-    return chart;
+    if ( _ == null ) {
+      // null passed intentionally: clear all
+      chart.svg.selectAll("g.interactor-layer g.interactors").remove();
+      interactors = [];
+      return chart;
+    }
+    else {
+      chart.svg.select("g.interactor-layer").call(_);
+      _.x(x).y(y).update();
+      interactors.push(_);
+      return chart;
+    }
   };
   
   chart.destroy = function() {
