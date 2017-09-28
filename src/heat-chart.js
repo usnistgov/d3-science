@@ -180,30 +180,26 @@ export default function heatChart(options_override) {
         .scale(y)
         .ticks(options.numberOfTicks)
         .tickPadding(10);        
-        
-      var mainCanvas = outercontainer.append("canvas");
+      
+      var container = outercontainer.append("div")
+        .attr("class", "heatmap-container")
+        .attr("width", innerwidth)
+        .attr("height", innerheight)
+        .style("display", "inline-block")
+        .style("position", "relative")
+        .style("width", innerwidth + "px")
+        .style("height", innerheight + "px");
+      
+      var mainCanvas = container.append("canvas");
       mainCanvas
           .attr("width", width)
           .attr("height", height)
           .attr("class", "mainplot")
           .style("position", "absolute")
-          .style("left", "0")
-          .style("top", "0")
+          .style("left", options.margin.left + "px")
+          .style("top", options.margin.top + "px")
           .style("width", width + "px")
           .style("height", height + "px")
-          .style("padding-left", options.margin.left + "px")
-          .style("padding-right", options.margin.right + "px")
-          .style("padding-top", options.margin.top + "px")
-          
-      var container = outercontainer.append("div")
-        .attr("class", "heatmap-container")
-        .attr("width", innerwidth)
-        .attr("height", innerheight)
-        //.style("left", "0")
-        //.style("top", "0")
-        .style("display", "inline-block")
-        .style("width", innerwidth + "px")
-        .style("height", innerheight + "px");
           
       mainCanvas.call(drawImage);
                 
@@ -225,32 +221,25 @@ export default function heatChart(options_override) {
                 
       mainview.append("g")
         .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-      mainview
         .append("text")
-        .attr("transform", "translate(0," + height + ")")
-        .classed("x axis-label", true)
-        .attr("x", width/2.0)
-        .attr("text-anchor", "middle")
-        .attr("y", 35)
+          .attr("class", "x axis-label")
+          .attr("x", width/2.0)
+          .attr("text-anchor", "middle")
+          .attr("y", options.margin.bottom - 5)
       mainview.append("g")
-        .attr("class", "y axis");
-      mainview
+        .attr("class", "y axis")
         .append("text")
-        .attr("transform", "rotate(-90)")
-        .classed("y axis-label", true)
-        .attr("y", 0 - options.margin.left)
-        .attr("x",0 - (height / 2))
-        .attr("dy", "1em")
-        .style("text-anchor", "middle")   
+          .attr("class", "y axis-label")
+          .attr("text-anchor", "middle")
+          .attr("transform", "rotate(-90)")
+          .attr("y", -options.margin.left + 15 )
+          .attr("x", -height/2)
       
       mainview.append("g")
         .attr("class", "x grid")
-        .attr("transform", "translate(0," + height + ")");         
+        //.attr("transform", "translate(0," + height + ")");         
       mainview.append("g")
         .attr("class", "y grid");
-      mainview.append("g")
-        .attr("class", "y interactors")
       
       mainview.append("rect")
         .attr("class", "zoom box")
@@ -258,6 +247,9 @@ export default function heatChart(options_override) {
         .attr("height", height)
         .style("visibility", "hidden")
         .attr("pointer-events", "all")
+        
+      mainview.append("g")
+        .attr("class", "interactor-layer")
       
       mainview.select(".x.axis").call(xAxis);
       mainview.select(".y.axis").call(yAxis);
@@ -267,6 +259,9 @@ export default function heatChart(options_override) {
       mainview.select(".x.axis-label").html(((options.axes || {}).xaxis || {}).label || "x-axis");
       mainview.select(".y.axis-label").html(((options.axes || {}).yaxis || {}).label || "y-axis");
       mainview.selectAll(".grid .tick line").attr("stroke", null);
+      
+      mainview.selectAll("g.x")
+        .attr("transform", "translate(0," + height + ")");
         
       chart.svg = svg;
       chart.mainview = mainview;
@@ -870,7 +865,7 @@ export default function heatChart(options_override) {
   
   chart.autofit = function() {
     var offset_right = (options.show_colorbar) ? options.colorbar_width + 5 : 0;
-    var outercontainer = this.outercontainer,
+    var outercontainer = chart.outercontainer,
         innerwidth = outercontainer.node().clientWidth - offset_right,
         innerheight = outercontainer.node().clientHeight,
         width = innerwidth - options.margin.right - options.margin.left,
