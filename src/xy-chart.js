@@ -428,6 +428,7 @@ function xyChart(options_override) {
     // Create D3 legend
     //************************************************************
     chart.draw_legend = function(data) {
+      if (!options.legend.show) { return }
       var el = chart.svg.select("g.legend");
       var update_sel = el.selectAll('g').data(data);
       update_sel
