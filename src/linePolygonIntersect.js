@@ -11,12 +11,12 @@ function linePolygonIntersects(line, polygonPoints, closePath, calculate_reflect
   // ordered is boolean (defaults to true): 
   //    if true, return list in order of intersection along line.
   var intersects = [];
-  for (var i=0; i<polygonPoints.length-1; i++) {
+  for (var i=0; i<polygonPoints.numberOfItems-1; i++) {
     var line2 = [polygonPoints.getItem(i), polygonPoints.getItem(i+1)],
         intersect = lineLineIntersect(line2, line, calculate_reflection);
     if (intersect) { intersects.push(intersect) }
   }
-  if (closePath && polygonPoints.length > 1) {
+  if (closePath && polygonPoints.numberOfItems > 1) {
     var line2 = [polygonPoints.getItem(polygonPoints.length-1), polygonPoints.getItem(0)],
         intersect = lineLineIntersect(line2, line, calculate_reflection);
     if (intersect) { intersects.push(intersect) }
