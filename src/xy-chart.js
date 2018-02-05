@@ -272,7 +272,21 @@ function xyChart(options_override) {
         }
       }
       
-      svg.call(drag);
+      chart.zoomRect = function(_) {
+        if (!arguments.length) return zoomRect;
+        if (_ == zoomRect) { return }
+        else {
+          zoomRect = _;
+          if (zoomRect == true) {
+            svg.call(drag);
+          } 
+          else {
+            svg.on('.drag', null);
+          }
+        }
+        return chart;
+      };
+      
       chart.drag = drag;
       chart.zoom = zoom;
       
@@ -749,12 +763,6 @@ function xyChart(options_override) {
     chart.max_y = function(_) {
       if (!arguments.length) return max_y;
       max_y = _;
-      return chart;
-    };
-    
-    chart.zoomRect = function(_) {
-      if (!arguments.length) return zoomRect;
-      zoomRect = _;
       return chart;
     };
     
