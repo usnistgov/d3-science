@@ -59,7 +59,7 @@ canvas {
 }
 
 </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.4.0/d3.min.js" charset="utf-8"></script>
+  <script src="//d3js.org/d3.v4.min.js" charset="utf-8"></script>
   <script src="../lib/jquery-extend.js"></script>
   <script src="../lib/heat-chart.js" charset="utf-8">></script>
   <script src="../lib/colormap.js" charset="utf-8">></script>
@@ -89,8 +89,20 @@ window.onload = function() {
 
   d3.json("sample_data/512.json", function(error, heatmap) {
       //mydata = heatmap;
+      var data_rolled = heatmap;
+      var ydim = heatmap.length;
+      var xdim = heatmap[0].length;
+      var unrolled = [], p=0;
+      for (let j=0; j<ydim; j++) {
+        let row = heatmap[j];
+        for (let i=0; i<xdim; i++) {
+          unrolled[p++] = row[i];
+        }
+      }
+      chart.dims({xdim: xdim, ydim: ydim});
+        
       c = d3.select("#plot1")
-        .data([heatmap])
+        .data([unrolled])
         .call(chart);
   });
 }

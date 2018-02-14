@@ -233,9 +233,6 @@ function xyChart(options_override) {
       var mainview = svg.append("g")
         .attr("class", "mainview")
         .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");  
-
-      var drag = d3.drag();
-      drag.on("start", drag_started);
       
       function drag_started() {
         if (!zoomRect) return;
@@ -278,6 +275,8 @@ function xyChart(options_override) {
         else {
           zoomRect = _;
           if (zoomRect == true) {
+            var drag = d3.drag();
+            drag.on("start", drag_started);
             svg.call(drag);
           } 
           else {
@@ -287,7 +286,6 @@ function xyChart(options_override) {
         return chart;
       };
       
-      chart.drag = drag;
       chart.zoom = zoom;
       
       

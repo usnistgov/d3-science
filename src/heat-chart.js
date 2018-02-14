@@ -26,8 +26,10 @@ export default function heatChart(options_override) {
     },
     ztransform: "linear", 
     dims: {
+      xdim: 1,
       xmin: 0,
       xmax: 1,
+      ydim: 1,
       ymin: 0, 
       ymax: 1,
       zmin: 1.0,
@@ -116,7 +118,7 @@ export default function heatChart(options_override) {
 
   function chart(selection) {
     selection.each(function(data) {
-      var offset_right = (options.show_colorbar) ? options.colorbar_width + 5 : 0;
+      var offset_right = (options.show_colorbar) ? options.colorbar_width + 15 : 0;
       var outercontainer = d3.select(this),
         innerwidth = outercontainer.node().clientWidth - offset_right,
         innerheight = outercontainer.node().clientHeight,
@@ -494,16 +496,22 @@ export default function heatChart(options_override) {
         .attr("x", parseFloat(mainview.attr("width")) - 10)
         .attr("y", parseFloat(mainview.attr("height")) + options.margin.bottom)
         
+      function get_z(x_bin, y_bin) {
+        // x_bin and y_bin are int
+        // var row_major = options.source_order.toUpperCase() == "C";
+        // var p = (row_major) ? ((x_bin * dims.ydim) + y_bin) : ((y_bin * dims.xdim) + x_bin);
+        var p = ((x_bin * dims.ydim) + y_bin);
+        return (x_bin >= 0 && x_bin < dims.xdim && y_bin >= 0 && y_bin < dims.ydim) ? source_data[p] : NaN;
+      }
+      
       var follow = function (){  
         if (source_data == null || source_data[0] == null) { return }
         var mouse = d3.mouse(mainview.node());
         var x_coord = x.invert(mouse[0]),
-            y_coord = y.invert(mouse[1]),
-            xdim = source_data[0].length,
-            ydim = source_data.length;
-        var x_bin = Math.floor((x_coord - dims.xmin) / (dims.xmax - dims.xmin) * xdim),
-            y_bin = Math.floor((y_coord - dims.ymin) / (dims.ymax - dims.ymin) * ydim);
-        var z_coord = (x_bin >= 0 && x_bin < xdim && y_bin >= 0 && y_bin < ydim) ? source_data[y_bin][x_bin] : NaN;
+            y_coord = y.invert(mouse[1]);
+        var x_bin = Math.floor((x_coord - dims.xmin) / (dims.xmax - dims.xmin) * dims.xdim),
+            y_bin = Math.floor((y_coord - dims.ymin) / (dims.ymax - dims.ymin) * dims.ydim);
+        var z_coord = get_z(x_bin, y_bin);
         position_cursor.text(
           x_coord.toPrecision(5) + 
           ", " + 
@@ -621,10 +629,8 @@ export default function heatChart(options_override) {
   };
 
   var get_sxdx = function(){
-    var xdim = source_data[0].length,
-        ydim = source_data.length;
-    var delta_x = (dims.xmax - dims.xmin)/(xdim),
-        delta_y = (dims.ymax - dims.ymin)/(ydim);
+    var delta_x = (dims.xmax - dims.xmin)/(dims.xdim),
+        delta_y = (dims.ymax - dims.ymin)/(dims.ydim);
     
     var graph_xmax = Math.max.apply(Math, x.domain()),
         graph_xmin = Math.min.apply(Math, x.domain()),
@@ -696,23 +702,23 @@ export default function heatChart(options_override) {
         
     if (_redraw_backing) {
       _redraw_backing = false;
-      var height = source_data.length,
-          width = source_data[0].length;
+      var height = dims.ydim,
+          width = dims.xdim;
       if (backing_image == null || backing_canvas.width != width || backing_canvas.height != height) {
         backing_canvas.width = width;
         backing_canvas.height = height;
         backing_image = ctx.createImageData(width, height);
       }
       var data = backing_image.data;
-      var yp, pp=0;
-      for (var yt = 0, p = -1; yt < height; ++yt) {
-        yp = dims.ydim - 1 - yt; // y-axis starts at the top!
-        for (var xp = 0; xp < width; ++xp, pp++) {
-          var c = _colormap_array[plotdata[pp]];
-          data[++p] = c.r;
-          data[++p] = c.g;
-          data[++p] = c.b;
-          data[++p] = c.a;
+      var yp, pp=0, p=0, offset;
+      for (var yp = height-1; yp > -1; yp--) {
+        offset = yp * width;
+        for (var xp = 0; xp < width; xp++) {
+          var c = _colormap_array[plotdata[offset++]];
+          data[p++] = c.r;
+          data[p++] = c.g;
+          data[p++] = c.b;
+          data[p++] = c.a;
         }
       }
       ctx.putImageData(backing_image, 0, 0);
@@ -768,21 +774,19 @@ export default function heatChart(options_override) {
     //var crange = d3.range(256);
     //var lookups = crange.slice(0,255).map(plotz.invert);
     //var threshold = d3.scale.quantile().domain(lookups).range(crange);
-    var height = source_data.length,
-        width = source_data[0].length;
+    var height = dims.ydim,
+        width = dims.xdim,
+        size = height * width;
     // set the local plotdata:
-    if (plotdata == null || plotdata.length != (width * height)) {
-      plotdata = new Uint8ClampedArray(width*height);
+    if (plotdata == null || plotdata.length != size) {
+      plotdata = new Uint8ClampedArray(size);
     }
     // plotdata is stored in row-major order ("C"), where row is "y"
     var zz, r, c, dr, plotz, pp=0;
-    for (r = height - 1; r >=0; r--) {
-      dr = source_data[r];
-      for (c = 0; c < width; c++) {
-        zz = dr[c];        
-        plotdata[pp++] = plotz(zz);
-        //plotdata[pp++] = threshold(zz);
-      }
+    //var row_major = options.source_order.toUpperCase() == "C";
+    //var first_index = (row_major) ? 
+    for (let i=0; i<size; i++) {
+      plotdata[i] = plotz(source_data[i]);
     }
     _redraw_backing = true;
     return
@@ -830,8 +834,8 @@ export default function heatChart(options_override) {
   
   function generate_cumsums() {
     //console.log('generating cumsum');
-    var height = source_data.length,
-        width = source_data[0].length,
+    var height = dims.ydim,
+        width = dims.xdim,
         data = source_data;
     
     var cumsum_x = [], cumsum_x_col;
@@ -845,7 +849,7 @@ export default function heatChart(options_override) {
       cumsum_x_col = [0]; xsum = 0;
       cumsum_y_col = [];
       for (var r = 0; r < height; r++) {
-        var z = data[r][c];
+        var z = data[r*width + c];
         if (isFinite(z)) {
           xsum += z;
           ysum[r] += z;
