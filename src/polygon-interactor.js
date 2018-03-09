@@ -39,7 +39,7 @@ function polygonInteractor(state, x, y) {
           .style("stroke", state.color1)
           .style("stroke-linecap", "round")
           .style("stroke-width", "4px")
-          .style("fill", "none")
+          .style("fill", state.fill || "none")
     //if (!fixed) edges.call(drag_edge);
       
     var corner_group = group.append("g")
