@@ -780,7 +780,6 @@ export default function heatChart(options_override) {
 
     // source data is an array, but the order can be "F" or "C" (default)
     let f_order = (String(options.source_order).toUpperCase() == 'F');
-    console.log(options.source_order, f_order);
     /* from the documentation for the ES ImageData object:
      * ...Each component is assigned a consecutive index within the array, with the
      * top left pixel's red component being at index 0 within the array. Pixels then
