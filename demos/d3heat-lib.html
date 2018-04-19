@@ -81,7 +81,7 @@ window.onload = function() {
   
   colormap_select.value = "jet"; // default
   
-  chart = heatChart.default({ztransform: 'log', margin: {"bottom": 75}})
+  chart = heatChart.default({ztransform: 'log', margin: {"bottom": 75}, source_order: "F"})
     .autoscale(true)
     .xlabel("Qx (\u212B\u207B\u00B9)")
     .ylabel("Qz (\u212B\u207B\u00B9)");

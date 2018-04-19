@@ -14,6 +14,7 @@ export default function heatChart(options_override) {
     cb_margin: {top: 10, right: 50, bottom: 50, left: 10},
     show_grid: true,
     show_colorbar: true,
+    source_order: "C",
     position_cursor: true,
     colorbar_width: 120,
     numberOfTicks: 4,
@@ -703,23 +704,21 @@ export default function heatChart(options_override) {
     if (_redraw_backing) {
       _redraw_backing = false;
       var height = dims.ydim,
-          width = dims.xdim;
+          width = dims.xdim,
+          size = height * width;
       if (backing_image == null || backing_canvas.width != width || backing_canvas.height != height) {
         backing_canvas.width = width;
         backing_canvas.height = height;
         backing_image = ctx.createImageData(width, height);
       }
       var data = backing_image.data;
-      var yp, pp=0, p=0, offset;
-      for (var yp = height-1; yp > -1; yp--) {
-        offset = yp * width;
-        for (var xp = 0; xp < width; xp++) {
-          var c = _colormap_array[plotdata[offset++]];
-          data[p++] = c.r;
-          data[p++] = c.g;
-          data[p++] = c.b;
-          data[p++] = c.a;
-        }
+      var p=0;
+      for (var offset=0; offset < size; offset++) {
+        var c = _colormap_array[plotdata[offset]];
+        data[p++] = c.r;
+        data[p++] = c.g;
+        data[p++] = c.b;
+        data[p++] = c.a;
       }
       ctx.putImageData(backing_image, 0, 0);
     }
@@ -771,9 +770,6 @@ export default function heatChart(options_override) {
   var make_plotdata = function() {
     // source_data is 2d array
     var plotz = z.copy().range([0,255]);
-    //var crange = d3.range(256);
-    //var lookups = crange.slice(0,255).map(plotz.invert);
-    //var threshold = d3.scale.quantile().domain(lookups).range(crange);
     var height = dims.ydim,
         width = dims.xdim,
         size = height * width;
@@ -781,13 +777,37 @@ export default function heatChart(options_override) {
     if (plotdata == null || plotdata.length != size) {
       plotdata = new Uint8ClampedArray(size);
     }
-    // plotdata is stored in row-major order ("C"), where row is "y"
-    var zz, r, c, dr, plotz, pp=0;
-    //var row_major = options.source_order.toUpperCase() == "C";
-    //var first_index = (row_major) ? 
-    for (let i=0; i<size; i++) {
-      plotdata[i] = plotz(source_data[i]);
+
+    // source data is an array, but the order can be "F" or "C" (default)
+    let f_order = (String(options.source_order).toUpperCase() == 'F');
+    console.log(options.source_order, f_order);
+    /* from the documentation for the ES ImageData object:
+     * ...Each component is assigned a consecutive index within the array, with the
+     * top left pixel's red component being at index 0 within the array. Pixels then
+     * proceed from left to right, then downward, throughout the array.
+     *
+     * The image array is then "F"-ordered (x-coordinate changes fastest)
+     * with an inversion in y, since the data coordinate system is defined
+     * to begin (0,0) in the lower-left corner.
+     *
+     */
+
+    let image_stride = [1, -width];
+    let image_offset = (height-1) * width;
+    let data_stride = (f_order) ? [1, width] : [height, 1];
+    //let data_offset = 0;
+
+    var image_p, data_p, image_p_i, data_p_i;
+    for (let i=0; i<width; i++) {
+      image_p_i = image_stride[0] * i + image_offset;
+      data_p_i = data_stride[0] * i; // + data_offset; // always zero
+      for (let j=0; j<height; j++) {
+        image_p = image_p_i + image_stride[1] * j;
+        data_p = data_p_i + data_stride[1] * j;
+        plotdata[image_p] = plotz(source_data[data_p]);
+      }
     }
+
     _redraw_backing = true;
     return
   };
