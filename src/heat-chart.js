@@ -119,7 +119,7 @@ export default function heatChart(options_override) {
 
   function chart(selection) {
     selection.each(function(data) {
-      var offset_right = (options.show_colorbar) ? options.colorbar_width + 15 : 0;
+      var offset_right = (options.show_colorbar) ? options.colorbar_width + 20 : 0;
       var outercontainer = d3.select(this),
         innerwidth = outercontainer.node().clientWidth - offset_right,
         innerheight = outercontainer.node().clientHeight,
