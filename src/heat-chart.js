@@ -335,7 +335,7 @@ export default function heatChart(options_override) {
     
       svg.select(".z.axis").call(zAxis);
       
-      svg.attr("width", width + options.cb_margin.left + options.cb_margin.right)
+      svg.attr("width", width + options.cb_margin.right)
           .attr("height", height + options.cb_margin.top + options.cb_margin.bottom);
       
       svg.selectAll("g.z")
