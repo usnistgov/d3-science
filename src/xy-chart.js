@@ -353,8 +353,8 @@ function xyChart(options_override) {
       chart.resetzoom(); // set to 10% zoom out.
 	
       chart.draw_lines(data);
-      chart.draw_points(data);
       chart.draw_errorbars(data);
+      chart.draw_points(data);
       chart.draw_legend(data);
 	  
       //************************************************************
@@ -454,7 +454,8 @@ function xyChart(options_override) {
               .attr("width", 10)
               .attr("height", 10)
               .style("fill", get_series_color(null, i))
-              .style("cursor", "move")
+              .style("stroke", get_series_color(null, i))
+              .style("cursor", "pointer")
               .on("mouseover", function() {
                 chart.svg.selectAll('path.line')
                   .classed('highlight', function(d,ii) {return ii == i})
@@ -465,7 +466,23 @@ function xyChart(options_override) {
                   .classed('highlight', false)
                   .classed('unhighlight', false);
               })
-              .call(drag_legend);
+              .on("click", function() {
+                let hidden = d3.select(this).classed("hidden");
+                // toggle:
+                hidden = !hidden;
+                d3.select(this).classed('hidden', hidden);
+                chart.svg.selectAll('path.line')
+                  .filter(function(d,ii) { return ii == i })
+                  .classed('hidden', hidden);
+                chart.svg.selectAll('g.series')
+                  .filter(function(d,ii) { return ii == i })
+                  .classed('hidden', hidden);
+                chart.svg.selectAll('g.errorbars')
+                  .filter(function(d,ii) { return ii == i })
+                  .classed('hidden', hidden);
+              })
+              .append("title").text("click to hide/unhide")
+              //.call(drag_legend);
             
             g.append("text")
               .attr("x", 15-options.legend.left)
@@ -598,8 +615,8 @@ function xyChart(options_override) {
       svg.selectAll("rect.zoom").remove();
 
       chart.draw_lines(source_data);
-      chart.draw_points(source_data);
       chart.draw_errorbars(source_data);
+      chart.draw_points(source_data);
       chart.draw_legend(source_data);
       
       chart.interactors().forEach(function(d,i) { if (d.update) {d.update();}});
