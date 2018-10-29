@@ -442,17 +442,20 @@ function xyChart(options_override) {
     chart.draw_legend = function(data) {
       if (!options.legend.show) { return }
       var el = chart.svg.select("g.legend");
-      var update_sel = el.selectAll('g').data(data);
+      // if there are more options.series defined than datasets, 
+      // use the extra series:
+      var ldata = d3.range(Math.max(data.length, (options.series || []).length));
+      var update_sel = el.selectAll('g').data(ldata);
       update_sel
         .enter()
           .append('g')
           .each(function(d, i) {
             var g = d3.select(this);
             g.append("rect")
-              .attr("x", -options.legend.left)
-              .attr("y", i*25 + 15)
-              .attr("width", 10)
-              .attr("height", 10)
+              .attr("x", legend_offset.x)
+              .attr("y", i*25 + 10)
+              .attr("width", 14)
+              .attr("height", 14)
               .style("fill", get_series_color(null, i))
               .style("stroke", get_series_color(null, i))
               .style("cursor", "pointer")
@@ -485,7 +488,7 @@ function xyChart(options_override) {
               //.call(drag_legend);
             
             g.append("text")
-              .attr("x", 15-options.legend.left)
+              .attr("x", 18 + legend_offset.x)
               .attr("y", i * 25 + 25)
               .attr("height",30)
               .attr("width",100)
@@ -509,10 +512,10 @@ function xyChart(options_override) {
       
       el.selectAll("rect")
         .attr("x", legend_offset.x)
-        .attr("y", function(d,i) {return i*25 + 15 + legend_offset.y});
+        .attr("y", function(d,i) {return i*25 + 12 + legend_offset.y});
 
       el.selectAll("text")
-        .attr("x", 15 + legend_offset.x)
+        .attr("x", 18 + legend_offset.x)
         .attr("y", function(d,i) { return i * 25 + 25 + legend_offset.y})
         .each(function(d, i) {
           d3.select(this).text((options.series[i] && options.series[i].label != null) ? options.series[i].label : i+1)
