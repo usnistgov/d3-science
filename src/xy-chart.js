@@ -646,6 +646,7 @@ function xyChart(options_override) {
       // otherwise grab from the default colors list:
       return (options.series[i] || {}).color || colors[i % colors.length];
     }
+    chart.get_series_color = function(i) { return get_series_color(null, i) }
     
     function errorbar_generator(d) {
       var errorbar_width = options.errorbar_width;
