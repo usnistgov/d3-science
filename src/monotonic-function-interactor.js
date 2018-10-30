@@ -17,6 +17,7 @@ function monotonicFunctionInteractor(state, x, y) {
   var interpolation = (state.interpolation == null) ? 'Linear' : state.interpolation;
 
   var line = d3.line()
+    .defined(function(d) { return (d && d != null && isFinite(d) && isFinite(y(state.functional(x.invert(d))))) })
     .x(function (d) { return d; })
     .y(function (d) { return y(state.functional(x.invert(d))); })
     .curve(d3["curve" + interpolation]);
