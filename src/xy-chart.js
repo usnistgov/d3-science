@@ -456,8 +456,6 @@ function xyChart(options_override) {
               .attr("y", i*25 + 10)
               .attr("width", 14)
               .attr("height", 14)
-              .style("fill", get_series_color(null, i))
-              .style("stroke", get_series_color(null, i))
               .style("cursor", "pointer")
               .on("mouseover", function() {
                 chart.svg.selectAll('path.line')
@@ -494,7 +492,6 @@ function xyChart(options_override) {
               .attr("width",100)
               .style("text-anchor", "start")
               .style("cursor", "move")
-              .style("fill", get_series_color(null, i))
               .on("mouseover", function() {
                 chart.svg.selectAll('path.line')
                   .classed('highlight', function(d,ii) {return ii == i})
@@ -509,10 +506,12 @@ function xyChart(options_override) {
 
           });
       update_sel.exit().remove();
+      update_sel.style("fill", get_series_color);
       
       el.selectAll("rect")
         .attr("x", legend_offset.x)
-        .attr("y", function(d,i) {return i*25 + 12 + legend_offset.y});
+        .attr("y", function(d,i) {return i*25 + 12 + legend_offset.y})
+        .style("stroke", get_series_color);
 
       el.selectAll("text")
         .attr("x", 18 + legend_offset.x)
@@ -536,12 +535,12 @@ function xyChart(options_override) {
       update_sel
         .enter()
           .append("path")
-          .attr("class", "line")
-          .attr('stroke', get_series_color);
+          .attr("class", "line");
       update_sel.exit().remove();
       
       chart.g.selectAll('path.line')
-        .attr("d", line);
+        .attr("d", line)
+        .attr('stroke', get_series_color);
     }      
     
     //************************************************************
@@ -552,9 +551,9 @@ function xyChart(options_override) {
         .data(filterShowOption('show_points', data))
       series_sel
         .enter().append("g")
-          .attr("class", "series")
-          .style("fill", get_series_color);
+          .attr("class", "series");
       series_sel.exit().remove();
+      series_sel.style("fill", get_series_color);
       
       var update_sel = chart.g.selectAll("g.series").selectAll(".dot")
           .data(function(d) { return d; });
@@ -587,9 +586,9 @@ function xyChart(options_override) {
       series_sel
        .enter().append("g")
           .classed("errorbars", true)
-          .style("stroke", get_series_color)
-          .style("stroke-width", "1.5px")
+          .style("stroke-width", "1.5px");
       series_sel.exit().remove();
+      series_sel.style("stroke", get_series_color);
       
       var update_sel = chart.g.selectAll(".errorbars").selectAll(".errorbar")
           .data(function(d,i) { return d; })
