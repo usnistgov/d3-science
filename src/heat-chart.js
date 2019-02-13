@@ -518,7 +518,7 @@ export default function heatChart(options_override) {
           ", " + 
           y_coord.toPrecision(5) + 
           ", " + 
-          ((isFinite(z_coord)) ? z_coord.toPrecision(5) : 'NaN'));
+          ((isNaN(z_coord) || z_coord == null) ? 'NaN' : z_coord.toPrecision(5)));
       }
       svg
         .on("mousemove.position_cursor", follow)
