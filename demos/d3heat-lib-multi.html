@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+<head>
+ <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans" />
+<style>
+
+html, body {
+  position: relative;
+  height: 100%;
+  font-family: 'Open Sans' !important;
+}
+
+#plot1 {
+    width: 100%;
+    height: 75%;;
+}
+
+svg,
+canvas {
+  position: absolute;
+  left: 
+  image-rendering: optimizeSpeed;
+  image-rendering: crisp-edges;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: optimize-contrast;
+  -ms-interpolation-mode: nearest-neighbor;
+}
+
+.axis text {
+  font: 14px 'Open Sans';
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+.axis .axis-label {
+    font-size: 14px;
+    user-select: none; 
+    -webkit-user-select: none; 
+    -moz-user-select: none;
+}
+
+.axis path {
+  /* display: none; */
+}
+
+.grid .tick {
+    stroke: lightgrey;
+    opacity: 0.7;
+}
+.grid path {
+      stroke-width: 0;
+}
+
+</style>
+  <script src="//d3js.org/d3.v4.min.js" charset="utf-8"></script>
+  <script src="../lib/jquery-extend.js"></script>
+  <script src="../lib/heat-chart-multi.js" charset="utf-8">></script>
+  <script src="../lib/colormap.js" charset="utf-8">></script>
+
+</head>
+<body>
+<!--<script src="d3.v3.min.js"></script>-->
+<script>
+window.onload = function() {
+
+  var dispatch = d3.dispatch("update_main", "update_colorbar");
+  var colormap_selector = document.getElementById('colormap_selector');
+  for (var m in colormap.colormap_data) {
+    var new_option = document.createElement("option");
+    new_option.value = m;
+    new_option.text = m;
+    colormap_select.add(new_option);
+  }
+  
+  colormap_select.value = "jet"; // default
+  
+  chart = heatChartMulti.default({ztransform: 'log', margin: {"bottom": 75}, source_order: "F"})
+    .autoscale(true)
+    .xlabel("Qx (\u212B\u207B\u00B9)")
+    .ylabel("Qz (\u212B\u207B\u00B9)");
+    
+
+  d3.json("sample_data/512.json", function(error, heatmap) {
+      //mydata = heatmap;
+      var data_rolled = heatmap;
+      var ydim = heatmap.length;
+      var xdim = heatmap[0].length;
+      var unrolled = [], p=0;
+      for (let j=0; j<ydim; j++) {
+        let row = heatmap[j];
+        for (let i=0; i<xdim; i++) {
+          unrolled[p++] = row[i];
+        }
+      }
+      var source_data = [
+          {
+              data: unrolled,
+              dims: {
+                xdim: xdim,
+                xmin: 0,
+                xmax: xdim,
+                ymin: 0,
+                ymax: ydim,
+                ydim: ydim
+              }
+          }, 
+          {
+              data: unrolled,
+              dims: {
+                xdim: xdim,
+                xmin: xdim*0.25,
+                xmax: xdim*0.5,
+                ymin: 200,
+                ymax: ydim+20+ydim,
+                ydim: ydim
+              }
+          }
+      ];
+      //chart.dims({xdim: xdim, ydim: ydim});
+        
+      c = d3.select("#plot1")
+        .data([source_data])
+        .call(chart);
+  });
+}
+// chart.target_ratio(1).update(); // changes aspect ratio!
+// var new_dims = chart.dims();
+// new_dims.xmax = 256;
+// chart.dims(new_dims).update(); // new dimensions for 2d plot object
+// chart.show_grid(false); // grid off
+
+</script>
+<div id="plot1">
+</div>
+<div id="demos">
+  <pre>chart.colormap(colormap.get_colormap(<select id="colormap_select" onchange="chart.colormap(colormap.get_colormap(this.value)).redrawImage(); chart.colorbar.update();"></select>)).redrawImage();</pre>
+  <pre>chart.aspect_ratio(<input type="text" value="null" name="aspect_ratio" onchange="chart.aspect_ratio(this.value).update()" />).update();</pre>
+  <pre>chart.dims({xmax: <input type="number" value="1" name="xmax" onchange="chart.dims({xmax: parseFloat(this.value)}).update()" />}).update(); // new xmax for 2d plot object</pre>
+  <pre>chart.show_grid(<input type="text" value="true" name="show_grid" onchange="chart.show_grid(this.value)" />); // grid off/on</pre>
+  <pre>chart.ztransform(<input type="text" value="log" name="ztransform" onchange="chart.ztransform(this.value).update()" />).update(); // do we like linear or sqrt color scale better?</pre>
+</div>
+</body>
+</html>
+
