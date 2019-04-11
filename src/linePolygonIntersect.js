@@ -1,5 +1,3 @@
-"use-strict";
-
 export {linePolygonIntersects, lineLineIntersect, reflect};
 
 function linePolygonIntersects(line, polygonPoints, closePath, calculate_reflection, ordered) {

@@ -30,13 +30,10 @@
 import * as d3 from 'd3';
 import {event as currentEvent} from 'd3';
 import {extend} from './jquery-extend';
+import {generateID} from './generate-id';
 
 export {editor};
 export default editor;
-
-if (!d3.hasOwnProperty("id")) {
-  d3.id = (function(){var a = 0; return function(){return a++}})();
-}
 
 function editor(data) {
   var data = data || [];
@@ -102,7 +99,7 @@ function editor(data) {
     // need to add module_ids to any modules that are missing them.
     var key_fn = function(d) {
       if (d.module_id == undefined) {
-        var id = d3.id();
+        var id = generateID();
         Object.defineProperty(d, "module_id", {get: function() {return id}});
       }
       return d.module_id; 

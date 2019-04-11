@@ -2,10 +2,7 @@
 import * as d3 from 'd3';
 import {event as currentEvent} from 'd3';
 import {type, extend} from './jquery-extend';
-  
-if (!d3.hasOwnProperty("id")) {
-  d3.id = (function(){var a = 0; return function(){return a++}})();
-}
+import {generateID} from './generate-id';
 
 export default function heatChart(options_override) {
   var debug=false;
@@ -49,7 +46,7 @@ export default function heatChart(options_override) {
   var dims = options.dims;
   // create working copy of zmax and zmin, for zooming colorbar
   var zdims = {}
-  var id = d3.id();
+  var id = generateID();
   
   var x = d3.scaleLinear();
   var y = d3.scaleLinear();

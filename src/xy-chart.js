@@ -1,12 +1,9 @@
 import * as d3 from 'd3';
 import {extend} from './jquery-extend';
+import {generateID} from './generate-id';
 
 //var extend = jQuery.extend;
 export default xyChart;
-
-if (!d3.hasOwnProperty("id")) {
-  d3.id = (function(){var a = 0; return function(){return a++}})();
-}
 
 function xyChart(options_override) {
   var debug=false;
@@ -38,7 +35,7 @@ function xyChart(options_override) {
     
   var options = extend(true, {}, options_defaults, options_override); // copy
     
-  var id = d3.id();
+  var id = generateID();
   var interactors = [];
   
   this.options = options;
