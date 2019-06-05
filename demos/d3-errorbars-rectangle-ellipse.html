@@ -124,6 +124,11 @@ rect.zoom {
   stroke: steelblue;
   fill-opacity: 0.5;
 }
+
+path.crosshair {
+    stroke: orange;
+    stroke-dasharray: 10,2;
+}
 </style>
   <script src="//d3js.org/d3.v4.min.js" charset="utf-8"></script>
   <script src="//d3js.org/d3-dispatch.v1.js"></script>  
@@ -136,6 +141,7 @@ rect.zoom {
   <script src="../lib/x-slice-interactor.js"></script>
   <script src="../lib/polygon-interactor.js"></script>
   <script src="../lib/monotonic-function-interactor.js"></script>
+  <script src="../lib/crosshair-interactor.js"></script>
 </head>
 <body>
 <script>
@@ -214,15 +220,16 @@ window.onload = function() {
     name:'roi_polygon',
     color1: 'purple',
     color2: 'LightOrange',
-    interpolation: 'Cardinal',
+    interpolation: 'Linear',
     prevent_crossing: false,
     show_points: true,
-    show_lines: true,
-    close_path: true,
+    show_lines: false,
+    close_path: false,
     fill: "none",
     //showcenter: true,
     //show: true,
-    points: [[0.021,0], [0.0215,15],[0.023, 50], [0.02, 40], [0.0205,10]]
+    //points: [[0.021,0], [0.0215,15],[0.023, 50], [0.02, 40], [0.0205,10]]
+    points: [[0.021,0], [0.0215,15]]
   }
   
   var opts_functional = {
@@ -232,6 +239,15 @@ window.onload = function() {
     functional: function(x) { return 80 * Math.exp(-Math.pow((x - 0.0225), 2) / (2 * Math.pow(0.001, 2))) + 5 }, 
     show_lines: true, 
     dx: 4
+  }
+
+  var opts_crosshair = {
+    type: "crosshair",
+    name: "crosshair",
+    color1: "orange",
+    color2: "lightBlue",
+    cx: 0.0215,
+    cy: 30
   }
   
   d3.json("sample_data/pbr_live_data.json", function(error, data) {
@@ -246,6 +262,7 @@ window.onload = function() {
       x_slice = new xSliceInteractor.default(optsx);
       polygon = new polygonInteractor.default(opts_poly);
       functional = new monotonicFunctionInteractor.default(opts_functional);
+      crosshair = new crosshairInteractor.default(opts_crosshair);
       chart
         .options(data[0].options)
         .interactors(x_slice)
@@ -255,6 +272,7 @@ window.onload = function() {
         .interactors(angle_slice)
         .interactors(polygon)
         .interactors(functional)
+        .interactors(crosshair)
         //.zoomRect(true)
       chart.options({axes: {xaxis: {label: 'Q<tspan dy="2" class="sub">efgh</tspan><tspan dx="-2em" dy="-10" class="sub">1234abcg</tspan><tspan dy="8">(&#8491;)</tspan>'}}}).update()
 
