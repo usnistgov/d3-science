@@ -1029,7 +1029,7 @@ export default function heatChartMulti(options_override) {
     _redraw_main = true;
   }
   
-  chart.type = "heatmap_2d";
+  chart.type = "heatmap_2d_multi";
   
   return chart
   
