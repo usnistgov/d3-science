@@ -19,6 +19,8 @@ function overlayInteractor(state, x, y) {
   var show_overlay = (state.show_overlay == null) ? true : state.show_overlay;
     
   function interactor(selection) {
+    var _redraw_backing = true;
+
     var group = selection.append("g")
       .classed("interactors interactor-" + name, true)
     
@@ -38,40 +40,49 @@ function overlayInteractor(state, x, y) {
       //.attr("height", canvasDim.height)
       .style("cursor", "crosshair")
     
-    var context = canvas.node().getContext('2d');
-    context.fillStyle = 'rgba(0,200,0,0.7)';
-    context.fillRect(0,0,50,75);
-    
     interactor.update = function(preventPropagation) {      
-      // fire!
-      
-      //let [w0, w1] = x.range();
-      //let [h0, h1] = y.range();
-      //let width = Math.abs(w0 - w1);
-      //let height = Math.abs(h0 - h1);
       let width = Math.abs(x(state.dims.xmax) - x(state.dims.xmin));
       let height = Math.abs(y(state.dims.ymax) - y(state.dims.ymin));
       let top = Math.min(y(state.dims.ymax), y(state.dims.ymin));
       let left = Math.min(x(state.dims.xmax), x(state.dims.xmin));
+
+      let xdim = state.dims.xdim;
+      let ydim = state.dims.ydim;
+
       foreignObject
         .attr("width", width)
         .attr("height", height)
         .attr("x", left)
         .attr("y", top)
 
-      console.log(canvas);
-      if (canvas.attr("width") != state.dims.xdim) {
-        canvas.attr("width", state.dims.xdim);
-        //canvas.style("width", width + "px");
+      if (canvas.attr("width") != xdim) {
+        canvas.attr("width", xdim);
+        _redraw_backing = true;
       }
-      if (canvas.attr("height") != state.dims.ydim) {
-        canvas.attr("height", state.dims.ydim);
-        //canvas.style("height", height + "px")
+      if (canvas.attr("height") != ydim) {
+        canvas.attr("height", ydim);
+        _redraw_backing = true;
+      }
+
+      if (_redraw_backing) {
+        let context = canvas.node().getContext('2d');
+        context.clearRect(0, 0, xdim, ydim);
+        let size = xdim * ydim;
+        let bi = context.createImageData(xdim, ydim);
+        let di = bi.data;
+        let cs = d3.rgb(state.color);
+        let source = state.source_data;
+        let p = 0;
+        for (var i=0; i<size; i++) {
+          di[p++] = cs.r;
+          di[p++] = cs.g;
+          di[p++] = cs.b;
+          di[p++] = source[i]*255;
+        }
+        
+        context.putImageData(bi, 0, 0);
       }
       
-      var context = canvas.node().getContext('2d');
-      context.fillStyle = 'rgba(0,200,0,0.7)';
-      context.fillRect(0,0,state.dims.xdim, state.dims.ydim);
 
       //console.log(get_sxdx());
       if (!preventPropagation) {
@@ -80,6 +91,11 @@ function overlayInteractor(state, x, y) {
     }
   }
   
+  function draw_mask(canvas) {
+    var context = canvas.node().getContext('2d');
+
+  }
+
   function get_sxdx(){
     let dims = state.dims;
     var delta_x = (dims.xmax - dims.xmin)/(dims.xdim),
