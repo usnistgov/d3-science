@@ -60,8 +60,8 @@ function angleSliceInteractor(state, x, y) {
     // calculate angles of graph corners
     if (show_lines) {
       var centerline = angle_to_path(state.cx, state.cy, state.angle_offset), 
-          upperline = angle_to_path(state.cx, state.cy, state.angle_offset + state.angle_range), 
-          lowerline = angle_to_path(state.cx, state.cy, state.angle_offset - state.angle_range);
+          upperline = angle_to_path(state.cx, state.cy, state.angle_offset + state.angle_range/2.0), 
+          lowerline = angle_to_path(state.cx, state.cy, state.angle_offset - state.angle_range/2.0);
       
       return [
         {
@@ -185,10 +185,10 @@ function angleSliceInteractor(state, x, y) {
       state.angle_offset = new_angle;
     }
     else if (d3.select(this).classed("upperline")) {
-      state.angle_range = new_angle - state.angle_offset;
+      state.angle_range = 2.0 * (new_angle - state.angle_offset);
     }
     else if (d3.select(this).classed("lowerline")) {
-      state.angle_range = -(new_angle - state.angle_offset);
+      state.angle_range = -2.0 * (new_angle - state.angle_offset);
     }
     interactor.update();
   }
