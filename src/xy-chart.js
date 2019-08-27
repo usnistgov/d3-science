@@ -923,5 +923,34 @@ function xyChart(options_override) {
 }
 
 function getScale(scalename) {
-  return d3['scale' + scalename.slice(0,1).toUpperCase() + scalename.slice(1).toLowerCase()]();
+  var lname = scalename.toLowerCase();
+
+  if (/^lin/.test(lname)) {
+    return d3.scaleLinear();
+  }
+  else if (/^log$/.test(lname)) {
+    // base 10
+    return d3.scaleLog();
+  }
+  else if (/^ln$/.test(lname)) {
+    return d3.scaleLog().base(Math.E);
+  }
+  else if (/^sqrt$/.test(lname)) {
+    return d3.scaleSqrt();
+  }
+  else if (/^log([0-9]+)$/.test(lname)) {
+    var match = /^log([0-9]+)$/.exec(lname);
+    var exponent = parseInt(match[1]);
+    return d3.scaleLog().base(exponent);
+  }
+  else if (/^pow\([0-9]*\.?[0-9]+\)/.test(lname)) {
+    var match = /^pow\(([0-9]*\.?[0-9]+)\)/.exec(lname);
+    var exponent = parseFloat(match[1]);
+    return d3.scalePow().exponent(exponent);
+  }
+  else {
+    console.warn("scale: " + scalename + " is not implemented.");
+    return d3.scaleLinear();
+  }
+
 }

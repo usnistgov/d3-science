@@ -133,7 +133,7 @@ canvas {
 <!--<script src="d3.v3.min.js"></script>-->
 <script>
 window.onload = function() {    
-  chart = xyChart.default({show_line: true, show_errorbars: true, ytransform: 'log'})
+  chart = xyChart.default({show_line: true, show_errorbars: true, ytransform: 'pow(2)'})
   d3.json("sample_data/pbr_live_data.json", function(error, data) {
       mydata = data;
       c = d3.select("#plot1")
