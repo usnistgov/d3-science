@@ -13,9 +13,6 @@ function rectangleInteractor(state, x, y) {
   var dispatch = d3.dispatch("update");
   var x = x || d3.scaleLinear();
   var y = y || d3.scaleLinear();
-  var show_points = (state.show_points == null) ? true : state.show_points;
-  var show_lines = (state.show_lines == null) ? true : state.show_lines;
-  var show_center = (state.show_center == null) ? true : state.show_center;
   var fixed = (state.fixed == null) ? false : state.fixed;
   var cursor = (fixed) ? "auto" : "move";
 
@@ -25,7 +22,7 @@ function rectangleInteractor(state, x, y) {
          
   var state_to_pairs = function(state) {
     // convert from xmin, xmax... to pairs of points for rectangle
-    if (show_lines) {
+    if (state.show_lines != false) {
       return [
         [[state.xmin, state.ymin], [state.xmax, state.ymin]],
         [[state.xmax, state.ymin], [state.xmax, state.ymax]],
@@ -39,7 +36,7 @@ function rectangleInteractor(state, x, y) {
   }
   
   var state_to_points = function(state) {
-    if (show_points) {
+    if (state.show_points != false) {
       return [
         [state.xmin, state.ymin],
         [state.xmax, state.ymin],
@@ -53,7 +50,7 @@ function rectangleInteractor(state, x, y) {
   }
   
   var state_to_center = function(state) {
-    if (show_center) {
+    if (state.show_center != false) {
       return [
         [x.invert((x(state.xmax) + x(state.xmin)) / 2.0),
          y.invert((y(state.ymax) + y(state.ymin)) / 2.0)]
@@ -143,9 +140,14 @@ function rectangleInteractor(state, x, y) {
     dispatch.call("update");
   }
   
-  function dragmove_corner(d) {
-    var new_x = x.invert(d3.event.x),
-        new_y = y.invert(d3.event.y);
+  function dragmove_corner() {
+    let grid_spacing = state.grid_spacing;
+    let new_x = x.invert(d3.event.x);
+    let new_y = y.invert(d3.event.y);
+    if (grid_spacing) {
+      new_x = Math.round(new_x/grid_spacing) * grid_spacing;
+      new_y = Math.round(new_y/grid_spacing) * grid_spacing;
+    }
     var vertex = parseInt(d3.select(this).attr("vertex"));  
     // enforce relationship between corners:
     switch (vertex) {
@@ -173,9 +175,14 @@ function rectangleInteractor(state, x, y) {
   }
   
   function dragmove_edge() {
-    var new_x = x.invert(d3.event.x),
-        new_y = y.invert(d3.event.y);
-    var side = parseInt(d3.select(this).attr("side"));
+    let grid_spacing = state.grid_spacing;
+    let new_x = x.invert(d3.event.x);
+    let new_y = y.invert(d3.event.y);
+    if (grid_spacing) {
+      new_x = Math.round(new_x/grid_spacing) * grid_spacing;
+      new_y = Math.round(new_y/grid_spacing) * grid_spacing;
+    }
+    let side = parseInt(d3.select(this).attr("side"));
     // enforce relationship between edges and corners:
     switch (side) {
       case 0:
