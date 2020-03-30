@@ -1,5 +1,5 @@
 before_script:
-  - npm install -g babel-cli
+  - npm install babel-cli
   - npm install babel-preset-env
 script: bash ./deploy.sh
 env:
