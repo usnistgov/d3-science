@@ -17,6 +17,7 @@ export default function heatChartMulti(options_override) {
     numberOfTicks: 4,
     aspect_ratio: null,
     autoscale: false,
+    legend: {show: false, left: 165, top: 15},
     axes: {
       xaxis: {label: "x-axis"},
       yaxis: {label: "y-axis"},
@@ -24,7 +25,8 @@ export default function heatChartMulti(options_override) {
     },
     ztransform: "linear",
     zmin: 1,
-    zmax: 2
+    zmax: 2,
+    series: new Array()
   }
   var options = extend(true, {}, options_defaults); // copy
   extend(true, options, options_override); // process any overrides from creation;
@@ -34,6 +36,8 @@ export default function heatChartMulti(options_override) {
   var interactors = [];
   var plotdatas = [];
   var source_data = [];
+  var dataset_visibility = []; // used by the legend
+  var default_series_color = "blue";
   var z = getScale(options.ztransform);
     
   var dims = options.dims;
@@ -252,6 +256,11 @@ export default function heatChartMulti(options_override) {
       mainview.append("g")
         .attr("class", "interactor-layer")
       
+      // legend on top so it can be moved...
+      mainview.append("g")
+        .attr("class", "legend")
+        .attr("transform", "translate(" + [width-options.legend.left, options.legend.top] + ")");
+      
       mainview.select(".x.axis").call(xAxis);
       mainview.select(".y.axis").call(yAxis);
       mainview.select(".x.grid").call(xAxisGrid);
@@ -268,9 +277,100 @@ export default function heatChartMulti(options_override) {
       chart.mainview = mainview;
       
       chart.position_cursor(options.position_cursor);
+      chart.draw_legend(data);
     });
     selection.call(chart.colorbar);
   }
+  
+  var legend_offset = {x: 0, y: 0};
+    var drag_legend = d3.drag()
+      .on("drag", function(d,i) {
+        legend_offset.x += d3.event.dx;
+        legend_offset.y += d3.event.dy;
+        chart.draw_legend(source_data);
+        })
+      .on("start", function() { d3.event.sourceEvent.stopPropagation(); })
+
+    //************************************************************
+    // Create D3 legend
+    //************************************************************
+    chart.draw_legend = function(data) {
+      if (!options.legend.show) { dataset_visibility = []; return }
+      var el = chart.svg.select("g.legend");
+      // if there are more options.series defined than datasets, 
+      // use the extra series:
+      var ldata = d3.range(Math.max(data.length, (options.series || []).length));
+      var update_sel = el.selectAll('g').data(ldata);
+      update_sel
+        .enter()
+          .append('g')
+          .style("fill", get_series_color)
+          .each(function(d, i) {
+            var g = d3.select(this);
+            g.append("rect")
+              .attr("x", legend_offset.x)
+              .attr("y", i*25 + 10)
+              .attr("width", 14)
+              .attr("height", 14)
+              .style("cursor", "pointer")
+              .on("mouseover", function() {
+                chart.svg.selectAll('path.line')
+                  .classed('highlight', function(d,ii) {return ii == i})
+                  .classed('unhighlight', function(d,ii) {return ii != i});
+              })
+              .on("mouseout", function() {
+                chart.svg.selectAll('path.line')
+                  .classed('highlight', false)
+                  .classed('unhighlight', false);
+              })
+              .on("click", function() {
+                let hidden = d3.select(this).classed("hidden");
+                // toggle:
+                hidden = !hidden;
+                d3.select(this).classed('hidden', hidden);
+                dataset_visibility[i] = (!hidden);
+                _redraw_main = true;
+              })
+              .append("title").text("click to hide/unhide")
+              //.call(drag_legend);
+            
+            g.append("text")
+              .attr("x", 18 + legend_offset.x)
+              .attr("y", i * 25 + 25)
+              .attr("height",30)
+              .attr("width",100)
+              .style("text-anchor", "start")
+              .style("cursor", "move")
+              .on("mouseover", function() {
+                chart.svg.selectAll('path.line')
+                  .classed('highlight', function(d,ii) {return ii == i})
+                  .classed('unhighlight', function(d,ii) {return ii != i});
+              })
+              .on("mouseout", function() {
+                chart.svg.selectAll('path.line')
+                  .classed('highlight', false)
+                  .classed('unhighlight', false);
+              })
+              .call(drag_legend)
+
+            dataset_visibility.push(true);
+
+          });
+      update_sel.exit().remove();
+      update_sel.style("fill", get_series_color);
+      
+      el.selectAll("rect")
+        .attr("x", legend_offset.x)
+        .attr("y", function(d,i) {return i*25 + 12 + legend_offset.y})
+        .style("stroke", get_series_color);
+
+      el.selectAll("text")
+        .attr("x", 18 + legend_offset.x)
+        .attr("y", function(d,i) { return i * 25 + 25 + legend_offset.y})
+        .each(function(d, i) {
+          d3.select(this).text((options.series[i] && options.series[i].label != null) ? options.series[i].label : i+1)
+        });
+    }
   
   chart.colorbar = function(selection) {
     selection.each(function(data) {      
@@ -394,6 +494,7 @@ export default function heatChartMulti(options_override) {
       mainview.selectAll(".grid .tick line").attr("stroke", null);
 
       chart.mainCanvas.call(drawImages);
+      chart.draw_legend(source_data);
       
       chart.interactors().forEach(function(d,i) { if (d.update) {d.update();}});
     }
@@ -569,6 +670,13 @@ export default function heatChartMulti(options_override) {
   //  zoomRect = _;
   //  return chart;
   //};
+  
+  function get_series_color(_, i) {
+    // use color specified in options.series, if it exists
+    // otherwise use the default
+    return (options.series[i] || {}).color || default_series_color;
+  }
+  chart.get_series_color = function(i) { return get_series_color(null, i) }
   
   chart.zoomScroll = function(_) {
     if (!arguments.length) return zoomScroll;
@@ -774,11 +882,11 @@ export default function heatChartMulti(options_override) {
     if (context.msImageSmoothingEnabled) context.msImageSmoothingEnabled = false;
     if (context.webkitImageSmoothingEnabled) context.webkitImageSmoothingEnabled = false;
 
-    for (var image_index in source_contexts) {
-      var sxdx = get_sxdx(image_index);
-      let ctx = source_contexts[image_index];
+    source_contexts.forEach(function(ctx, image_index) {
+      if (dataset_visibility[image_index] == false) { return }
+      let sxdx = get_sxdx(image_index);
       context.drawImage(ctx.canvas, sxdx.sx, sxdx.sy, sxdx.sw, sxdx.sh, sxdx.dx, sxdx.dy, sxdx.dw, sxdx.dh);
-    }
+    });
     
   }
   
@@ -1024,7 +1132,8 @@ export default function heatChartMulti(options_override) {
       
     chart.colorbar.svg.selectAll("g.z")
         .attr("transform", "translate(" + width + "," + options.cb_margin.top + ")");
-
+        
+    chart.svg.select("g.legend").attr("transform", "translate(" + (width-65) + ",25)");
     chart.position_cursor(options.position_cursor);
     _redraw_main = true;
   }

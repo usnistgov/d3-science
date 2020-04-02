@@ -55,7 +55,11 @@ canvas {
     opacity: 0.7;
 }
 .grid path {
-      stroke-width: 0;
+    stroke-width: 0;
+}
+
+g.legend rect.hidden {
+    fill-opacity: 0.1;
 }
 
 </style>
@@ -107,8 +111,15 @@ window.onload = function() {
     overlay_opts.source_data[i] = 0.33;
   }
 
+  let chart_options = {
+    ztransform: 'log',
+    margin: {"bottom": 75},
+    source_order: "F",
+    legend: {show: true},
+    series: [{"label": "first dataset", "color": "green"}, {"label": "second dataset"}]
+  }
 
-  chart = heatChartMulti.default({ztransform: 'log', margin: {"bottom": 75}, source_order: "F"})
+  chart = heatChartMulti.default(chart_options)
     .autoscale(true)
     .xlabel("Qx (\u212B\u207B\u00B9)")
     .ylabel("Qz (\u212B\u207B\u00B9)");
