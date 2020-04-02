@@ -100,16 +100,10 @@ window.onload = function() {
   }
 
   var source_size = overlay_opts.dims.xdim * overlay_opts.dims.ydim;
-  overlay_opts.source_data = Array(source_size);
-  for (var i=0; i<source_size/3; i++) {
-    overlay_opts.source_data[i] = 1.0;
-  }
-  for (var i=Math.round(source_size/3); i<2*source_size/3; i++) {
-    overlay_opts.source_data[i] = 0;
-  }
-  for (var i=Math.round(2*source_size/3); i<3*source_size/3; i++) {
-    overlay_opts.source_data[i] = 0.33;
-  }
+  overlay_opts.source_data = Array(source_size).fill(0);
+  overlay_opts.source_data.fill(1.0, 0, Math.round(source_size/3));
+  overlay_opts.source_data.fill(0.0, Math.round(source_size/3), Math.round(2*source_size/3));
+  overlay_opts.source_data.fill(0.3, Math.round(2*source_size/3), source_size);
 
   let chart_options = {
     ztransform: 'log',

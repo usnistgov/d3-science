@@ -3,6 +3,7 @@ import * as d3 from 'd3';
 import {event as currentEvent} from 'd3';
 import {type, extend} from './jquery-extend';
 import {generateID} from './generate-id';
+import {get_html_color} from './colormap';
 
 export default function heatChartMulti(options_override) {
   var debug=false;
@@ -18,6 +19,7 @@ export default function heatChartMulti(options_override) {
     aspect_ratio: null,
     autoscale: false,
     legend: {show: false, left: 165, top: 15},
+    mask: {show: false},
     axes: {
       xaxis: {label: "x-axis"},
       yaxis: {label: "y-axis"},
@@ -35,6 +37,7 @@ export default function heatChartMulti(options_override) {
   var zoomScroll = false;
   var interactors = [];
   var plotdatas = [];
+  var maskdatas = [];
   var source_data = [];
   var dataset_visibility = []; // used by the legend
   var default_series_color = "blue";
@@ -678,6 +681,37 @@ export default function heatChartMulti(options_override) {
   }
   chart.get_series_color = function(i) { return get_series_color(null, i) }
   
+  function generate_masker() {
+    if (!(options.mask && options.mask.show)) {
+      return function(color, mask_val) { return color }
+    }
+    if (!options.mask.method || options.mask.method == "overlay") {
+      let mask_colorname = options.mask.overlay_color || "green";
+      let mask_color = get_html_color(mask_colorname);
+      let opacity = options.mask.overlay_opacity || 0.5;
+      return function(color, mask_val) {
+        let new_color = {};
+        let m = (mask_val * opacity) + 1.0 - opacity;
+        new_color.r = Math.round(color.r * m + mask_color.r * (1-m));
+        new_color.g = Math.round(color.g * m + mask_color.g * (1-m));
+        new_color.b = Math.round(color.b * m + mask_color.b * (1-m));
+        new_color.a = color.a;
+        return new_color;
+      }
+    }
+    else if (options.mask.method == "desaturate") {
+      return function(color, mask_val) {
+        let gray = color.r * 0.3086 + color.g * 0.6094 + color.b * 0.0820;
+        let new_color = {};
+        new_color.r = Math.round(color.r * mask_val + gray * (1-mask_val));
+        new_color.g = Math.round(color.g * mask_val + gray * (1-mask_val));
+        new_color.b = Math.round(color.b * mask_val + gray * (1-mask_val));
+        new_color.a = color.a;
+        return new_color;
+      }
+    }
+  }
+
   chart.zoomScroll = function(_) {
     if (!arguments.length) return zoomScroll;
     zoomScroll = _;
@@ -842,11 +876,13 @@ export default function heatChartMulti(options_override) {
         
     if (_redraw_backing) {
       _redraw_backing = false;
+      let masker = generate_masker();
       for (var image_index in source_data) {
         let dims = source_data[image_index].dims;
         let bc = backing_canvases[image_index];
         let ctx = source_contexts[image_index];
         let plotdata = plotdatas[image_index];
+        let maskdata = maskdatas[image_index];
         var height = dims.ydim,
             width = dims.xdim,
             size = height * width;
@@ -861,6 +897,9 @@ export default function heatChartMulti(options_override) {
         var p=0;
         for (var offset=0; offset < size; offset++) {
             var c = _colormap_array[plotdata[offset]];
+            if (maskdata) {
+              c = masker(c, maskdata[offset]);
+            }
             data[p++] = c.r;
             data[p++] = c.g;
             data[p++] = c.b;
@@ -920,12 +959,48 @@ export default function heatChartMulti(options_override) {
   
   function make_all_plotdata() {
     var new_plotdatas = [];
+    var new_maskdatas = [];
     for (var sd of source_data) {
-      new_plotdatas.push(make_single_plotdata(sd.data, sd.dims));  
+      new_plotdatas.push(make_single_plotdata(sd.data, sd.dims));
+      new_maskdatas.push(make_single_maskdata(sd.mask, sd.dims));
     }
     plotdatas = new_plotdatas;
+    maskdatas = new_maskdatas;
     _redraw_backing = true;
     return
+  }
+
+  function make_single_maskdata(mask_data, dims) {
+    if (mask_data == null) {
+      return null;
+    }
+    var clamped = new Uint8ClampedArray(1);
+    var height = dims.ydim,
+        width = dims.xdim,
+        size = height * width;
+    // set the local maskdata:
+    var new_maskdata = new Float32Array(size);
+    
+    // source data is an array, but the order can be "F" or "C" (default)
+    let f_order = (String(options.source_order).toUpperCase() == 'F');
+    let image_stride = [1, -width];
+    let image_offset = (height-1) * width;
+    let data_stride = (f_order) ? [1, width] : [height, 1];
+
+    var image_p, data_p, image_p_i, data_p_i, mask_data_p;
+    for (let i=0; i<width; i++) {
+      image_p_i = image_stride[0] * i + image_offset;
+      data_p_i = data_stride[0] * i; // + data_offset; // always zero
+      for (let j=0; j<height; j++) {
+        image_p = image_p_i + image_stride[1] * j;
+        data_p = data_p_i + data_stride[1] * j;
+        mask_data_p = mask_data[data_p];
+        clamped[0] = (mask_data_p * 255.0);
+        new_maskdata[image_p] = clamped[0] / 255.0;
+      }
+    }
+
+    return new_maskdata;
   }
 
   // call after setting transform
