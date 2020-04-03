@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import {event as currentEvent} from 'd3';
 import {type, extend} from './jquery-extend';
 import {generateID} from './generate-id';
-import {get_html_color} from './colormap';
+import * as lib_colormap from './colormap';
 
 export default function heatChartMulti(options_override) {
   var debug=false;
@@ -687,7 +687,7 @@ export default function heatChartMulti(options_override) {
     }
     if (!options.mask.method || options.mask.method == "overlay") {
       let mask_colorname = options.mask.overlay_color || "green";
-      let mask_color = get_html_color(mask_colorname);
+      let mask_color = lib_colormap.get_html_color(mask_colorname);
       let opacity = options.mask.overlay_opacity || 0.5;
       return function(color, mask_val) {
         let new_color = {};
@@ -743,6 +743,16 @@ export default function heatChartMulti(options_override) {
   chart.z = function(_) {
     if (!arguments.length) return z;
     z = _;
+    return chart;
+  };
+
+  chart.options = function(_, clear) {
+    if (!arguments.length) return options;
+    if (clear) {
+      options = extend(true, {}, options_defaults, _);
+    } else {
+      extend(true, options, _);
+    }
     return chart;
   };
   

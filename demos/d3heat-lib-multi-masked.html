@@ -82,21 +82,10 @@ window.onload = function() {
   
   colormap_select.value = "jet"; // default
 
-  let chart_options = {
-    ztransform: 'log',
-    margin: {"bottom": 75},
-    source_order: "F",
-    legend: {show: true},
-    series: [{"label": "first dataset", "color": "green"}, {"label": "second dataset"}],
-    //mask: {show: true, method: "desaturate", overlay_color: "green"}
-    mask: {show: true, method: "overlay", overlay_color: "lightGreen", overlay_opacity: 0.8}
-}
-
-  chart = heatChartMultiMasked.default(chart_options)
+  chart = heatChartMultiMasked.default({margin: {bottom: 75}})
     .autoscale(true)
     .xlabel("Qx (\u212B\u207B\u00B9)")
-    .ylabel("Qz (\u212B\u207B\u00B9)");
-    
+    .ylabel("Qz (\u212B\u207B\u00B9)");    
 
   d3.json("sample_data/512.json", function(error, heatmap) {
       //mydata = heatmap;
@@ -148,6 +137,12 @@ window.onload = function() {
       c = d3.select("#plot1")
         .data([source_data])
         .call(chart);
+        
+        chart.options().source_order = "F";
+        chart.options().mask = {show: true, method: "overlay", overlay_color: "lightGreen", overlay_opacity: 0.8}
+        chart.options().series = [{"label": "first dataset", "color": "green"}, {"label": "second dataset"}];
+        chart.options().legend = {show: true};
+        chart.ztransform("log")
   });
 }
 // chart.target_ratio(1).update(); // changes aspect ratio!
