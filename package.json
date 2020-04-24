@@ -1,6 +1,6 @@
 {
   "name": "d3-science",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "plotting routines based on d3, for scientific data",
   "main": "lib/index.js",
   "module": "src/index.js",
