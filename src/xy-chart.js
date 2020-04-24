@@ -700,6 +700,39 @@ function xyChart(options_override, d3_import = null) {
       
       return pathstring;
     }
+
+    function getScale(scalename) {
+      var lname = scalename.toLowerCase();
+    
+      if (/^lin/.test(lname)) {
+        return d3.scaleLinear();
+      }
+      else if (/^log$/.test(lname)) {
+        // base 10
+        return d3.scaleLog();
+      }
+      else if (/^ln$/.test(lname)) {
+        return d3.scaleLog().base(Math.E);
+      }
+      else if (/^sqrt$/.test(lname)) {
+        return d3.scaleSqrt();
+      }
+      else if (/^log([0-9]+)$/.test(lname)) {
+        var match = /^log([0-9]+)$/.exec(lname);
+        var exponent = parseInt(match[1]);
+        return d3.scaleLog().base(exponent);
+      }
+      else if (/^pow\([0-9]*\.?[0-9]+\)/.test(lname)) {
+        var match = /^pow\(([0-9]*\.?[0-9]+)\)/.exec(lname);
+        var exponent = parseFloat(match[1]);
+        return d3.scalePow().exponent(exponent);
+      }
+      else {
+        console.warn("scale: " + scalename + " is not implemented.");
+        return d3.scaleLinear();
+      }
+    
+    }
     
     chart.resetzoom = function() {
       var xoffset = (x.range()[1] - x.range()[0]) * base_zoom_offset,
@@ -919,37 +952,4 @@ function xyChart(options_override, d3_import = null) {
     chart.type = "xy";
     
     return chart;
-}
-
-function getScale(scalename) {
-  var lname = scalename.toLowerCase();
-
-  if (/^lin/.test(lname)) {
-    return d3.scaleLinear();
-  }
-  else if (/^log$/.test(lname)) {
-    // base 10
-    return d3.scaleLog();
-  }
-  else if (/^ln$/.test(lname)) {
-    return d3.scaleLog().base(Math.E);
-  }
-  else if (/^sqrt$/.test(lname)) {
-    return d3.scaleSqrt();
-  }
-  else if (/^log([0-9]+)$/.test(lname)) {
-    var match = /^log([0-9]+)$/.exec(lname);
-    var exponent = parseInt(match[1]);
-    return d3.scaleLog().base(exponent);
-  }
-  else if (/^pow\([0-9]*\.?[0-9]+\)/.test(lname)) {
-    var match = /^pow\(([0-9]*\.?[0-9]+)\)/.exec(lname);
-    var exponent = parseFloat(match[1]);
-    return d3.scalePow().exponent(exponent);
-  }
-  else {
-    console.warn("scale: " + scalename + " is not implemented.");
-    return d3.scaleLinear();
-  }
-
 }
