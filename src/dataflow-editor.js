@@ -25,17 +25,15 @@
 // 
 
 /* requires('d3.js'); */
-'use strict';
 
-import * as d3 from 'd3';
-import {event as currentEvent} from 'd3';
-import {extend} from './jquery-extend';
+import {extend} from './jquery-extend.js';
 import {generateID} from './generate-id.js';
 
 export {editor};
 export default editor;
 
-function editor(options) {
+function editor(options, d3_import = null) {
+  var d3 = (d3_import != null) ? d3_import : window.d3;
   var module_defs = {};
   var default_options = {
     padding: 5,
@@ -314,9 +312,9 @@ function editor(options) {
       new_wiredata = null;
       
   function wirestart() {
-    currentEvent.sourceEvent.stopPropagation();
+    d3.event.sourceEvent.stopPropagation();
     var parent_el = this.parentNode.parentNode;
-    if (currentEvent.sourceEvent.button > 0 || !d3.select(parent_el).classed("wireable")) {
+    if (d3.event.sourceEvent.button > 0 || !d3.select(parent_el).classed("wireable")) {
       wiredrag_cancelled = true;
       return
     }
@@ -345,7 +343,7 @@ function editor(options) {
   }
     
     function wirestop() {
-      currentEvent.sourceEvent.stopPropagation();
+      d3.event.sourceEvent.stopPropagation();
       if (wiredrag_cancelled) { return }
       d3.select(this).classed("active-wiring", false);
       var active_data = new_wiredata; // d3.select(active_wire).datum();
@@ -400,7 +398,7 @@ function editor(options) {
     }
     
     function wirepull() {
-      currentEvent.sourceEvent.stopPropagation();
+      d3.event.sourceEvent.stopPropagation();
       draw_wires();
     }
   
@@ -431,8 +429,8 @@ function editor(options) {
       
     function dragmove() {
       if (!d3.select(this).classed("draggable")) {return}
-      var dx = Math.round(currentEvent.x/grid_spacing) * grid_spacing - module_data.x;
-      var dy = Math.round(currentEvent.y/grid_spacing) * grid_spacing - module_data.y;
+      var dx = Math.round(d3.event.x/grid_spacing) * grid_spacing - module_data.x;
+      var dy = Math.round(d3.event.y/grid_spacing) * grid_spacing - module_data.y;
       module_data.x += dx;
       module_data.y += dy;
       group.attr("transform", "translate(" + module_data.x.toFixed() + "," + module_data.y.toFixed() + ")");

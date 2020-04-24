@@ -25,17 +25,15 @@
 // 
 
 /* requires('d3.js'); */
-'use strict';
 
-import * as d3 from 'd3';
-import {event as currentEvent} from 'd3';
-import {extend} from './jquery-extend';
-import {generateID} from './generate-id';
+import {extend} from './jquery-extend.js';
+import {generateID} from './generate-id.js';
 
 export {editor};
 export default editor;
 
-function editor(data) {
+function editor(data, d3_import = null) {
+  var d3 = (d3_import != null) ? d3_import : window.d3;
   var data = data || [];
   var module_defs = module_defs || {};
   var grid_spacing = 5;
@@ -280,7 +278,7 @@ function editor(data) {
   function wirestart() {
     var module_el = this.parentNode.parentNode;
     if (!d3.select(module_el).classed("wireable")) {return}
-    currentEvent.sourceEvent.stopPropagation();
+    d3.event.sourceEvent.stopPropagation();
     d3.select(this).classed("highlight", true);
     var terminal_id = d3.select(this).attr("terminal_id");
     var module_index = d3.select(module_el).attr("index");
@@ -337,7 +335,7 @@ function editor(data) {
     }
     
     function wirepull() {
-      currentEvent.sourceEvent.stopPropagation();
+      d3.event.sourceEvent.stopPropagation();
       draw_wires();
     }
   
@@ -364,8 +362,8 @@ function editor(data) {
       
     function dragmove() {
       if (!d3.select(this).classed("draggable")) {return}
-      module_data.x = Math.round(currentEvent.x/grid_spacing) * grid_spacing;
-      module_data.y = Math.round(currentEvent.y/grid_spacing) * grid_spacing;
+      module_data.x = Math.round(d3.event.x/grid_spacing) * grid_spacing;
+      module_data.y = Math.round(d3.event.y/grid_spacing) * grid_spacing;
       group.attr("transform", "translate(" + module_data.x.toFixed() + "," + module_data.y.toFixed() + ")");
       draw_wires();
     }

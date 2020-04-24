@@ -1,10 +1,7 @@
-"use strict";
-import * as d3 from 'd3';
-import {event as currentEvent} from 'd3';
-
 export default ellipseInteractor;
 
-function ellipseInteractor(state, x, y) {
+function ellipseInteractor(state, x, y, d3_import = null) {
+  var d3 = (d3_import != null) ? d3_import : window.d3;
   // dispatch is the d3 event dispatcher: should have event "update" register
   // state: {cx: ..., cy: ..., rx: ..., ry: ...}
   // if dragging the ellipse itself, the eccentricity (ry/rx) is preserved
@@ -63,15 +60,15 @@ function ellipseInteractor(state, x, y) {
   
   var drag_corner = d3.drag()
     .on("drag", dragmove_corner)
-    .on("start", function() { currentEvent.sourceEvent.stopPropagation(); });
+    .on("start", function() { d3.event.sourceEvent.stopPropagation(); });
   
   var drag_center = d3.drag()
     .on("drag", dragmove_center)
-    .on("start", function() { currentEvent.sourceEvent.stopPropagation(); });  
+    .on("start", function() { d3.event.sourceEvent.stopPropagation(); });  
     
   var drag_edge = d3.drag()
     .on("drag", dragmove_edge)
-    .on("start", function() { currentEvent.sourceEvent.stopPropagation(); });
+    .on("start", function() { d3.event.sourceEvent.stopPropagation(); });
   
 
   function interactor(selection) {
@@ -142,8 +139,8 @@ function ellipseInteractor(state, x, y) {
   }
   
   function dragmove_corner(d) {
-    var new_x = x.invert(currentEvent.x),
-        new_y = y.invert(currentEvent.y);
+    var new_x = x.invert(d3.event.x),
+        new_y = y.invert(d3.event.y);
     var vertex = parseInt(d3.select(this).attr("vertex"));  
     // enforce relationship between corners:
     switch (vertex) {
@@ -159,16 +156,16 @@ function ellipseInteractor(state, x, y) {
   }
   
   function dragmove_center() {
-    state.cx = x.invert(x(state.cx) + currentEvent.dx);
-    state.cy = y.invert(y(state.cy) + currentEvent.dy);
+    state.cx = x.invert(x(state.cx) + d3.event.dx);
+    state.cy = y.invert(y(state.cy) + d3.event.dy);
     interactor.update();
   }
   
   
   function dragmove_edge() {
     var eccentricity = state.ry / state.rx,
-        new_x = x.invert(currentEvent.x),
-        new_y = y.invert(currentEvent.y),
+        new_x = x.invert(d3.event.x),
+        new_y = y.invert(d3.event.y),
         new_rx = Math.sqrt(Math.pow(new_x - state.cx, 2) + Math.pow(new_y - state.cy, 2)/Math.pow(eccentricity, 2)),
         new_ry = eccentricity * new_rx;
     state.rx = new_rx;

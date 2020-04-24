@@ -1,6 +1,3 @@
-// The "extend" function from jQuery, by itself.
-'use strict';
-
 export default extend;
 export {extend, type};
 

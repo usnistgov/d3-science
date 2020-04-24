@@ -1,12 +1,11 @@
-import * as d3 from 'd3';
-import {extend} from './jquery-extend';
-import {generateID} from './generate-id';
+import {extend} from './jquery-extend.js';
+import {generateID} from './generate-id.js';
 
 //var extend = jQuery.extend;
-export default xyChart;
+export {xyChart, xyChart as default};
 
-function xyChart(options_override) {
-  var debug=false;
+function xyChart(options_override, d3_import = null) {
+  var d3 = (d3_import != null) ? d3_import : window.d3;
   var options_defaults = {
     margin: {top: 10, right: 10, bottom: 75, left: 100},
     autoscale: true,

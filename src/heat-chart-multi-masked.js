@@ -1,11 +1,11 @@
-"use strict";
-import * as d3 from 'd3';
-import {event as currentEvent} from 'd3';
-import {type, extend} from './jquery-extend';
-import {generateID} from './generate-id';
-import * as lib_colormap from './colormap';
+import {type, extend} from './jquery-extend.js';
+import {generateID} from './generate-id.js';
+import * as lib_colormap from './colormap.js';
 
-export default function heatChartMulti(options_override) {
+export {heatChartMultiMasked, heatChartMultiMasked as default};
+
+function heatChartMultiMasked(options_override, d3_import = null) {
+  var d3 = (d3_import != null) ? d3_import : window.d3;
   var debug=false;
   var options_defaults = {
     margin: {top: 10, right: 10, bottom: 50, left: 50},

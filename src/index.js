@@ -1,6 +1,6 @@
 export {default as heatChart} from './heat-chart.js';
 export {default as xyChart} from './xy-chart.js';
-export {extend} from './jquery-extend.js';
+export {extend, type} from './jquery-extend.js';
 export {default as rectangleSelect} from './rectangle-select.js';
 export {colormap_names, get_colormap, colormap_data} from './colormap.js';
 export {default as dataflowEditor} from './dataflow-editor.js';
@@ -15,4 +15,5 @@ export {linePolygonIntersects, lineLineIntersect, reflect} from './linePolygonIn
 export {default as polygonInteractor} from './polygon-interactor.js';
 export {default as profileInteractor} from './profile-interactor.js';
 export {default as angleSliceInteractor} from './angle-slice-interactor.js';
+export {default as crosshairInteractor} from './crosshair-interactor.js';
 export {generateID} from './generate-id.js';
