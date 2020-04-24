@@ -1,0 +1,38 @@
+{
+  "name": "d3-science",
+  "version": "0.2.0",
+  "description": "plotting routines based on d3, for scientific data",
+  "main": "lib/index.js",
+  "module": "src/index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.3",
+    "babel-esnext": "^0.2.3",
+    "babel-preset-env": "^1.6.0",
+    "jsdom": "^11.2.0",
+    "puppeteer": "^0.9.0",
+    "xmldom": "^0.1.27"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "make"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/usnistgov/d3-science.git"
+  },
+  "keywords": [
+    "science",
+    "data"
+  ],
+  "author": "Brian B. Maranville",
+  "license": "SEE LICENSE IN LICENSE.txt",
+  "bugs": {
+    "url": "https://github.com/usnistgov/d3-science/issues"
+  },
+  "homepage": "https://github.com/usnistgov/d3-science#readme"
+}
