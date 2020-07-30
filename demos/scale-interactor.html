@@ -140,14 +140,14 @@ window.onload = function() {
           10,1,10,1
       ]
   }
-  chart = xyChart.default({show_line: true, show_errorbars: true, ytransform: 'pow(2)'})
+  chart = xyChart.default({show_line: true, show_errorbars: true, ytransform: 'log'})
   d3.json("sample_data/pbr_live_data.json", function(error, data) {
       mydata = data;
       c = d3.select("#plot1")
         .data([data[0].data])
         .call(chart);
-      scale = new scaleInteractor.default(opts_scale, chart.x(), chart.y());
-      scale.dispatch.on("update", () => {chart.update()})
+      scale = new scaleInteractor.default(opts_scale, null, null, d3);
+      scale.dispatch.on("updated", () => {chart.update()})
       chart
         .options(data[0].options)
         //.ytransform('log')
