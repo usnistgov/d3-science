@@ -1,0 +1,203 @@
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans" />
+<style>
+
+html, body {
+  position: relative;
+  height: 100%;
+    font-family: 'Open Sans' !important;
+}
+
+#plot1 {
+    width: 100%;
+    height: 75%;;
+}
+
+svg,
+canvas {
+  position: absolute;
+  image-rendering: optimizeSpeed;
+  image-rendering: crisp-edges;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: optimize-contrast;
+  -ms-interpolation-mode: nearest-neighbor;
+}
+
+.axis-label {
+  font-size: 18px;
+}
+
+.axis .tick text {
+  font-size: 14px;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+
+.grid path {
+      stroke-width: 1;
+      fill: none;
+}
+.grid .tick {
+    stroke: lightgrey;
+    opacity: 0.7;
+    stroke-width: 1;
+    shape-rendering: crispEdges;
+    user-select: none; 
+    -webkit-user-select: none; 
+    -moz-user-select: none;
+}
+ 
+.axis path {
+    fill: none;
+    stroke: #bbb;
+    shape-rendering: crispEdges;
+}
+ 
+.axis text {
+    fill: #555;
+}
+ 
+.axis line {	
+    stroke: #e7e7e7;
+    shape-rendering: crispEdges;
+}
+ 
+.axis .axis-label {
+    user-select: none; 
+    -webkit-user-select: none; 
+    -moz-user-select: none;
+}
+
+.legend, .tick {
+    user-select: none; 
+    -webkit-user-select: none; 
+    -moz-user-select: none;
+}
+ 
+.line {
+    fill: none;
+    stroke-width: 1.5px;
+}
+
+.highlight {
+    stroke-width: 4.5px;
+}
+ 
+.dot {
+    /* consider the stroke-with the mouse detect radius? */
+    stroke: transparent;
+    stroke-width: 10px;  
+    cursor: pointer;
+}
+
+.dot.masked {
+    stroke: red;
+}
+ 
+.dot:hover {
+    stroke: rgba(68, 127, 255, 0.3);
+}
+
+rect {
+  fill: none;
+  user-select: none; 
+  -webkit-user-select: none; 
+  -moz-user-select: none;
+}
+
+rect.zoom {
+  stroke: steelblue;
+  fill-opacity: 0.5;
+}
+</style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.4.0/d3.min.js" charset="utf-8"></script>
+  <script src="https://d3js.org/d3-dispatch.v1.js"></script>  
+  <script src="../lib/jquery-extend.js"></script>
+  <script src="../lib/generate-id.js"></script>
+  <script src="../lib/xy-chart.js" charset="utf-8"></script>
+  <script src="../lib/rectangle-select.js"></script>
+  <script src="../lib/rectangle-select-points.js"></script>
+</head>
+<body>
+<!--<script src="d3.v3.min.js"></script>-->
+<script>
+var rectangle;
+window.onload = function() {    
+  chart = xyChart.default({show_line: true, show_errorbars: true, ytransform: 'log'})
+  var opts = { 
+      type:'Select Points', 
+      name:'selector',
+      skip_points: false
+  }
+
+//   let zoom_select = document.getElementById("zoom");
+//   zoom_select.addEventListener("change", function() {console.log('change', this); opts.select_points = !(this.checked)});
+  
+  d3.json("sample_data/pbr_live_data.json", function(error, data) {
+      mydata = data;
+      c = d3.select("#plot1")
+        .data([data[0].data])
+        .call(chart);
+      selector = new rectangleSelectPoints.default(opts);
+      selector.dispatch.on("selection", function() {
+          console.log(this.indices, this.elements);
+          let interaction = document.querySelector("input[type='radio'][name='interaction']:checked").value;
+          if (interaction == 'select') {
+            this.elements.forEach((e) => (e.classList.add("masked")))
+          }
+          else if (interaction == 'deselect') {
+            this.elements.forEach((e) => (e.classList.remove("masked")))
+          }
+          else {
+              // interaction is "zoom"
+              chart.x().domain([this.limits.xmin, this.limits.xmax]);
+              chart.y().domain([this.limits.ymin, this.limits.ymax]);
+              chart.update();
+          }
+      });
+      chart
+        .options(data[0].options)
+        .interactors(rectangle)
+        .interactors(selector)
+        //.zoomRect(true)
+
+  });
+}
+// chart.target_ratio(1).update(); // changes aspect ratio!
+// var new_dims = chart.dims();
+// new_dims.xmax = 256;
+// chart.dims(new_dims).update(); // new dimensions for 2d plot object
+// chart.show_grid(false); // grid off
+
+</script>
+<div id="plot1">
+</div>
+<div id="demos">
+    <h2>interaction:</h2>
+    <label>
+        <input type="radio" name="interaction" value="zoom" />
+        zoom
+    </label>
+    <label>
+        <input type="radio" name="interaction" value="select" checked />
+        select
+    </label>
+    <label>
+        <input type="radio" name="interaction" value="deselect" />
+        deselect
+    </label>
+</div>
+</body>
+</html>
+
