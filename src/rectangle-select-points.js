@@ -1,4 +1,3 @@
-import { extend } from './jquery-extend.js';
 import { rectangleSelect } from './rectangle-select.js';
 
 export { rectangleSelectPoints, rectangleSelectPoints as default };
