@@ -95,17 +95,17 @@ function angleSliceInteractor(state, x, y, d3_import = null) {
     .on("drag", dragmove_center)
     .on("start", function() {
       d3.event.sourceEvent.stopPropagation();
-      dispatcher.call("start");
+      dispatch.call("start");
     })
-    .on("end", function() { dispatcher.call("end") });
+    .on("end", function() { dispatch.call("end") });
     
   var drag_lines = d3.drag()
     .on("drag", dragmove_lines)
     .on("start", function() {
       d3.event.sourceEvent.stopPropagation();
-      dispatcher.call("start");
+      dispatch.call("start");
     })
-    .on("end", function() { dispatcher.call("end") });
+    .on("end", function() { dispatch.call("end") });
   
 
   function interactor(selection) {

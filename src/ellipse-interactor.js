@@ -62,25 +62,25 @@ function ellipseInteractor(state, x, y, d3_import = null) {
     .on("drag", dragmove_corner)
     .on("start", function() {
       d3.event.sourceEvent.stopPropagation();
-      dispatcher.call("start");
+      dispatch.call("start");
     })
-    .on("end", function() { dispatcher.call("end") });
+    .on("end", function() { dispatch.call("end") });
   
   var drag_center = d3.drag()
     .on("drag", dragmove_center)
     .on("start", function() {
       d3.event.sourceEvent.stopPropagation();
-      dispatcher.call("start");
+      dispatch.call("start");
     })
-    .on("end", function() { dispatcher.call("end") });
+    .on("end", function() { dispatch.call("end") });
     
   var drag_edge = d3.drag()
     .on("drag", dragmove_edge)
     .on("start", function() {
       d3.event.sourceEvent.stopPropagation();
-      dispatcher.call("start");
+      dispatch.call("start");
     })
-    .on("end", function() { dispatcher.call("end") });
+    .on("end", function() { dispatch.call("end") });
   
 
   function interactor(selection) {
