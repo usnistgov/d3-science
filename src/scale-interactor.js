@@ -6,7 +6,7 @@ function scaleInteractor(state, x, y, d3_import = null) {
   var d3 = (d3_import != null) ? d3_import : window.d3;
   var x = x || d3.scaleLinear();
   var y = y || d3.scaleLinear();
-  var dispatch = d3.dispatch("updated", "end");
+  var dispatch = d3.dispatch("start", "updated", "end");
 
   function interactor(selection) {
     let unscaled_data = [];
@@ -48,7 +48,7 @@ function scaleInteractor(state, x, y, d3_import = null) {
       }
       var drag_point = d3.drag()
         .on("drag", dragmove_point)
-        .on("start", function () { d3.event.sourceEvent.stopPropagation(); })
+        .on("start", function () { d3.event.sourceEvent.stopPropagation(); dispatch.call("start") })
         .on("end", function() { dispatch.call("end") });
 
       var series_select = d3.select(this);

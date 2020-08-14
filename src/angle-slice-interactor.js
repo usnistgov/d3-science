@@ -7,7 +7,7 @@ function angleSliceInteractor(state, x, y, d3_import = null) {
   // angle is in pixel coords
   var name = state.name;
   var point_radius = ( state.point_radius == null ) ? 5 : state.point_radius;
-  var dispatch = d3.dispatch("update");
+  var dispatch = d3.dispatch("start", "update", "end");
   var x = x || d3.scaleLinear();
   var y = y || d3.scaleLinear();
   
@@ -93,11 +93,19 @@ function angleSliceInteractor(state, x, y, d3_import = null) {
   
   var drag_center = d3.drag()
     .on("drag", dragmove_center)
-    .on("start", function() { d3.event.sourceEvent.stopPropagation(); });  
+    .on("start", function() {
+      d3.event.sourceEvent.stopPropagation();
+      dispatcher.call("start");
+    })
+    .on("end", function() { dispatcher.call("end") });
     
   var drag_lines = d3.drag()
     .on("drag", dragmove_lines)
-    .on("start", function() { d3.event.sourceEvent.stopPropagation(); });
+    .on("start", function() {
+      d3.event.sourceEvent.stopPropagation();
+      dispatcher.call("start");
+    })
+    .on("end", function() { dispatcher.call("end") });
   
 
   function interactor(selection) {
