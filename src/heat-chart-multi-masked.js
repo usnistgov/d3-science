@@ -601,12 +601,14 @@ function heatChartMultiMasked(options_override, d3_import = null) {
         .attr("y", parseFloat(mainview.attr("height")) + options.margin.bottom)
         
       function get_z(data, dims, x_coord, y_coord) {
-        if (x_coord > dims.xmax || x_coord < dims.xmin || y_coord > dims.ymax || y_coord < dims.ymin) {
+        let x_rel = (x_coord - dims.xmin) / (dims.xmax - dims.xmin);
+        let y_rel = (y_coord - dims.ymin) / (dims.ymax - dims.ymin);
+        if (x_rel >= 1.0 || x_rel < 0 || y_rel >= 1.0 || y_rel < 0) {
           return NaN
         }
         else {
-          var x_bin = Math.floor((x_coord - dims.xmin) / (dims.xmax - dims.xmin) * dims.xdim),
-              y_bin = Math.floor((y_coord - dims.ymin) / (dims.ymax - dims.ymin) * dims.ydim);
+          let x_bin = Math.floor(x_rel * dims.xdim);
+          let y_bin = Math.floor(y_rel * dims.ydim);
 
           // x_bin and y_bin are int
           // var row_major = options.source_order.toUpperCase() == "C";
