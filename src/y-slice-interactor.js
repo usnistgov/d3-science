@@ -1,6 +1,6 @@
 export {ySliceInteractor, ySliceInteractor as default};
 
-function ySliceInteractor(state, x, yd3_import = null) {
+function ySliceInteractor(state, x, y, d3_import = null) {
   var d3 = (d3_import != null) ? d3_import : window.d3;
   // dispatch is the d3 event dispatcher: should have event "update" register
   var name = state.name;
