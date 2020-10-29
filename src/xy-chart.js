@@ -649,11 +649,13 @@ function xyChart(options_override, d3_import = null) {
       if (!d[2]) {return pathstring}
       var draw_top_bottom = (
         (d[2].yupper != d[2].ylower) &&
+          isFinite(x(d[0])) &&
           isFinite(y(d[2].ylower)) &&
           isFinite(y(d[2].yupper))
       );
       var draw_left_right = (
         (d[2].xupper != d[2].xlower) &&
+        isFinite(y(d[1])) &&
         isFinite(x(d[2].xlower)) && 
         isFinite(x(d[2].xupper)) 
       );
