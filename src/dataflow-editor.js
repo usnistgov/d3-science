@@ -402,7 +402,7 @@ function editor(options, d3_import = null) {
       draw_wires();
     }
   
-  function module(module_data) {
+  function module(module_data, index) {
     var group; // this will be the module group.
     if (!('x' in module_data)) module_data.x = 100;
     if (!('y' in module_data)) module_data.y = 100;  
@@ -539,6 +539,8 @@ function editor(options, d3_import = null) {
         .attr("height", height)
         .attr("x", 0)
         .attr("y", 0)
+        .append("svg:title")
+            .text("index: " + index.toFixed());
 
       group.call(drag);
       return group.node();  
