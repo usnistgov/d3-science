@@ -73,50 +73,69 @@ function xyChart(options_override, d3_import = null) {
   
   var source_data;
   
-  function do_autoscale() {
+  function do_autoscale(axis='both', set_global=true) {
+    // axis can be 'both', 'x' or 'y'
     var extents;
     var merged_data = d3.merge(source_data);
+    if (axis == 'y'){
+      let xrange = Array.from(x.domain());
+      xrange.sort();
+      merged_data = merged_data.filter((d) => (xrange[0] <= d[0] && xrange[1] >= d[0]));
+    }
+    if (axis == 'x'){
+      let yrange = Array.from(y.domain());
+      yrange.sort();
+      merged_data = merged_data.filter((d) => (yrange[0] <= d[1] && yrange[1] >= d[1]));
+    }
+    let new_max_x, new_max_y, new_min_x, new_min_y;
     if (options.show_errorbars) {
-      max_y = d3.extent(merged_data, function(d) {
+      new_max_y = d3.extent(merged_data, function(d) {
         var yy = (d[2] && d[2].yupper != undefined) ? d[2].yupper : d[1];
         return (isFinite(y(yy))) ? yy : null;
       })[1];
-      min_y = d3.extent(merged_data, function(d) {
+      new_min_y = d3.extent(merged_data, function(d) {
         var yy = (d[2] && d[2].ylower != undefined) ? d[2].ylower : d[1];
         return (isFinite(y(yy))) ? yy : null;
       })[0];
-      max_x = d3.extent(merged_data, function(d) {
+      new_max_x = d3.extent(merged_data, function(d) {
         var xx = (d[2] && d[2].xupper != undefined) ? d[2].xupper : d[0];
         return (isFinite(x(xx))) ? xx : null;
       })[1];
-      min_x = d3.extent(merged_data, function(d) {
+      new_min_x = d3.extent(merged_data, function(d) {
         var xx = (d[2] && d[2].xlower != undefined) ? d[2].xlower : d[0];
         return (isFinite(x(xx))) ? xx : null;
       })[0];
     } else {
       extents = d3.extent(merged_data, function(d) { return isFinite(y(d[1]))? d[1] : null });
-      min_y = extents[0];
-      max_y = extents[1];
+      new_min_y = extents[0];
+      new_max_y = extents[1];
       extents = d3.extent(merged_data, function(d) { return isFinite(x(d[0]))? d[0] : null });
-      min_x = extents[0];
-      max_x = extents[1];
+      new_min_x = extents[0];
+      new_max_x = extents[1];
     }
     
     // if datasets are empty, don't break things.
-    if (min_x == null) { min_x = 1; }
-    if (max_x == null) { max_x = 1; }
-    if (min_y == null) { min_y = 1; }
-    if (max_y == null) { max_y = 1; }
+    if (new_min_x == null) { new_min_x = 1; }
+    if (new_max_x == null) { new_max_x = 1; }
+    if (new_min_y == null) { new_min_y = 1; }
+    if (new_max_y == null) { new_max_y = 1; }
     
-    if (max_x == min_x) {
-      max_x += (max_x * 0.1) || 0.1;
-      min_x -= (min_x * 0.1) || 0.1;
+    if (new_max_x == new_min_x) {
+      new_max_x += (new_max_x * 0.1) || 0.1;
+      new_min_x -= (new_min_x * 0.1) || 0.1;
     }
-    if (max_y == min_y) {
-      max_y += (max_y * 0.1) || 0.1;
-      min_y -= (min_y * 0.1) || 0.1;
+    if (new_max_y == new_min_y) {
+      new_max_y += (new_max_y * 0.1) || 0.1;
+      new_min_y -= (new_min_y * 0.1) || 0.1;
     }
-    return {min_x: min_x, max_x: max_x, min_y: min_y, max_y: max_y}
+
+    if (set_global) {
+      min_x = new_min_x;
+      max_x = new_max_x;
+      min_y = new_min_y;
+      max_y = new_max_y;
+    }
+    return {min_x: new_min_x, max_x: new_max_x, min_y: new_min_y, max_y: new_max_y}
   }
   chart.do_autoscale = do_autoscale;
     
@@ -218,9 +237,9 @@ function xyChart(options_override, d3_import = null) {
       var svg = outercontainer.append("svg")
         .attr("class", "mainplot")
         //.call(zoom) // call this from zoomScroll setter
-        .on("dblclick.zoom", null)
+        //.on("dblclick.zoom", null)
         //.on("dblclick.resetzoom", null)
-        .on("dblclick.resetzoom", chart.resetzoom)
+        //.on("dblclick.resetzoom", chart.resetzoom)
           
       var axes = svg.append("g")
         .attr("class", "axes")
@@ -286,21 +305,44 @@ function xyChart(options_override, d3_import = null) {
       
       
         //.call(zoom);
-      axes.append("g")
+      let xaxis = axes.append("g")
         .attr("class", "x axis")
+      
+      xaxis
+        .append("rect")
+        .attr("height", options.margin.bottom)
+        .attr("width", width)
+        .style("pointer-events", "all")
+        .on("dblclick.zoom", null)
+        .on("dblclick.resetzoom", function() {chart.resetzoom('x')});
+
+      xaxis
         .append("text")
         .attr("class", "x axis-label")
         .attr("x", width/2.0)
         .attr("text-anchor", "middle")
         .attr("y", options.margin.bottom - 15)
-      axes.append("g")
-        .attr("class", "y axis")
+
+      let yaxis = axes.append("g")
+        .attr("class", "y axis");
+
+      yaxis
+        .append("rect")
+        .attr("width", options.margin.left)
+        .attr("x", -options.margin.left)
+        .attr("height", height)
+        .style("pointer-events", "all")
+        .on("dblclick.zoom", null)
+        .on("dblclick.resetzoom", function() {chart.resetzoom('y')});
+      
+      yaxis
         .append("text")
         .attr("class", "y axis-label")
         .attr("text-anchor", "middle")
         .attr("transform", "rotate(-90)")
         .attr("y", -options.margin.left + 15 )
         .attr("x", -height/2)
+
       
       mainview.append("defs").append("clipPath")
         .attr("id", "d3clip_" + id.toFixed()) // local def
@@ -323,6 +365,9 @@ function xyChart(options_override, d3_import = null) {
         .attr("height", height)
         .style("visibility", "hidden")
         .attr("pointer-events", "all")
+        .on("dblclick.zoom", null)
+        //.on("dblclick.resetzoom", null)
+        .on("dblclick.resetzoom", function() { chart.resetzoom() })
       
       // legend on top so it can be moved...
       mainview.append("g")
@@ -736,18 +781,32 @@ function xyChart(options_override, d3_import = null) {
     
     }
     
-    chart.resetzoom = function() {
+    chart.resetzoom = function(axis='both') {
       var xoffset = (x.range()[1] - x.range()[0]) * base_zoom_offset,
           yoffset = (y.range()[1] + y.range()[0]) * base_zoom_offset;
-      var zoombox = chart.g.select("rect.zoom-box");
-      x.domain([min_x, max_x]);
-      y.domain([min_y, max_y]);
-      orig_x = x.copy();
-      orig_y = y.copy();
+      
+      let new_min_x, new_max_x, new_min_y, new_max_y;
+      if (axis == 'both'){
+        x.domain([min_x, max_x]);
+        y.domain([min_y, max_y]);
+        orig_x = x.copy();
+        orig_y = y.copy();
+        chart.g.select("rect.zoom-box")
+          .call(zoom.transform, d3.zoomIdentity.translate(xoffset, yoffset).scale(1.0 - 2*base_zoom_offset) );
+        is_zoomed = false;
+      }
+      else if (axis == 'x') {
+        let {min_x, max_x} = do_autoscale(axis, false);
+        x.domain([min_x, max_x]);
+        chart.update();
+      }
+      else if (axis == 'y') {
+        let {min_y, max_y} = do_autoscale(axis, false);
+        y.domain([min_y, max_y]);
+        chart.update()
+      }
       //zoombox.call(zoom.transform, d3.zoomIdentity);
-      zoombox
-        .call(zoom.transform, d3.zoomIdentity.translate(xoffset, yoffset).scale(1.0 - 2*base_zoom_offset) );
-      is_zoomed = false;
+      
     }
     
     chart.options = function(_, clear) {

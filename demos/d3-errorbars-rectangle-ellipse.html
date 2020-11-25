@@ -279,6 +279,8 @@ window.onload = function() {
      x_slice.dispatch.on("end", () => {console.log("end")});
      x_slice.dispatch.on("update", function() { console.log('updated'); });
 
+     chart.zoomRect(true);
+
   });
 }
 // chart.target_ratio(1).update(); // changes aspect ratio!
