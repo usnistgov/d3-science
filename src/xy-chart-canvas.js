@@ -234,7 +234,7 @@ function xyChart(options_override, d3_import = null) {
 
       var canvas_container = outercontainer.append("div")
         .attr("class", "canvas-container")
-        .style("position", "absolute")
+        .style("position", "relative")
         .style("left", options.margin.left + "px")
         .style("top", options.margin.top + "px");
       //************************************************************
