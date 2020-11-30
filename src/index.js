@@ -1,5 +1,6 @@
 export { default as heatChart } from './heat-chart.js';
 export { default as xyChart } from './xy-chart.js';
+export { default as xyChartCanvas } from './xy-chart-canvas.js';
 export { extend, type } from './jquery-extend.js';
 export { default as rectangleSelect } from './rectangle-select.js';
 export { colormap_names, get_colormap, colormap_data } from './colormap.js';
