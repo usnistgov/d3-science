@@ -291,8 +291,8 @@ function xyChart(options_override, d3_import = null) {
           zoomRect = _;
           if (zoomRect == true) {
             var drag = d3.drag();
-            drag.on("start", drag_started);
-            svg.select("g.mainview rect.zoom-box").call(drag);
+            drag.on("start.zoomrect", drag_started);
+            svg.call(drag);
           } 
           else {
             svg.on('.drag', null);
