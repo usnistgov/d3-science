@@ -1,6 +1,5 @@
 import {extend} from './jquery-extend.js';
 import {generateID} from './generate-id.js';
-import { toughCookie } from 'jsdom';
 
 //var extend = jQuery.extend;
 export {xyChart, xyChart as default};
