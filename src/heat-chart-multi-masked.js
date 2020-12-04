@@ -25,6 +25,11 @@ function heatChartMultiMasked(options_override, d3_import = null) {
       yaxis: {label: "y-axis"},
       zaxis: {label: "z-axis"}
     },
+    additional_axes: {
+      xaxis: [],
+      yaxis: [],
+      zaxis: []
+    },
     ztransform: "linear",
     zmin: 1,
     zmax: 2,
@@ -57,7 +62,8 @@ function heatChartMultiMasked(options_override, d3_import = null) {
   var xAxisGrid = d3.axisBottom(x);
   var yAxisGrid = d3.axisLeft(y);
   var colormap = getJetColormap();  
-  
+  var legend_offset = {};
+
   var zoomed = function() {
     //console.log(d3.event.transform);
     if (d3.event && d3.event.transform) {
@@ -122,6 +128,8 @@ function heatChartMultiMasked(options_override, d3_import = null) {
         innerheight = outercontainer.node().clientHeight,
         width = innerwidth - options.margin.right - options.margin.left,
         height = innerheight - options.margin.top - options.margin.bottom;
+      legend_offset.x = width - options.legend.left;
+      legend_offset.y = options.legend.top;
       chart.outercontainer = outercontainer;
       source_data = data;
       backing_canvases = source_data.map(function() { return document.createElement('canvas') });
@@ -262,7 +270,7 @@ function heatChartMultiMasked(options_override, d3_import = null) {
       // legend on top so it can be moved...
       mainview.append("g")
         .attr("class", "legend")
-        .attr("transform", "translate(" + [width-options.legend.left, options.legend.top] + ")");
+        .attr("transform", "translate(" + [legend_offset.x, legend_offset.y] + ")");
       
       mainview.select(".x.axis").call(xAxis);
       mainview.select(".y.axis").call(yAxis);
@@ -285,12 +293,13 @@ function heatChartMultiMasked(options_override, d3_import = null) {
     selection.call(chart.colorbar);
   }
   
-  var legend_offset = {x: 0, y: 0};
     var drag_legend = d3.drag()
+      .container(() => chart.mainview.node())
       .on("drag", function(d,i) {
         legend_offset.x += d3.event.dx;
         legend_offset.y += d3.event.dy;
-        chart.draw_legend(source_data);
+        chart.svg.select("g.legend")
+          .attr("transform", "translate(" + [legend_offset.x, legend_offset.y] + ")");
         })
       .on("start", function() { d3.event.sourceEvent.stopPropagation(); })
 
@@ -307,12 +316,13 @@ function heatChartMultiMasked(options_override, d3_import = null) {
       update_sel
         .enter()
           .append('g')
+          .classed('legend-item', true)
           .style("fill", get_series_color)
           .each(function(d, i) {
             var g = d3.select(this);
             g.append("rect")
-              .attr("x", legend_offset.x)
-              .attr("y", i*25 + 10)
+              .attr("x", 0)
+              .attr("y", i*25)
               .attr("width", 14)
               .attr("height", 14)
               .style("cursor", "pointer")
@@ -338,7 +348,7 @@ function heatChartMultiMasked(options_override, d3_import = null) {
               //.call(drag_legend);
             
             g.append("text")
-              .attr("x", 18 + legend_offset.x)
+              .attr("x", 18)
               .attr("y", i * 25 + 25)
               .attr("height",30)
               .attr("width",100)
@@ -363,13 +373,11 @@ function heatChartMultiMasked(options_override, d3_import = null) {
       update_sel.style("fill", get_series_color);
       
       el.selectAll("rect")
-        .attr("x", legend_offset.x)
-        .attr("y", function(d,i) {return i*25 + 12 + legend_offset.y})
+        .attr("y", function(d,i) {return i*25 + 12 })
         .style("stroke", get_series_color);
 
       el.selectAll("text")
-        .attr("x", 18 + legend_offset.x)
-        .attr("y", function(d,i) { return i * 25 + 25 + legend_offset.y})
+        .attr("y", function(d,i) { return i * 25 + 25 })
         .each(function(d, i) {
           d3.select(this).text((options.series[i] && options.series[i].label != null) ? options.series[i].label : i+1)
         });
@@ -598,13 +606,13 @@ function heatChartMultiMasked(options_override, d3_import = null) {
        
       position_cursor
         .attr("x", parseFloat(mainview.attr("width")) - 10)
-        .attr("y", parseFloat(mainview.attr("height")) + options.margin.bottom)
+        .attr("y", parseFloat(mainview.attr("height")) + options.margin.bottom - 10)
         
       function get_z(data, dims, x_coord, y_coord) {
         let x_rel = (x_coord - dims.xmin) / (dims.xmax - dims.xmin);
         let y_rel = (y_coord - dims.ymin) / (dims.ymax - dims.ymin);
         if (x_rel >= 1.0 || x_rel < 0 || y_rel >= 1.0 || y_rel < 0) {
-          return NaN
+          return null
         }
         else {
           let x_bin = Math.floor(x_rel * dims.xdim);
@@ -630,12 +638,21 @@ function heatChartMultiMasked(options_override, d3_import = null) {
           var sd = source_data[nd];
           z_coord = get_z(sd.data, sd.dims, x_coord, y_coord);
         }
+        let z_str = '';
+        if (isNaN(z_coord)) {
+          z_str = 'NaN';
+        }
+        else if (z_coord != null) {
+          z_str = z_coord.toPrecision(5);
+        }
         position_cursor.text(
+          "x: " + 
           x_coord.toPrecision(5) + 
-          ", " + 
+          ", y: " + 
           y_coord.toPrecision(5) + 
-          ", " + 
-          ((isNaN(z_coord) || z_coord == null) ? 'NaN' : z_coord.toPrecision(5)));
+          ", z: " + 
+          z_str
+        );
       }
       svg
         .on("mousemove.position_cursor", follow)
