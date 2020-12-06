@@ -292,10 +292,10 @@ function xyChart(options_override, d3_import = null) {
           if (zoomRect == true) {
             var drag = d3.drag();
             drag.on("start.zoomrect", drag_started);
-            svg.call(drag);
+            svg.select("g.mainview").call(drag);
           } 
           else {
-            svg.on('.drag', null);
+            svg.select("g.mainview").on('.drag', null);
           }
         }
         return chart;
@@ -368,7 +368,7 @@ function xyChart(options_override, d3_import = null) {
         .on("dblclick.zoom", null)
         //.on("dblclick.resetzoom", null)
         .on("dblclick.resetzoom", function() { chart.resetzoom() })
-      
+
       // legend on top so it can be moved...
       mainview.append("g")
         .attr("class", "legend")
@@ -937,7 +937,7 @@ function xyChart(options_override, d3_import = null) {
       if (!arguments.length) return interactors;
       if ( _ == null ) {
         // null passed intentionally: clear all
-        chart.svg.selectAll("g.interactors").remove();
+        chart.svg.selectAll("g.mainview g.interactors").remove();
         interactors = [];
         return chart;
       }
@@ -997,7 +997,7 @@ function xyChart(options_override, d3_import = null) {
         
       chart.svg.attr("width", width + options.margin.left + options.margin.right)
         .attr("height", height + options.margin.top + options.margin.bottom);
-      chart.svg.select("clipPath rect").attr("width", width).attr("height", height);
+      chart.svg.select("clipPath rect, rect.zoom-box").attr("width", width).attr("height", height);
       chart.svg.selectAll("g.axes g.x").attr("transform", "translate(0," + height + ")");
       
       chart.svg.selectAll("g.x.axis text.axis-label").attr("x", width/2.0);
