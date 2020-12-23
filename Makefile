@@ -10,5 +10,5 @@ clean:
 lib: 
 	mkdir -p $(@D)
 
-lib/%.js: src/%.js .babelrc
+lib/%.js: src/%.js babel.config.json
 	$(BABEL) $< -o $@
