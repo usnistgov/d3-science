@@ -528,6 +528,10 @@ function xyChart(options_override, d3_import = null) {
                 // toggle:
                 hidden = !hidden;
                 d3.select(this).classed('hidden', hidden);
+                let s = options.series[i] = options.series[i] ?? {};
+                s.show_errorbars = s.show_points = s.show_line = (!hidden);
+                update();
+                /*
                 chart.svg.selectAll('path.line')
                   .filter(function(d,ii) { return ii == i })
                   .classed('hidden', hidden);
@@ -537,6 +541,7 @@ function xyChart(options_override, d3_import = null) {
                 chart.svg.selectAll('g.errorbars')
                   .filter(function(d,ii) { return ii == i })
                   .classed('hidden', hidden);
+                */
               })
               .append("title").text("click to hide/unhide")
               //.call(drag_legend);
@@ -751,7 +756,7 @@ function xyChart(options_override, d3_import = null) {
     function filterShowOption(optname, data) { 
       return data.map(function(d,i) {
         var localopt = (((options || {}).series || [])[i] || {});
-        if (localopt[optname] == false || (localopt[optname] === undefined && !options[optname])) {
+        if (options[optname] == false || localopt[optname] == false) {
           return []
         } else {
           return d;
