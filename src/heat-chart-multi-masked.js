@@ -44,7 +44,6 @@ function heatChartMultiMasked(options_override, d3_import = null) {
   var plotdatas = [];
   var maskdatas = [];
   var source_data = [];
-  var dataset_visibility = []; // used by the legend
   var default_series_color = "blue";
   var z = getScale(options.ztransform);
     
@@ -307,7 +306,7 @@ function heatChartMultiMasked(options_override, d3_import = null) {
     // Create D3 legend
     //************************************************************
     chart.draw_legend = function(data) {
-      if (!options.legend.show) { dataset_visibility = []; return }
+      if (!options.legend.show) { return }
       var el = chart.svg.select("g.legend");
       // if there are more options.series defined than datasets, 
       // use the extra series:
@@ -341,7 +340,8 @@ function heatChartMultiMasked(options_override, d3_import = null) {
                 // toggle:
                 hidden = !hidden;
                 d3.select(this).classed('hidden', hidden);
-                dataset_visibility[i] = (!hidden);
+                if (!options.series[i]) { options.series[i] = {} }
+                options.series[i].visible = (!hidden);
                 _redraw_main = true;
               })
               .append("title").text("click to hide/unhide")
@@ -365,8 +365,6 @@ function heatChartMultiMasked(options_override, d3_import = null) {
                   .classed('unhighlight', false);
               })
               .call(drag_legend)
-
-            dataset_visibility.push(true);
 
           });
       update_sel.exit().remove();
@@ -951,7 +949,7 @@ function heatChartMultiMasked(options_override, d3_import = null) {
     if (context.webkitImageSmoothingEnabled) context.webkitImageSmoothingEnabled = false;
 
     source_contexts.forEach(function(ctx, image_index) {
-      if (dataset_visibility[image_index] == false) { return }
+      if (options.series[image_index]?.visible == false) { return }
       let sxdx = get_sxdx(image_index);
       context.drawImage(ctx.canvas, sxdx.sx, sxdx.sy, sxdx.sw, sxdx.sh, sxdx.dx, sxdx.dy, sxdx.dw, sxdx.dh);
     });
