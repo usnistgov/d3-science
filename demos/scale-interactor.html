@@ -147,7 +147,8 @@ window.onload = function() {
         .data([data[0].data])
         .call(chart);
       scale = new scaleInteractor.default(opts_scale, null, null, d3);
-      scale.dispatch.on("updated", () => {chart.update()})
+      scale.dispatch.on("update", () => {chart.update()})
+      scale.dispatch.on("end", () => {chart.update()})
       chart
         .options(data[0].options)
         //.ytransform('log')
