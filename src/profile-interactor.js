@@ -10,7 +10,7 @@ function profileInteractor(state, x, y, d3_import = null) {
   var name = state.name;
   var radius = ( state.radius == null ) ? 5 : state.radius;
   var event_name = "profile." + state.name;
-  var dispatch = d3.dispatch("update","changed");
+  var dispatch = d3.dispatch("start", "updated", "changed", "end");
   var x = x || d3.scaleLinear();
   var y = y || d3.scaleLinear();
   var interpolation = (state.interpolation == null) ? 'StepBefore' : state.interpolation;
@@ -96,11 +96,23 @@ function profileInteractor(state, x, y, d3_import = null) {
   
   var drag_corner = d3.drag()
     .on("drag", dragmove_corner)
-    .on("start", function() { d3.event.sourceEvent.stopPropagation(); });
+    .on("start", function() { 
+      d3.event.sourceEvent.stopPropagation();
+      dispatch.call("start", null, state.profile_data);
+    })
+    .on("end", function() {
+      dispatch.call("end", null, state.profile_data);
+    })
     
   var drag_edge = d3.drag()
     .on("drag", dragmove_edge)
-    .on("start", function() { d3.event.sourceEvent.stopPropagation(); });
+    .on("start", function() { 
+      d3.event.sourceEvent.stopPropagation();
+      dispatch.call("start", null, state.profile_data);
+    })
+    .on("end", function() {
+      dispatch.call("end", null, state.profile_data);
+    })
   
   function interactor(selection) {
     var group = selection.append("g")
@@ -206,7 +218,7 @@ function profileInteractor(state, x, y, d3_import = null) {
       });
         
       // fire!
-      dispatch.call("update");
+      dispatch.call("updated");
     }
     
     interactor.update();
