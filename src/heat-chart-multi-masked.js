@@ -863,16 +863,16 @@ function heatChartMultiMasked(options_override, d3_import = null) {
       null,
       source_data.map(function(sd) { return sd.dims.ymax})
     );
-    if (aspect_ratio == null) {
-      return {'xmin': xmin, 'xmax': xmax, 'ymin': ymin, 'ymax': ymax}
-    }
+
     var yrange = (ymax - ymin);
     var ycenter = (ymax + ymin) / 2.0;
     var xrange = (xmax - xmin);
     var xcenter = (xmax + xmin) / 2.0;
     var graph_ratio = width / height;
     var ratio = yrange/xrange * graph_ratio;
-    if (isNaN(ratio) || ratio == aspect_ratio) { return };
+    if (aspect_ratio == null || isNaN(ratio) || ratio == aspect_ratio) {
+      return {'xmin': xmin, 'xmax': xmax, 'ymin': ymin, 'ymax': ymax}
+    };
     if (ratio < aspect_ratio) { // y-range is too small
         yrange = aspect_ratio * xrange / graph_ratio;
     }
