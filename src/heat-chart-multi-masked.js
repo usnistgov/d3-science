@@ -1,11 +1,26 @@
+import {
+  axisBottom,
+  axisLeft,
+  axisRight,
+  drag,
+  pointer,
+  range,
+  rgb,
+  scaleLinear,
+  scaleLog,
+  scalePow,
+  scaleSqrt,
+  select,
+  zoom as d3Zoom,
+  zoomIdentity
+} from 'd3';
 import {type, extend} from './jquery-extend.js';
 import {generateID} from './generate-id.js';
 import * as lib_colormap from './colormap.js';
 
 export {heatChartMultiMasked, heatChartMultiMasked as default};
 
-function heatChartMultiMasked(options_override, d3_import = null) {
-  var d3 = (d3_import != null) ? d3_import : window.d3;
+function heatChartMultiMasked(options_override) {
   var debug=false;
   var options_defaults = {
     margin: {top: 10, right: 10, bottom: 50, left: 50},
@@ -39,7 +54,7 @@ function heatChartMultiMasked(options_override, d3_import = null) {
   extend(true, options, options_override); // process any overrides from creation;
   
   //var zoomRect = false;
-  var zoomScroll = false;
+  var zoomScroll = false;  // Enable zoom by default
   var interactors = [];
   var plotdatas = [];
   var maskdatas = [];
@@ -52,40 +67,45 @@ function heatChartMultiMasked(options_override, d3_import = null) {
   var zdims = {}
   var id = generateID();
   
-  var x = d3.scaleLinear();
-  var y = d3.scaleLinear();
+  var x = scaleLinear();
+  var y = scaleLinear();
   var orig_x, orig_y, orig_z;
-  var xAxis = d3.axisBottom(x);
-  var yAxis = d3.axisLeft(y);
-  var zAxis = d3.axisRight(z);
-  var xAxisGrid = d3.axisBottom(x);
-  var yAxisGrid = d3.axisLeft(y);
+  var xAxis = axisBottom(x);
+  var yAxis = axisLeft(y);
+  var zAxis = axisRight(z);
+  var xAxisGrid = axisBottom(x);
+  var yAxisGrid = axisLeft(y);
   var colormap = getJetColormap();  
   var legend_offset = {};
 
-  var zoomed = function() {
-    //console.log(d3.event.transform);
-    if (d3.event && d3.event.transform) {
+  var zoomed = function(event) {
+    //console.log(event.transform);
+    if (event && event.transform) {
       // emulating old zoom behavior:
-      var new_x = d3.event.transform.rescaleX(orig_x),
-          new_y = d3.event.transform.rescaleY(orig_y);
+      var new_x = event.transform.rescaleX(orig_x),
+          new_y = event.transform.rescaleY(orig_y);
       
       x.domain(new_x.domain());
       y.domain(new_y.domain());
     }
     _redraw_main = true;
   }
-  var zoom = d3.zoom().on("zoom.heatmap", zoomed);
+  var zoom = d3Zoom()
+    .filter(function(event) {
+      // Allow wheel zoom, drag zoom, but prevent double-click zoom (we use that for reset)
+      return (!event.ctrlKey || event.type === 'wheel') && !event.button;
+    })
+    .on("zoom.heatmap", zoomed);
   var resetzoom = function() {
     var zoombox = chart.mainview.select("rect.zoom.box");
-    zoombox.call(zoom.transform, d3.zoomIdentity);
+    zoombox.call(zoom.transform, zoomIdentity);
   }
   
-  var cb_zoomed = function() {
-    var svg = d3.select(this);
-    if (d3.event && d3.event.transform) {
+  var cb_zoomed = function(event) {
+    var svg = select(this);
+    if (event && event.transform) {
       // emulating old zoom behavior:
-      var new_z = d3.event.transform.rescaleY(orig_z);
+      var new_z = event.transform.rescaleY(orig_z);
       z.domain(new_z.domain());
     }
     zdims.zmax = Math.max.apply(Math, z.domain());
@@ -95,12 +115,12 @@ function heatChartMultiMasked(options_override, d3_import = null) {
     _redraw_colorbar = true;
     //chart.redrawImage();
   }
-  var cb_zoom = d3.zoom()
+  var cb_zoom = d3Zoom()
     .on("zoom.colorbar", null)
     .on("zoom.colorbar", cb_zoomed);
     
   var cb_resetzoom = function() {
-    chart.colorbar.svg.call(cb_zoom.transform, d3.zoomIdentity);
+    chart.colorbar.svg.call(cb_zoom.transform, zoomIdentity);
   }
   
   //var dispatch = d3.dispatch("update", "redrawImage");
@@ -122,7 +142,7 @@ function heatChartMultiMasked(options_override, d3_import = null) {
   function chart(selection) {
     selection.each(function(data) {
       var offset_right = (options.show_colorbar) ? options.colorbar_width + 20 : 0;
-      var outercontainer = d3.select(this),
+      var outercontainer = select(this),
         innerwidth = outercontainer.node().clientWidth - offset_right,
         innerheight = outercontainer.node().clientHeight,
         width = innerwidth - options.margin.right - options.margin.left,
@@ -286,21 +306,26 @@ function heatChartMultiMasked(options_override, d3_import = null) {
       chart.svg = svg;
       chart.mainview = mainview;
       
+      // Enable zoom by default
+      chart.mainview.select("rect.zoom.box")
+        .call(zoom)
+        .on("dblclick.zoom", null);
+      
       chart.position_cursor(options.position_cursor);
       chart.draw_legend(data);
     });
     selection.call(chart.colorbar);
   }
   
-    var drag_legend = d3.drag()
+    var drag_legend = drag()
       .container(() => chart.mainview.node())
-      .on("drag", function(d,i) {
-        legend_offset.x += d3.event.dx;
-        legend_offset.y += d3.event.dy;
+      .on("drag", function(event, d) {
+        legend_offset.x += event.dx;
+        legend_offset.y += event.dy;
         chart.svg.select("g.legend")
           .attr("transform", "translate(" + [legend_offset.x, legend_offset.y] + ")");
         })
-      .on("start", function() { d3.event.sourceEvent.stopPropagation(); })
+      .on("start", function(event) { event.sourceEvent.stopPropagation(); })
 
     //************************************************************
     // Create D3 legend
@@ -310,7 +335,7 @@ function heatChartMultiMasked(options_override, d3_import = null) {
       var el = chart.svg.select("g.legend");
       // if there are more options.series defined than datasets, 
       // use the extra series:
-      var ldata = d3.range(Math.max(data.length, (options.series || []).length));
+      var ldata = range(Math.max(data.length, (options.series || []).length));
       var update_sel = el.selectAll('g').data(ldata);
       update_sel
         .enter()
@@ -318,7 +343,7 @@ function heatChartMultiMasked(options_override, d3_import = null) {
           .classed('legend-item', true)
           .style("fill", get_series_color)
           .each(function(d, i) {
-            var g = d3.select(this);
+            var g = select(this);
             g.append("rect")
               .attr("x", 0)
               .attr("y", i*25)
@@ -336,10 +361,10 @@ function heatChartMultiMasked(options_override, d3_import = null) {
                   .classed('unhighlight', false);
               })
               .on("click", function() {
-                let hidden = d3.select(this).classed("hidden");
+                let hidden = select(this).classed("hidden");
                 // toggle:
                 hidden = !hidden;
-                d3.select(this).classed('hidden', hidden);
+                select(this).classed('hidden', hidden);
                 if (!options.series[i]) { options.series[i] = {} }
                 options.series[i].visible = (!hidden);
                 _redraw_main = true;
@@ -377,13 +402,13 @@ function heatChartMultiMasked(options_override, d3_import = null) {
       el.selectAll("text")
         .attr("y", function(d,i) { return i * 25 + 25 })
         .each(function(d, i) {
-          d3.select(this).text((options.series[i] && options.series[i].label != null) ? options.series[i].label : i+1)
+          select(this).text((options.series[i] && options.series[i].label != null) ? options.series[i].label : i+1)
         });
     }
   
   chart.colorbar = function(selection) {
     selection.each(function(data) {      
-      var outercontainer = d3.select(this),
+      var outercontainer = select(this),
         offset_left = 0,
         innerwidth = options.colorbar_width,
         innerheight = outercontainer.node().clientHeight,
@@ -459,10 +484,10 @@ function heatChartMultiMasked(options_override, d3_import = null) {
     colormap = _;
     _colormap_array = [];
     for (var i=0; i<256; i++) {
-        _colormap_array[i] = d3.rgb(colormap(i));
+        _colormap_array[i] = rgb(colormap(i));
         _colormap_array[i].a = 255;
     }
-    _colormap_array[256] = d3.rgb(0,0,0);
+    _colormap_array[256] = rgb(0,0,0);
     _colormap_array[256].a = 0;
     _redraw_colorbar = true;
     return chart;
@@ -624,11 +649,11 @@ function heatChartMultiMasked(options_override, d3_import = null) {
         }
       }
       
-      var follow = function (){  
+      var follow = function (event){  
         if (source_data == null || source_data[0] == null) { return }
-        var mouse = d3.mouse(mainview.node());
-        var x_coord = x.invert(mouse[0]),
-            y_coord = y.invert(mouse[1]);
+        var mouse_pos = pointer(event, mainview.node());
+        var x_coord = x.invert(mouse_pos[0]),
+            y_coord = y.invert(mouse_pos[1]);
         // start at the top and move down through the datasets:
         var z_coord = NaN;
         var nd = source_data.length;
@@ -1241,11 +1266,16 @@ function heatChartMultiMasked(options_override, d3_import = null) {
   }
 
   function getScale(scalename) {
-    return d3['scale' + scalename.slice(0,1).toUpperCase() + scalename.slice(1).toLowerCase()]();
+    var lname = scalename.toLowerCase();
+    if (lname === 'linear') return scaleLinear();
+    if (lname === 'log') return scaleLog();
+    if (lname === 'sqrt') return scaleSqrt();
+    if (lname === 'pow') return scalePow();
+    return scaleLinear(); // default
   }
   
   function getJetColormap() {
-    var jet_colormap = d3.scaleLinear()
+    var jet_colormap = scaleLinear()
         .domain([0, 31, 63, 95, 127, 159, 191, 223, 255])
         /* Jet:
           #00007F: dark blue

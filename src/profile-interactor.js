@@ -1,18 +1,63 @@
+import { 
+  dispatch as d3Dispatch, 
+  drag, 
+  line as d3Line, 
+  scaleLinear,
+  select,
+  curveBasis,
+  curveBasisClosed,
+  curveBasisOpen,
+  curveBundle,
+  curveCardinal,
+  curveCardinalClosed,
+  curveCardinalOpen,
+  curveCatmullRom,
+  curveCatmullRomClosed,
+  curveCatmullRomOpen,
+  curveLinear,
+  curveLinearClosed,
+  curveMonotoneX,
+  curveMonotoneY,
+  curveNatural,
+  curveStep,
+  curveStepAfter,
+  curveStepBefore
+} from 'd3';
 import {extend} from './jquery-extend.js';
+
+const curveMapping = {
+  'Basis': curveBasis,
+  'BasisClosed': curveBasisClosed,
+  'BasisOpen': curveBasisOpen,
+  'Bundle': curveBundle,
+  'Cardinal': curveCardinal,
+  'CardinalClosed': curveCardinalClosed,
+  'CardinalOpen': curveCardinalOpen,
+  'CatmullRom': curveCatmullRom,
+  'CatmullRomClosed': curveCatmullRomClosed,
+  'CatmullRomOpen': curveCatmullRomOpen,
+  'Linear': curveLinear,
+  'LinearClosed': curveLinearClosed,
+  'MonotoneX': curveMonotoneX,
+  'MonotoneY': curveMonotoneY,
+  'Natural': curveNatural,
+  'Step': curveStep,
+  'StepAfter': curveStepAfter,
+  'StepBefore': curveStepBefore
+};
 
 export {profileInteractor, profileInteractor as default};
 
-function profileInteractor(state, x, y, d3_import = null) {
-  var d3 = (d3_import != null) ? d3_import : window.d3;
+function profileInteractor(state, x, y) {
   // x, y are d3.scale objects (linear, log, etc) from parent
   // dispatch is the d3 event dispatcher: should have event "update" register
   //var state = options;
   var name = state.name;
   var radius = ( state.radius == null ) ? 5 : state.radius;
   var event_name = "profile." + state.name;
-  var dispatch = d3.dispatch("start", "updated", "changed", "end");
-  var x = x || d3.scaleLinear();
-  var y = y || d3.scaleLinear();
+  var dispatch = d3Dispatch("start", "updated", "changed", "end");
+  var x = x || scaleLinear();
+  var y = y || scaleLinear();
   var interpolation = (state.interpolation == null) ? 'StepBefore' : state.interpolation;
   var prevent_crossing = (state.prevent_crossing == null) ? false : state.prevent_crossing;
   var show_points = (state.show_points == null) ? true : state.show_points;
@@ -24,10 +69,10 @@ function profileInteractor(state, x, y, d3_import = null) {
   var series = state.series || [];
   var constraints = [];
 
-  var line = d3.line()
+  var line = d3Line()
     .x(function(d) { return x(d[0]); })
     .y(function(d) { return y(d[1]); })
-    .curve(d3["curve" + interpolation]);  
+    .curve(curveMapping[interpolation] || curveStepBefore);  
          
   
   function data_to_pairs(data, column) {
@@ -94,20 +139,20 @@ function profileInteractor(state, x, y, d3_import = null) {
       "#bd70c7"
   ] 
   
-  var drag_corner = d3.drag()
+  var drag_corner = drag()
     .on("drag", dragmove_corner)
-    .on("start", function() { 
-      d3.event.sourceEvent.stopPropagation();
+    .on("start", function(event) { 
+      event.sourceEvent.stopPropagation();
       dispatch.call("start", null, state.profile_data);
     })
     .on("end", function() {
       dispatch.call("end", null, state.profile_data);
     })
     
-  var drag_edge = d3.drag()
+  var drag_edge = drag()
     .on("drag", dragmove_edge)
-    .on("start", function() { 
-      d3.event.sourceEvent.stopPropagation();
+    .on("start", function(event) { 
+      event.sourceEvent.stopPropagation();
       dispatch.call("start", null, state.profile_data);
     })
     .on("end", function() {
@@ -142,7 +187,7 @@ function profileInteractor(state, x, y, d3_import = null) {
         .exit().remove()
         
       corner_groups_sel.each(function(d,i) {
-        var corners = d3.select(this).selectAll('.corner').data(d)
+        var corners = select(this).selectAll('.corner').data(d)
         var new_corners = corners.enter().append("circle")
           .classed("corner", true)
           .attr("vertex", function(dd,ii) { return ii.toFixed()})
@@ -155,40 +200,41 @@ function profileInteractor(state, x, y, d3_import = null) {
             corner_groups_sel.selectAll("circle.corner")
               .attr("r", radius)
               .classed("selected", false);
-            d3.select(this).attr("r", radius*1.2).classed("selected", true);
+            select(this).attr("r", radius*1.2).classed("selected", true);
           })
             
         corners.exit().remove();
       });
         
       edge_groups_sel.each(function(d,i) {
-        var edges = d3.select(this).selectAll('.edge').data(d);
+        var edges = select(this).selectAll('.edge').data(d);
         var new_edges = edges.enter().append("path")
           .classed("edge", true)
           .attr("side", function(dd,ii) { return ii.toFixed()})
           .attr("direction", function(d) { return d[0][4] })
         if (!fixed) new_edges.call(drag_edge);
-        d3.select(this).selectAll('.edge').on("dblclick", function(dd, ii) {
-          var direction = d3.select(this).attr("direction"),
+        select(this).selectAll('.edge').on("dblclick", function(event, dd) {
+          var ii = parseInt(select(this).attr("side"));
+          var direction = select(this).attr("direction"),
               old_row_index = dd[0][3],
               old_row = state.profile_data[old_row_index],
               new_row = extend(true, {}, old_row); 
           if (direction == "h") {
-            var xi = x.invert(d3.mouse(this)[0]),
+            var xi = x.invert(d3.pointer(event, this)[0]),
                 thickness_below = xi - d[ii][0][0],
                 thickness_above = d[ii][1][0] - xi;
             new_row.thickness = thickness_below;
             old_row.thickness = thickness_above;
           }
           else if (direction == "v") {
-            var yi = y.invert(d3.mouse(this)[1]),
+            var yi = y.invert(d3.pointer(event, this)[1]),
                 col = state.series[i].id;
             new_row.thickness = 0;
             new_row[col] = yi;
           }            
           state.profile_data.splice(old_row_index, 0, new_row); 
-          d3.event.preventDefault();
-          d3.event.stopPropagation();
+          event.preventDefault();
+          event.stopPropagation();
           dispatch.call("changed", null, state.profile_data);
           interactor.update();
         })
@@ -197,7 +243,7 @@ function profileInteractor(state, x, y, d3_import = null) {
         if (draw_extensions) {
           var left_d = extend(true, [], d[0][0]);
           left_d[0] = x.invert(-10);
-          var left_ext = d3.select(this).selectAll('.left.extension')
+          var left_ext = select(this).selectAll('.left.extension')
             .data([[left_d, d[0][0]]])
             .enter().append("path")
             .classed("left extension", true)
@@ -206,14 +252,14 @@ function profileInteractor(state, x, y, d3_import = null) {
           
           var right_d = extend(true, [], d.slice(-1)[0][0]);
           right_d[0] = x.invert(x.range()[1]+10);
-          var right_ext = d3.select(this).selectAll('.right.extension')
+          var right_ext = select(this).selectAll('.right.extension')
             .data([[right_d, d.slice(-1)[0][0]]])
             .enter().append("path")
             .classed("right extension", true)
             .attr("direction", "h");
           if (!fixed) right_ext.call(drag_edge);
         }
-        d3.select(this).selectAll(".edge, .extension").attr("d", line).attr("visibility", (state.show_lines) ? "visible" : "hidden");
+        select(this).selectAll(".edge, .extension").attr("d", line).attr("visibility", (state.show_lines) ? "visible" : "hidden");
         
       });
         
@@ -224,11 +270,12 @@ function profileInteractor(state, x, y, d3_import = null) {
     interactor.update();
   }
   
-  function dragmove_corner(d,i) {
-    var new_x = x.invert(d3.event.x),
-        new_y = y.invert(d3.event.y);
-    var new_dx = x.invert(x(0) + d3.event.dx),
-        new_dy = y.invert(y(0) + d3.event.dy);
+  function dragmove_corner(event, d) {
+    var i = parseInt(select(this).attr("vertex"));
+    var new_x = x.invert(event.x),
+        new_y = y.invert(event.y);
+    var new_dx = x.invert(x(0) + event.dx),
+        new_dy = y.invert(y(0) + event.dy);
     state.profile_data[i].thickness += new_dx; //= Math.max(0, state.profile_data[i].thickness + new_dx);
     state.profile_data[i][d[2]] = new_y;
     constraints.forEach(function(constraint) {
@@ -238,12 +285,13 @@ function profileInteractor(state, x, y, d3_import = null) {
     interactor.update();
   }
   
-  function dragmove_edge(d,i) {
-    var new_x = x.invert(d3.event.x),
-        new_y = y.invert(d3.event.y);
-    var new_dx = x.invert(x(0) + d3.event.dx),
-        new_dy = y.invert(y(0) + d3.event.dy);
-    var direction = d3.select(this).attr("direction"),
+  function dragmove_edge(event, d) {
+    var i = parseInt(select(this).attr("side"));
+    var new_x = x.invert(event.x),
+        new_y = y.invert(event.y);
+    var new_dx = x.invert(x(0) + event.dx),
+        new_dy = y.invert(y(0) + event.dy);
+    var direction = select(this).attr("direction"),
         old_row_index = d[0][3];
     if (direction == "h") {
       state.profile_data[old_row_index][d[0][2]] = new_y;

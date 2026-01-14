@@ -1,14 +1,15 @@
+import { dispatch as d3Dispatch, scaleLinear } from 'd3';
+
 export {overlayInteractor, overlayInteractor as default};
 
 var debug = false;
 
-function overlayInteractor(state, x, y, d3_import = null) {
-  var d3 = (d3_import != null) ? d3_import : window.d3;
+function overlayInteractor(state, x, y) {
   // dispatch is the d3 event dispatcher: should have event "update" register
   var name = state.name;
-  var dispatcher = d3.dispatch("update");
-  var x = x || d3.scaleLinear();
-  var y = y || d3.scaleLinear();
+  var dispatcher = d3Dispatch("update");
+  var x = x || scaleLinear();
+  var y = y || scaleLinear();
   var backing_canvas = document.createElement("canvas");
   backing_canvas.setAttribute("width", state.dims.xdim);
   backing_canvas.setAttribute("height", state.dims.ydim);

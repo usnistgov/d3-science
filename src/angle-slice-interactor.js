@@ -1,15 +1,16 @@
+import { dispatch as d3Dispatch, drag, scaleLinear, select } from 'd3';
+
 export {angleSliceInteractor, angleSliceInteractor as default};
 
-function angleSliceInteractor(state, x, y, d3_import = null) {
-  var d3 = (d3_import != null) ? d3_import : window.d3;
+function angleSliceInteractor(state, x, y) {
   // dispatch is the d3 event dispatcher: should have event "update" register
   // state: {cx: ..., cy: ..., angle_offset: ..., angle_range: ...}
   // angle is in pixel coords
   var name = state.name;
   var point_radius = ( state.point_radius == null ) ? 5 : state.point_radius;
-  var dispatch = d3.dispatch("start", "update", "end");
-  var x = x || d3.scaleLinear();
-  var y = y || d3.scaleLinear();
+  var dispatch = d3Dispatch("start", "update", "end");
+  var x = x || scaleLinear();
+  var y = y || scaleLinear();
   
   // TODO: need to check for linear scale somehow - doesn't work otherwise
 
@@ -91,18 +92,18 @@ function angleSliceInteractor(state, x, y, d3_import = null) {
     }
   }
   
-  var drag_center = d3.drag()
+  var drag_center = drag()
     .on("drag", dragmove_center)
-    .on("start", function() {
-      d3.event.sourceEvent.stopPropagation();
+    .on("start", function(event) {
+      event.sourceEvent.stopPropagation();
       dispatch.call("start");
     })
     .on("end", function() { dispatch.call("end") });
     
-  var drag_lines = d3.drag()
+  var drag_lines = drag()
     .on("drag", dragmove_lines)
-    .on("start", function() {
-      d3.event.sourceEvent.stopPropagation();
+    .on("start", function(event) {
+      event.sourceEvent.stopPropagation();
       dispatch.call("start");
     })
     .on("end", function() { dispatch.call("end") });
@@ -160,10 +161,10 @@ function angleSliceInteractor(state, x, y, d3_import = null) {
     }
   }
   
-  function dragmove_corner(d) {
-    var new_x = x.invert(d3.event.x),
-        new_y = y.invert(d3.event.y);
-    var vertex = parseInt(d3.select(this).attr("vertex"));  
+  function dragmove_corner(event, d) {
+    var new_x = x.invert(event.x),
+        new_y = y.invert(event.y);
+    var vertex = parseInt(select(this).attr("vertex"));  
     // enforce relationship between corners:
     switch (vertex) {
       case 0:
@@ -177,22 +178,22 @@ function angleSliceInteractor(state, x, y, d3_import = null) {
     interactor.update();
   }
   
-  function dragmove_center() {
-    state.cx = x.invert(x(state.cx) + d3.event.dx);
-    state.cy = y.invert(y(state.cy) + d3.event.dy);
+  function dragmove_center(event) {
+    state.cx = x.invert(x(state.cx) + event.dx);
+    state.cy = y.invert(y(state.cy) + event.dy);
     interactor.update();
   }
   
   
-  function dragmove_lines() {
-    var new_angle = Math.atan2(y(state.cy) - d3.event.y, d3.event.x - x(state.cx));
-    if (d3.select(this).classed("centerline")) {
+  function dragmove_lines(event) {
+    var new_angle = Math.atan2(y(state.cy) - event.y, event.x - x(state.cx));
+    if (select(this).classed("centerline")) {
       state.angle_offset = new_angle;
     }
-    else if (d3.select(this).classed("upperline")) {
+    else if (select(this).classed("upperline")) {
       state.angle_range = 2.0 * (new_angle - state.angle_offset);
     }
-    else if (d3.select(this).classed("lowerline")) {
+    else if (select(this).classed("lowerline")) {
       state.angle_range = -2.0 * (new_angle - state.angle_offset);
     }
     interactor.update();

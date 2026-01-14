@@ -1,16 +1,60 @@
+import { 
+  dispatch as d3Dispatch, 
+  drag, 
+  line as d3Line, 
+  scaleLinear, 
+  select,
+  curveLinear,
+  curveStep,
+  curveStepBefore,
+  curveStepAfter,
+  curveBasis,
+  curveBasisClosed,
+  curveBasisOpen,
+  curveCardinal,
+  curveCardinalClosed,
+  curveCardinalOpen,
+  curveCatmullRom,
+  curveCatmullRomClosed,
+  curveCatmullRomOpen,
+  curveMonotoneX,
+  curveMonotoneY,
+  curveBundle,
+  curveNatural
+} from 'd3';
+
 export {polygonInteractor, polygonInteractor as default};
 
-function polygonInteractor(state, x, y, d3_import = null) {
-  var d3 = (d3_import != null) ? d3_import : window.d3;
+const curves = {
+  Linear: curveLinear,
+  Step: curveStep,
+  StepBefore: curveStepBefore,
+  StepAfter: curveStepAfter,
+  Basis: curveBasis,
+  BasisClosed: curveBasisClosed,
+  BasisOpen: curveBasisOpen,
+  Cardinal: curveCardinal,
+  CardinalClosed: curveCardinalClosed,
+  CardinalOpen: curveCardinalOpen,
+  CatmullRom: curveCatmullRom,
+  CatmullRomClosed: curveCatmullRomClosed,
+  CatmullRomOpen: curveCatmullRomOpen,
+  MonotoneX: curveMonotoneX,
+  MonotoneY: curveMonotoneY,
+  Bundle: curveBundle,
+  Natural: curveNatural
+};
+
+function polygonInteractor(state, x, y) {
   // x, y are d3.scale objects (linear, log, etc) from parent
   // dispatch is the d3 event dispatcher: should have event "update" register
   //var state = options;
   var name = state.name;
   var radius = ( state.radius == null ) ? 5 : state.radius;
   var event_name = "polygon." + state.name;
-  var dispatch = d3.dispatch("update");
-  var x = x || d3.scaleLinear();
-  var y = y || d3.scaleLinear();
+  var dispatch = d3Dispatch("start", "update", "end");
+  var x = x || scaleLinear();
+  var y = y || scaleLinear();
   var interpolation = (state.interpolation == null) ? 'Linear' : state.interpolation;
   var prevent_crossing = (state.prevent_crossing == null) ? false : state.prevent_crossing;
   var show_points = (state.show_points == null) ? true : state.show_points;
@@ -19,14 +63,14 @@ function polygonInteractor(state, x, y, d3_import = null) {
   var fixed = (state.fixed == null) ? false : state.fixed;
   var cursor = (fixed) ? "auto" : "move";
 
-  var line = d3.line()
+  var line = d3Line()
     .x(function(d) { return x(d[0]); })
     .y(function(d) { return y(d[1]); })
-    .curve(d3["curve" + interpolation]);    
+    .curve(curves[interpolation] || curveLinear);    
          
-  var drag_corner = d3.drag()
+  var drag_corner = drag()
     .on("drag", dragmove_corner)
-    .on("start", function() { d3.event.sourceEvent.stopPropagation(); });
+    .on("start", function(event) { event.sourceEvent.stopPropagation(); });
   
   function interactor(selection) {
     var group = selection.append("g")
@@ -75,9 +119,10 @@ function polygonInteractor(state, x, y, d3_import = null) {
     interactor.update();
   }
   
-  function dragmove_corner(d,i) {
-    var new_x = x.invert(d3.event.x),
-        new_y = y.invert(d3.event.y);
+  function dragmove_corner(event, d) {
+    var new_x = x.invert(event.x),
+        new_y = y.invert(event.y);
+    var i = parseInt(select(this).attr("vertex"));
     var sp = state.points;
     if (prevent_crossing && sp[i+1] != null && sp[i+1][0] <= new_x) {
       new_x = sp[i+1][0]

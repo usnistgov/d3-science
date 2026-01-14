@@ -1,12 +1,13 @@
+import { dispatch as d3Dispatch, drag, scaleLinear, select } from 'd3';
+
 export {ySliceInteractor, ySliceInteractor as default};
 
-function ySliceInteractor(state, x, y, d3_import = null) {
-  var d3 = (d3_import != null) ? d3_import : window.d3;
+function ySliceInteractor(state, x, y) {
   // dispatch is the d3 event dispatcher: should have event "update" register
   var name = state.name;
-  var dispatcher = d3.dispatch("start", "update", "end");
-  var x = x || d3.scaleLinear();
-  var y = y || d3.scaleLinear();
+  var dispatcher = d3Dispatch("start", "update", "end");
+  var x = x || scaleLinear();
+  var y = y || scaleLinear();
  
   var show_lines = (state.show_lines == null) ? true : state.show_lines;
   var show_range = (state.show_range == null) ? true : state.show_range;
@@ -70,18 +71,18 @@ function ySliceInteractor(state, x, y, d3_import = null) {
     }
   }
     
-  var drag_lines = d3.drag()
+  var drag_lines = drag()
     .on("drag", dragmove_lines)
-    .on("start", function() {
-      d3.event.sourceEvent.stopPropagation();
+    .on("start", function(event) {
+      event.sourceEvent.stopPropagation();
       dispatcher.call("start");
     })
     .on("end", function() { dispatcher.call("end") });
   
-  var drag_rect = d3.drag()
+  var drag_rect = drag()
     .on("drag", dragmove_rect)
-    .on("start", function() {
-      d3.event.sourceEvent.stopPropagation();
+    .on("start", function(event) {
+      event.sourceEvent.stopPropagation();
       dispatcher.call("start");
     })
     .on("end", function() { dispatcher.call("end") });
@@ -140,9 +141,9 @@ function ySliceInteractor(state, x, y, d3_import = null) {
     }
   }
   
-  function dragmove_lines() {
-    var new_y = y.invert(d3.event.y);
-    if (d3.select(this).classed("y1")) {
+  function dragmove_lines(event) {
+    var new_y = y.invert(event.y);
+    if (select(this).classed("y1")) {
         state.y1 = new_y;
     }
     else {
@@ -151,8 +152,8 @@ function ySliceInteractor(state, x, y, d3_import = null) {
     interactor.update();
   }
   
-  function dragmove_rect() {
-    var dy = d3.event.dy;
+  function dragmove_rect(event) {
+    var dy = event.dy;
     state.y1 = y.invert(y(state.y1) + dy);
     state.y2 = y.invert(y(state.y2) + dy);
     interactor.update();

@@ -1,15 +1,16 @@
+import { dispatch as d3Dispatch, drag, scaleLinear, select } from 'd3';
+
 export {crosshairInteractor, crosshairInteractor as default};
 
-function crosshairInteractor(state, x, y, d3_import = null) {
-  var d3 = (d3_import != null) ? d3_import : window.d3;
+function crosshairInteractor(state, x, y) {
   // dispatch is the d3 event dispatcher: should have event "update" register
   // state: {cx: ..., cy: ..., angle_offset: ..., angle_range: ...}
   // angle is in pixel coords
   var name = state.name;
   var point_radius = ( state.point_radius == null ) ? 5 : state.point_radius;
-  var dispatch = d3.dispatch("update");
-  var x = x || d3.scaleLinear();
-  var y = y || d3.scaleLinear();
+  var dispatch = d3Dispatch("start", "update", "end");
+  var x = x || scaleLinear();
+  var y = y || scaleLinear();
   
   // TODO: need to check for linear scale somehow - doesn't work otherwise
 
@@ -82,13 +83,13 @@ function crosshairInteractor(state, x, y, d3_import = null) {
     }
   }
   
-  var drag_center = d3.drag()
+  var drag_center = drag()
     .on("drag", dragmove_center)
-    .on("start", function() { d3.event.sourceEvent.stopPropagation(); });  
+    .on("start", function(event) { event.sourceEvent.stopPropagation(); });  
     
-  var drag_lines = d3.drag()
+  var drag_lines = drag()
     .on("drag", dragmove_lines)
-    .on("start", function() { d3.event.sourceEvent.stopPropagation(); });
+    .on("start", function(event) { event.sourceEvent.stopPropagation(); });
   
 
   function interactor(selection) {
@@ -137,19 +138,19 @@ function crosshairInteractor(state, x, y, d3_import = null) {
     }
   }
   
-  function dragmove_center() {
-    state.cx = x.invert(x(state.cx) + d3.event.dx);
-    state.cy = y.invert(y(state.cy) + d3.event.dy);
+  function dragmove_center(event) {
+    state.cx = x.invert(x(state.cx) + event.dx);
+    state.cy = y.invert(y(state.cy) + event.dy);
     interactor.update();
   }
   
   
-  function dragmove_lines() {
-    if (d3.select(this).classed("vertical")) {
-      state.cx = x.invert(x(state.cx) + d3.event.dx);
+  function dragmove_lines(event) {
+    if (select(this).classed("vertical")) {
+      state.cx = x.invert(x(state.cx) + event.dx);
     }
-    else if (d3.select(this).classed("horizontal")) {
-        state.cy = y.invert(y(state.cy) + d3.event.dy);
+    else if (select(this).classed("horizontal")) {
+        state.cy = y.invert(y(state.cy) + event.dy);
     }
     interactor.update();
   }

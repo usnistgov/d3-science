@@ -1,12 +1,12 @@
+import { dispatch as d3Dispatch, drag, scaleLinear, select } from 'd3';
 import { extend } from './jquery-extend.js';
 
 export {scaleInteractor, scaleInteractor as default};
 
-function scaleInteractor(state, x, y, d3_import = null) {
-  var d3 = (d3_import != null) ? d3_import : window.d3;
-  var x = x || d3.scaleLinear();
-  var y = y || d3.scaleLinear();
-  var dispatch = d3.dispatch("start", "update", "end");
+function scaleInteractor(state, x, y) {
+  var x = x || scaleLinear();
+  var y = y || scaleLinear();
+  var dispatch = d3Dispatch("start", "update", "end");
 
   function interactor(selection) {
     let unscaled_data = [];
@@ -35,9 +35,10 @@ function scaleInteractor(state, x, y, d3_import = null) {
     interactor.update = update;
 
     selection.selectAll("g.series").each(function (d, i) {
-      var dragmove_point = function (dd, ii) {
-        var new_x = x.invert(d3.event.x),
-          new_y = y.invert(d3.event.y),
+      var dragmove_point = function (event, dd) {
+        var ii = parseInt(select(this).attr("index"));
+        var new_x = x.invert(event.x),
+          new_y = y.invert(event.y),
           old_point = unscaled_data[i][ii],
           old_x = old_point[0],
           old_y = old_point[1];
@@ -46,13 +47,14 @@ function scaleInteractor(state, x, y, d3_import = null) {
         dispatch.call("update");
       }
 
-      var drag_point = d3.drag()
+      var drag_point = drag()
         .on("drag", dragmove_point)
-        .on("start", function () { d3.event.sourceEvent.stopPropagation(); dispatch.call("start") })
+        .on("start", function (event) { event.sourceEvent.stopPropagation(); dispatch.call("start") })
         .on("end", function() { dispatch.call("end") });
 
-      var series_select = d3.select(this);
+      var series_select = select(this);
       series_select.selectAll(".dot")
+        .attr("index", function(d, i) { return i; })
         .attr("r", (state.point_size || 7)) // bigger for easier drag...
         .call(drag_point);
     });

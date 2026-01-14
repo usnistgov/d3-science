@@ -57,20 +57,30 @@ canvas {
 }
 
 </style>
-  <script src="https://d3js.org/d3.v4.min.js" charset="utf-8"></script>
-  <script src="../lib/jquery-extend.js"></script>
-  <script src="../lib/generate-id.js"></script>
-  <script src="../lib/colormap.js"></script>
-  <script src="../lib/heat-chart-multi-masked.js" charset="utf-8">></script>
-  <script src="../lib/colormap.js" charset="utf-8"></script>
-
+  <script type="importmap">
+  {
+    "imports": {
+      "d3": "https://cdn.jsdelivr.net/npm/d3@7/+esm"
+    }
+  }
+  </script>
 </head>
 <body>
-<!--<script src="d3.v3.min.js"></script>-->
-<script>
-window.onload = function() {
 
-  var dispatch = d3.dispatch("update_main", "update_colorbar");
+<div id="plot1">
+</div>
+<div id="demos">
+  <pre>chart.colormap(colormap.get_colormap(<select id="colormap_select" onchange="chart.colormap(colormap.get_colormap(this.value)).redrawImage(); chart.colorbar.update();"></select>)).redrawImage();</pre>
+  <pre>chart.aspect_ratio(<input type="text" value="null" name="aspect_ratio" onchange="chart.aspect_ratio(this.value).update()" />).update();</pre>
+  <pre>chart.dims({xmax: <input type="number" value="1" name="xmax" onchange="chart.dims({xmax: parseFloat(this.value)}).update()" />}).update(); // new xmax for 2d plot object</pre>
+  <pre>chart.show_grid(<input type="text" value="true" name="show_grid" onchange="chart.show_grid(this.value)" />); // grid off/on</pre>
+  <pre>chart.ztransform(<input type="text" value="log" name="ztransform" onchange="chart.ztransform(this.value).update()" />).update(); // do we like linear or sqrt color scale better?</pre>
+</div>
+<script type="module">
+  import { select } from "d3";
+  import heatChartMultiMasked from "../src/heat-chart-multi-masked.js";
+  import * as colormap from "../src/colormap.js";
+
   var colormap_selector = document.getElementById('colormap_selector');
   for (var m in colormap.colormap_data) {
     var new_option = document.createElement("option");
@@ -81,17 +91,19 @@ window.onload = function() {
   
   colormap_select.value = "jet"; // default
 
-  chart = heatChartMultiMasked.default({margin: {bottom: 75}})
+  const chart = heatChartMultiMasked({margin: {bottom: 75}})
     .autoscale(true)
     .xlabel("Qx (\u212B\u207B\u00B9)")
     .ylabel("Qz (\u212B\u207B\u00B9)");    
 
-  d3.json("sample_data/512.json", function(error, heatmap) {
-      //mydata = heatmap;
-      var data_rolled = heatmap;
-      var ydim = heatmap.length;
-      var xdim = heatmap[0].length;
-      var unrolled = [], p=0;
+  const response = await fetch("sample_data/512.json");
+  const heatmap = await response.json();
+  
+  //mydata = heatmap;
+  var data_rolled = heatmap;
+  var ydim = heatmap.length;
+  var xdim = heatmap[0].length;
+  var unrolled = [], p=0;
       for (let j=0; j<ydim; j++) {
         let row = heatmap[j];
         for (let i=0; i<xdim; i++) {
@@ -133,7 +145,7 @@ window.onload = function() {
       ];
       //chart.dims({xdim: xdim, ydim: ydim});
         
-      c = d3.select("#plot1")
+      const c = select("#plot1")
         .data([source_data])
         .call(chart);
         
@@ -142,8 +154,7 @@ window.onload = function() {
         chart.options().series = [{"label": "first dataset", "color": "green"}, {"label": "second dataset"}];
         chart.options().legend = {show: true};
         chart.ztransform("log")
-  });
-}
+
 // chart.target_ratio(1).update(); // changes aspect ratio!
 // var new_dims = chart.dims();
 // new_dims.xmax = 256;
@@ -151,15 +162,7 @@ window.onload = function() {
 // chart.show_grid(false); // grid off
 
 </script>
-<div id="plot1">
-</div>
-<div id="demos">
-  <pre>chart.colormap(colormap.get_colormap(<select id="colormap_select" onchange="chart.colormap(colormap.get_colormap(this.value)).redrawImage(); chart.colorbar.update();"></select>)).redrawImage();</pre>
-  <pre>chart.aspect_ratio(<input type="text" value="null" name="aspect_ratio" onchange="chart.aspect_ratio(this.value).update()" />).update();</pre>
-  <pre>chart.dims({xmax: <input type="number" value="1" name="xmax" onchange="chart.dims({xmax: parseFloat(this.value)}).update()" />}).update(); // new xmax for 2d plot object</pre>
-  <pre>chart.show_grid(<input type="text" value="true" name="show_grid" onchange="chart.show_grid(this.value)" />); // grid off/on</pre>
-  <pre>chart.ztransform(<input type="text" value="log" name="ztransform" onchange="chart.ztransform(this.value).update()" />).update(); // do we like linear or sqrt color scale better?</pre>
-</div>
+
 </body>
 </html>
 
