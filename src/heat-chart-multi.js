@@ -3,7 +3,7 @@ import {
   axisLeft,
   axisRight,
   drag,
-  mouse,
+  pointer,
   range,
   rgb,
   scaleLinear,
@@ -630,7 +630,7 @@ function heatChartMulti(options_override) {
       
       var follow = function (event){  
         if (source_data == null || source_data[0] == null) { return }
-        var mouse_pos = mouse(event, mainview.node());
+        var mouse_pos = pointer(event, mainview.node());
         var x_coord = x.invert(mouse_pos[0]),
             y_coord = y.invert(mouse_pos[1]);
         // start at the top and move down through the datasets:
