@@ -3,7 +3,7 @@ import {
   axisBottom,
   axisLeft,
   axisRight,
-  mouse,
+  pointer,
   rgb,
   scaleLinear,
   scaleLog,
@@ -516,7 +516,7 @@ export default function heatChart(options_override) {
       
       var follow = function (event){  
         if (source_data == null || source_data[0] == null) { return }
-        var mouse_pos = mouse(event, mainview.node());
+        var mouse_pos = pointer(event, mainview.node());
         var x_coord = x.invert(mouse_pos[0]),
             y_coord = y.invert(mouse_pos[1]);
         var x_bin = Math.floor((x_coord - dims.xmin) / (dims.xmax - dims.xmin) * dims.xdim),
