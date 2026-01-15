@@ -1,15 +1,15 @@
+import { pointer, scaleLinear, select, dispatch as d3Dispatch } from "d3";
 export {rectangleSelect, rectangleSelect as default};
 
-function rectangleSelect(drag, x, y, d3_import = null) {
-  var d3 = (d3_import != null) ? d3_import : window.d3;
+function rectangleSelect(drag, x, y) {
   // x, y are d3.scale objects (linear, log, etc) from parent
   // dispatch is the d3 event dispatcher: should have event "update" register
   // 
   // drag is the drag behavior attached to the chart (initialize with this);
   var event_name = "rectangle_select";
-  var dispatch = d3.dispatch("update");
-  var x = x || d3.scaleLinear();
-  var y = y || d3.scaleLinear();
+  var dispatch = d3Dispatch("update");
+  var x = x || scaleLinear();
+  var y = y || scaleLinear();
   var selectRect = true;
   var callbacks = [];
     
@@ -19,21 +19,21 @@ function rectangleSelect(drag, x, y, d3_import = null) {
     //svg.call(drag);
       
     drag.on("start.select", drag_started);
-    function drag_started() {
+    function drag_started(event) {
       if (!selectRect) return;
       var e = selection.node(),
-          origin = d3.mouse(e),
+          origin = pointer(event, e),
           rect = selection.append("rect").attr("class", "zoom");
-      d3.select("body").classed("noselect", true);
+      select("body").classed("noselect", true);
       var width = Math.max.apply(Math, x.range()),
           height = Math.max.apply(Math, y.range());
       origin[0] = Math.max(0, Math.min(width, origin[0]));
       origin[1] = Math.max(0, Math.min(height, origin[1]));
             
-      d3.event.on("drag", dragged).on("end", ended);
+      event.on("drag", dragged).on("end", ended);
 
-      function dragged(d) {
-        var m = d3.mouse(e);
+      function dragged(dragEvent) {
+        var m = pointer(dragEvent, e);
         m[0] = Math.max(0, Math.min(width, m[0]));
         m[1] = Math.max(0, Math.min(height, m[1]));
         rect.attr("x", Math.min(origin[0], m[0]))
@@ -42,9 +42,9 @@ function rectangleSelect(drag, x, y, d3_import = null) {
           .attr("height", Math.abs(m[1] - origin[1]));
       }
 
-      function ended() {
-        d3.select("body").classed("noselect", false);
-        var m = d3.mouse(e);
+      function ended(endEvent) {
+        select("body").classed("noselect", false);
+        var m = pointer(endEvent, e);
         m[0] = Math.max(0, Math.min(width, m[0]));
         m[1] = Math.max(0, Math.min(height, m[1]));
         if (m[0] !== origin[0] && m[1] !== origin[1]) {
@@ -61,7 +61,7 @@ function rectangleSelect(drag, x, y, d3_import = null) {
         rect.remove();
         dispatch.call("update");
       }
-      d3.event.sourceEvent.stopPropagation();
+      event.sourceEvent.stopPropagation();
     }
   }
   
