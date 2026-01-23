@@ -1,20 +1,21 @@
+import { dispatch as d3Dispatch, drag, line as d3Line, scaleLinear, select } from 'd3';
+
 export {rectangleInteractor, rectangleInteractor as default};
 
-function rectangleInteractor(state, x, y, d3_import = null) {
-  var d3 = (d3_import != null) ? d3_import : window.d3;
+function rectangleInteractor(state, x, y) {
   // x, y are d3.scale objects (linear, log, etc) from parent
   // dispatch is the d3 event dispatcher: should have event "update" register
   //var state = options;
   var name = state.name;
   var radius = ( state.radius == null ) ? 5 : state.radius;
   var event_name = "rectangle." + state.name;
-  var dispatch = d3.dispatch("start", "update", "end");
-  var x = x || d3.scaleLinear();
-  var y = y || d3.scaleLinear();
+  var dispatch = d3Dispatch("start", "update", "end");
+  var x = x || scaleLinear();
+  var y = y || scaleLinear();
   var fixed = (state.fixed == null) ? false : state.fixed;
   var cursor = (fixed) ? "auto" : "move";
 
-  var line = d3.line()
+  var line = d3Line()
     .x(function(d) { return x(d[0]); })
     .y(function(d) { return y(d[1]); });
          
@@ -59,26 +60,26 @@ function rectangleInteractor(state, x, y, d3_import = null) {
     }
   }
   
-  var drag_corner = d3.drag()
+  var drag_corner = drag()
     .on("drag", dragmove_corner)
-    .on("start", function() {
-      d3.event.sourceEvent.stopPropagation();
+    .on("start", function(event) {
+      event.sourceEvent.stopPropagation();
       dispatch.call("start");
     })
     .on("end", function() { dispatch.call("end") });
   
-  var drag_center = d3.drag()
+  var drag_center = drag()
     .on("drag", dragmove_center)
-    .on("start", function() {
-      d3.event.sourceEvent.stopPropagation();
+    .on("start", function(event) {
+      event.sourceEvent.stopPropagation();
       dispatch.call("start");
     })
     .on("end", function() { dispatch.call("end") });
     
-  var drag_edge = d3.drag()
+  var drag_edge = drag()
     .on("drag", dragmove_edge)
-    .on("start", function() {
-      d3.event.sourceEvent.stopPropagation();
+    .on("start", function(event) {
+      event.sourceEvent.stopPropagation();
       dispatch.call("start");
     })
     .on("end", function() { dispatch.call("end") });
@@ -141,24 +142,24 @@ function rectangleInteractor(state, x, y, d3_import = null) {
     }
   }
   
-  function dragmove_center() {
-    state.xmin = x.invert(x(state.xmin) + d3.event.dx);
-    state.xmax = x.invert(x(state.xmax) + d3.event.dx);
-    state.ymin = y.invert(y(state.ymin) + d3.event.dy);
-    state.ymax = y.invert(y(state.ymax) + d3.event.dy);
+  function dragmove_center(event) {
+    state.xmin = x.invert(x(state.xmin) + event.dx);
+    state.xmax = x.invert(x(state.xmax) + event.dx);
+    state.ymin = y.invert(y(state.ymin) + event.dy);
+    state.ymax = y.invert(y(state.ymax) + event.dy);
     interactor.update();
     dispatch.call("update");
   }
   
-  function dragmove_corner() {
+  function dragmove_corner(event) {
     let grid_spacing = state.grid_spacing;
-    let new_x = x.invert(d3.event.x);
-    let new_y = y.invert(d3.event.y);
+    let new_x = x.invert(event.x);
+    let new_y = y.invert(event.y);
     if (grid_spacing) {
       new_x = Math.round(new_x/grid_spacing) * grid_spacing;
       new_y = Math.round(new_y/grid_spacing) * grid_spacing;
     }
-    var vertex = parseInt(d3.select(this).attr("vertex"));  
+    var vertex = parseInt(select(this).attr("vertex"));  
     // enforce relationship between corners:
     switch (vertex) {
       case 0:
@@ -178,21 +179,21 @@ function rectangleInteractor(state, x, y, d3_import = null) {
         state.ymax = new_y;
         break
       default:
-        console.log("default", d3.event, d3.select(this));
+        console.log("default", event, select(this));
     }
     interactor.update();
     dispatch.call("update");
   }
   
-  function dragmove_edge() {
+  function dragmove_edge(event) {
     let grid_spacing = state.grid_spacing;
-    let new_x = x.invert(d3.event.x);
-    let new_y = y.invert(d3.event.y);
+    let new_x = x.invert(event.x);
+    let new_y = y.invert(event.y);
     if (grid_spacing) {
       new_x = Math.round(new_x/grid_spacing) * grid_spacing;
       new_y = Math.round(new_y/grid_spacing) * grid_spacing;
     }
-    let side = parseInt(d3.select(this).attr("side"));
+    let side = parseInt(select(this).attr("side"));
     // enforce relationship between edges and corners:
     switch (side) {
       case 0:
@@ -208,7 +209,7 @@ function rectangleInteractor(state, x, y, d3_import = null) {
         state.xmin = new_x;
         break
       default:
-        console.log("default", d3.event, d3.select(this));
+        console.log("default", event, select(this));
     }
     interactor.update();
     dispatch.call("update");

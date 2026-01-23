@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+<html>
+<head>
 <style>
 html, body {
   height: 100%;
@@ -123,18 +125,23 @@ polygon.terminal.state {
 }
 
 </style>
+<script type="importmap">
+{
+  "imports": {
+    "d3": "https://cdn.jsdelivr.net/npm/d3@7/+esm"
+  }
+}
+</script>
+</head>
 <body>
-<script src="https://d3js.org/d3.v4.min.js"></script>
-<script src="../lib/jquery-extend.js"></script>
-<script src="../lib/generate-id.js"></script>
-<!--<script src="dataflow-box-module.js"></script>-->
-<script src="../lib/dataflow-editor.js"></script>
-<script src="embedded_template_example.js"></script>
-<script src="ncnr.refl.module_defs.js"></script>
-<script>
-window.onload = function() {
+<script type="module">
+import * as d3 from "d3";
+import { select, transition } from "d3";
+import dataflowEditor from "../src/dataflow-editor.js";
+import { embedded_template_example } from "./embedded_template_example.js";
+import { instruments } from "./ncnr.refl.module_defs.js";
 
-current_instrument = 'ncnr.refl';
+const current_instrument = 'ncnr.refl';
 
 var x0 = 150,
     y0 = 100, 
@@ -155,37 +162,37 @@ function expand_module_defs(modules, instrument) {
   return output
 }
 
-e = new dataflowEditor.default(); //Class2.editorFactory();
+const e = new dataflowEditor(); //Class2.editorFactory();
 e._outer = []; // contexts for embedded templates;
 e.module_defs(instruments[current_instrument].modules);
-d3.select("#editor_div").call(e);
+select("#editor_div").call(e);
 
 
 var contextMenuShowing = false;
 
-e.container.on('contextmenu',function (d,i) {
+e.container.on('contextmenu', function (event, d) {
     if (contextMenuShowing) {
-        d3.event.preventDefault();
-        d3.select(".popup").remove();
+        event.preventDefault();
+        select(".popup").remove();
         contextMenuShowing = false;
     } else {
-        d3_target = d3.select(d3.event.target);
+        const d3_target = select(event.target);
         if (d3_target.classed("wire")) {
-            d3.event.preventDefault();
+            event.preventDefault();
             contextMenuShowing = true;
 
             // Build the popup            
-            popup = d3.select("#editor_div")
+            const popup = select("#editor_div")
             .append("div")
             .attr("class", "popup")
-            .style("left", d3.event.x + "px")
-            .style("top", d3.event.y + "px")
+            .style("left", event.x + "px")
+            .style("top", event.y + "px")
             .append("ul")
             
             popup.append("li").text("delete").on("click", function() {
                 var active_data = d3_target.datum();
                 var parentNode = d3_target.node().parentNode;
-                var wires = d3.select(parentNode).datum().wires;
+                var wires = select(parentNode).datum().wires;
                 for (var i=0; i<wires.length; i++) {
                     var w = wires[i]; 
                     if (w.source == active_data.source && w.target == active_data.target) {
@@ -194,21 +201,21 @@ e.container.on('contextmenu',function (d,i) {
                     }
                 };
                 e.update();
-                d3.select(".popup").remove(); 
+                select(".popup").remove(); 
                 contextMenuShowing=false;
             });
             
         }
         else if (d3_target.classed("exposed-wire")) {
-            d3.event.preventDefault();
+            event.preventDefault();
             contextMenuShowing = true;
 
             // Build the popup            
-            popup = d3.select("#editor_div")
+            const popup = select("#editor_div")
             .append("div")
             .attr("class", "popup")
-            .style("left", d3.event.x + "px")
-            .style("top", d3.event.y + "px")
+            .style("left", event.x + "px")
+            .style("top", event.y + "px")
             .append("ul")
             
             popup.append("li").text("delete").on("click", function() {
@@ -228,20 +235,20 @@ e.container.on('contextmenu',function (d,i) {
                   });
                 }
                 e.update();
-                d3.select(".popup").remove(); 
+                select(".popup").remove(); 
                 contextMenuShowing=false;
             });
         }
         else if (d3_target.classed("title")) {
-            d3.event.preventDefault();
+            event.preventDefault();
             contextMenuShowing = true;
 
             // Build the popup            
-            popup = d3.select("#editor_div")
+            const popup = select("#editor_div")
             .append("div")
             .attr("class", "popup")
-            .style("left", d3.event.x + "px")
-            .style("top", d3.event.y + "px")
+            .style("left", event.x + "px")
+            .style("top", event.y + "px")
             .append("ul")
             
             var active_template = e.svg().datum();
@@ -252,7 +259,7 @@ e.container.on('contextmenu',function (d,i) {
             var fields = module_def.fields || [];
             //popup.append("li").text("configure").on("click", function() {
             //  alert("implement configure");
-            //  d3.select(".popup").remove(); 
+            //  select(".popup").remove(); 
             //  contextMenuShowing=false;
             //});
             //popup.append("hr");
@@ -271,8 +278,8 @@ e.container.on('contextmenu',function (d,i) {
             fields_list.append("input")
               .attr("type", "checkbox")
               .property("checked", function(d) { return check_exposed(module_index, d.id) })
-              .on("change", function(d) {
-                var exposed_as = d3.select(this.parentNode).select("input.exposed_as").node().value;
+              .on("change", function(event, d) {
+                var exposed_as = select(this.parentNode).select("input.exposed_as").node().value;
                 var success = set_field(this.checked, module_index, d.id, exposed_as);
                 if (!success) { this.checked = false }
               });
@@ -281,9 +288,9 @@ e.container.on('contextmenu',function (d,i) {
             if (is_embedded) {
               buttons.append("button").text("explode").on("click", function() {
                 //e._outer.push(active_template);
-                var module = d3.select(d3_target.node().parentNode.parentNode);
+                var module = select(d3_target.node().parentNode.parentNode);
                 explode2(module, active_template, function() {e.import(module_def) });
-                d3.select(".popup").remove(); 
+                select(".popup").remove(); 
                 contextMenuShowing=false;
               });
               //popup.append("hr");
@@ -291,7 +298,7 @@ e.container.on('contextmenu',function (d,i) {
             buttons
               .append("button").text("dismiss")
                 .on("click", function() {
-                  d3.select(".popup").remove(); 
+                  select(".popup").remove(); 
                   e.update();
                   contextMenuShowing=false;
                 });
@@ -300,36 +307,36 @@ e.container.on('contextmenu',function (d,i) {
                 .on("click", function() {
                   var module_id = d3_target.datum().module_id;
                   e.svg().datum().modules = e.svg().datum().modules.filter(function(d) { return d.module_id != module_id});
-                  d3.select(".popup").remove(); 
+                  select(".popup").remove(); 
                   e.update();
                   contextMenuShowing=false;
                 });
             
         }
         else if ((d3_target.classed("input") || d3_target.classed("output")) && d3_target.classed("exposed")) {
-            d3.event.preventDefault();
+            event.preventDefault();
             contextMenuShowing = true;
 
             // Build the popup            
-            popup = d3.select("#editor_div")
+            const popup = select("#editor_div")
             .append("div")
             .attr("class", "popup")
-            .style("left", d3.event.x + "px")
-            .style("top", d3.event.y + "px")
+            .style("left", event.x + "px")
+            .style("top", event.y + "px")
             .append("ul")
             
             var side = d3_target.classed("output") ? "inputs" : "outputs";
-            //popup.append("li").text("configure").on("click", function() {alert("implement configure"); d3.select(".popup").remove(); contextMenuShowing=false;});
+            //popup.append("li").text("configure").on("click", function() {alert("implement configure"); select(".popup").remove(); contextMenuShowing=false;});
             
             popup.append("li").text("delete").on("click", function() {
-                console.log(d3_target, d3.select(d3_target.node().parentNode.parentNode));
-                //d3.select(d3_target.node().parentNode.parentNode).remove();
+                console.log(d3_target, select(d3_target.node().parentNode.parentNode));
+                //select(d3_target.node().parentNode.parentNode).remove();
                 var term_id = d3_target.datum().id;
                 console.log(term_id);
                 e.svg().datum()[side] = e.svg().datum()[side].filter(function(d) { 
                   return d.id != term_id
                 });
-                d3.select(".popup").remove(); 
+                select(".popup").remove(); 
                 e.update();
                 contextMenuShowing=false;
             });
@@ -383,12 +390,12 @@ function check_exposed(module_index, fieldname) {
   return (matching.length > 0)
 }
 
-highlightEmbedded = function() {
+const highlightEmbedded = function() {
   e.svg().selectAll(".module").filter(function(d) { return d.module_def == null })
     .select("g.title rect.embedded-indicator").remove();
   var embedded = e.svg().selectAll(".module").filter(function(d) { return d.module_def != null });
   embedded.selectAll("g.title").each(function() {
-    var t = d3.select(this);
+    var t = select(this);
     var b = t.select("rect.border");
     var w = b.attr("width"); 
     var h = b.attr("height");
@@ -413,10 +420,10 @@ highlightEmbedded = function() {
   })
 }
 
-highlightAll = function() {
+const highlightAll = function() {
   var modules = e.svg().selectAll(".module");
   e.svg().selectAll("g.module g.title").each(function() {
-    var t = d3.select(this);
+    var t = select(this);
     var b = t.select("rect.border");
     var w = b.attr("width"); 
     var h = b.attr("height"); 
@@ -430,7 +437,7 @@ highlightAll = function() {
   })
 } 
 
-pathDataToString = function(pathData) {
+const pathDataToString = function(pathData) {
   var ps = ""
   pathData.forEach(function(s,i) {
     if (i > 0) { ps += " " }
@@ -440,7 +447,7 @@ pathDataToString = function(pathData) {
   return ps;
 }
 
-explode2 = function(module, current_template, callback) {
+const explode2 = function(module, current_template, callback) {
   //transform="matrix(sx, 0, 0, sy, cx-sx*cx, cy-sy*cy)"
   var module_def = module.datum().module_def || {};
   var svg_width = e.svg().node().width.baseVal.value;
@@ -478,16 +485,16 @@ explode2 = function(module, current_template, callback) {
   e.svg(new_svg);
   e.import(module_def)
   
-  var tr = d3.transition()
+  var tr = transition()
     .duration(d)
     .ease(d3.easeLinear);
     
   var transform = "scale(" + multiplier + ", " + multiplier + ")";
-  outer_svg.transition(tr).attr("transform", transform).style("opacity", 0).on("end", function() { console.log("exploding!", this); d3.select(this).style("display", "none")});
+  outer_svg.transition(tr).attr("transform", transform).style("opacity", 0).on("end", function() { console.log("exploding!", this); select(this).style("display", "none")});
   e.svg().transition(tr).attr("transform", "scale(1,1)")
 }
 
-explode = function(module, current_template, callback) {
+const explode = function(module, current_template, callback) {
   var svg_width = e.svg().node().width.baseVal.value;
   var svg_height = e.svg().node().height.baseVal.value;
   var current_width = module.select("rect.title").attr("width");
@@ -545,14 +552,14 @@ explode = function(module, current_template, callback) {
     .each("end", callback);
 }
 
-unexplode = function(stored_template, stored_x, stored_y) {
+const unexplode = function(stored_template, stored_x, stored_y) {
   var d = 1000;
   var to_restore = e._outer.pop();
   var svg_width = e.svg().node().width.baseVal.value;
   var svg_height = e.svg().node().height.baseVal.value;
   var output_width = 20;
   
-  var tr = d3.transition()
+  var tr = transition()
     .duration(d)
     .ease(d3.easeLinear);
   
@@ -563,7 +570,7 @@ unexplode = function(stored_template, stored_x, stored_y) {
       .attr("width", to_restore.module_width)
       .attr("height", to_restore.module_height)
       .attr("transform", "translate(" + to_restore.module_x + "," + to_restore.module_y + ")")
-      .on("end", function() {e.import(to_restore.template); d3.select(this).remove()});
+      .on("end", function() {e.import(to_restore.template); select(this).remove()});
   
   e.svg().selectAll(".wire,.exposed-wire").remove()
   //  .transition()
@@ -578,7 +585,7 @@ unexplode = function(stored_template, stored_x, stored_y) {
     
 }
 
-unexplode2 = function(stored_template, stored_x, stored_y) {
+const unexplode2 = function(stored_template, stored_x, stored_y) {
   var d = 1000;
   var to_restore = e._outer.pop();
   
@@ -586,7 +593,7 @@ unexplode2 = function(stored_template, stored_x, stored_y) {
   e.svg(to_restore.svg);
   e.svg().style("display", "block")
   
-  var tr = d3.transition()
+  var tr = transition()
     .duration(d)
     .ease(d3.easeLinear);
   
@@ -601,12 +608,12 @@ unexplode2 = function(stored_template, stored_x, stored_y) {
 var module_defs = instruments[current_instrument].modules,
     module_names = (["Add new module:"]).concat(Object.keys(module_defs));
     
-d3.select("#new_module").selectAll("option").data(module_names)
+select("#new_module").selectAll("option").data(module_names)
   .enter().append('option')
   .attr("module", function(d) {return d}) // function(d) {return module_defs[d].module})
   .text(function(d) {return module_defs[d].name})  
   
-d3.select('#new_module').on("change", function(ev) {
+select('#new_module').on("change", function(ev) {
     var title = this.value,
         module = module_names[this.selectedIndex];
     e.svg().datum().modules.push({module: module, title: title});
@@ -614,12 +621,12 @@ d3.select('#new_module').on("change", function(ev) {
     this.selectedIndex=0;
 });
 
-d3.select("#show_value").on("click", function() { 
+select("#show_value").on("click", function() { 
   var win = window.open();
   win.document.write("<pre>" + JSON.stringify(e.export(), null, 2) + "</pre>");
 });
 
-d3.select("#show_example").on("click", function() {
+select("#show_example").on("click", function() {
   e._outer = [];
   e.import(embedded_template_example, true);
 });
@@ -636,12 +643,12 @@ e.dispatch.on("update", function() {
   });
   //console.log("updating..");
   highlightEmbedded();
-  d3.select("button#return_to_outer").style("visibility", (e._outer.length > 0) ? "visible" : "hidden");
+  select("button#return_to_outer").style("visibility", (e._outer.length > 0) ? "visible" : "hidden");
 });
 
 function loadData() {
     var file = document.getElementById('upload_template').files[0]; // only one file allowed
-    datafilename = file.name;
+    var datafilename = file.name;
     var result = null;
     var reader = new FileReader();
     reader.onload = function(ev) {
@@ -651,10 +658,9 @@ function loadData() {
     reader.readAsText(file);
 }
 
-d3.select("#upload_template").on("change", loadData);
-d3.select("button#return_to_outer").on("click", unexplode2);
+select("#upload_template").on("change", loadData);
+select("button#return_to_outer").on("click", unexplode2);
 
-}
 </script>
 <div id="controls">
     <select id="new_module">
@@ -668,3 +674,4 @@ d3.select("button#return_to_outer").on("click", unexplode2);
 <div id="editor_div">
 </div>
 </body>
+</html>

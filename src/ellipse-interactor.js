@@ -1,15 +1,16 @@
+import { dispatch as d3Dispatch, drag, scaleLinear, select } from 'd3';
+
 export default ellipseInteractor;
 
-function ellipseInteractor(state, x, y, d3_import = null) {
-  var d3 = (d3_import != null) ? d3_import : window.d3;
+function ellipseInteractor(state, x, y) {
   // dispatch is the d3 event dispatcher: should have event "update" register
   // state: {cx: ..., cy: ..., rx: ..., ry: ...}
   // if dragging the ellipse itself, the eccentricity (ry/rx) is preserved
   var name = state.name;
   var point_radius = ( state.point_radius == null ) ? 5 : state.point_radius;
-  var dispatch = d3.dispatch("update");
-  var x = x || d3.scaleLinear();
-  var y = y || d3.scaleLinear();
+  var dispatch = d3Dispatch("start", "update", "end");
+  var x = x || scaleLinear();
+  var y = y || scaleLinear();
   //if (x.name != 'i' || y.name != 'i') {
   //  throw "circle only defined for linear scales";
   //  return
@@ -58,26 +59,26 @@ function ellipseInteractor(state, x, y, d3_import = null) {
     }
   }
   
-  var drag_corner = d3.drag()
+  var drag_corner = drag()
     .on("drag", dragmove_corner)
-    .on("start", function() {
-      d3.event.sourceEvent.stopPropagation();
+    .on("start", function(event) {
+      event.sourceEvent.stopPropagation();
       dispatch.call("start");
     })
     .on("end", function() { dispatch.call("end") });
   
-  var drag_center = d3.drag()
+  var drag_center = drag()
     .on("drag", dragmove_center)
-    .on("start", function() {
-      d3.event.sourceEvent.stopPropagation();
+    .on("start", function(event) {
+      event.sourceEvent.stopPropagation();
       dispatch.call("start");
     })
     .on("end", function() { dispatch.call("end") });
     
-  var drag_edge = d3.drag()
+  var drag_edge = drag()
     .on("drag", dragmove_edge)
-    .on("start", function() {
-      d3.event.sourceEvent.stopPropagation();
+    .on("start", function(event) {
+      event.sourceEvent.stopPropagation();
       dispatch.call("start");
     })
     .on("end", function() { dispatch.call("end") });
@@ -150,10 +151,10 @@ function ellipseInteractor(state, x, y, d3_import = null) {
     }
   }
   
-  function dragmove_corner(d) {
-    var new_x = x.invert(d3.event.x),
-        new_y = y.invert(d3.event.y);
-    var vertex = parseInt(d3.select(this).attr("vertex"));  
+  function dragmove_corner(event, d) {
+    var new_x = x.invert(event.x),
+        new_y = y.invert(event.y);
+    var vertex = parseInt(select(this).attr("vertex"));  
     // enforce relationship between corners:
     switch (vertex) {
       case 0:
@@ -167,17 +168,17 @@ function ellipseInteractor(state, x, y, d3_import = null) {
     interactor.update();
   }
   
-  function dragmove_center() {
-    state.cx = x.invert(x(state.cx) + d3.event.dx);
-    state.cy = y.invert(y(state.cy) + d3.event.dy);
+  function dragmove_center(event) {
+    state.cx = x.invert(x(state.cx) + event.dx);
+    state.cy = y.invert(y(state.cy) + event.dy);
     interactor.update();
   }
   
   
-  function dragmove_edge() {
+  function dragmove_edge(event) {
     var eccentricity = state.ry / state.rx,
-        new_x = x.invert(d3.event.x),
-        new_y = y.invert(d3.event.y),
+        new_x = x.invert(event.x),
+        new_y = y.invert(event.y),
         new_rx = Math.sqrt(Math.pow(new_x - state.cx, 2) + Math.pow(new_y - state.cy, 2)/Math.pow(eccentricity, 2)),
         new_ry = eccentricity * new_rx;
     state.rx = new_rx;

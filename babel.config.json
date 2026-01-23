@@ -1,7 +1,0 @@
-{
-  "presets": [["@babel/preset-env", {
-    "targets": {"browsers": ["> 1%"]},
-    "modules": "umd"
-  }]],
-  "plugins": ["@babel/plugin-proposal-class-properties"]
-}

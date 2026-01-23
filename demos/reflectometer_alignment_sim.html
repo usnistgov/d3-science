@@ -3,9 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <title>Reflectometer alignment</title>
-  <script src="//d3js.org/d3.v4.js" charset="utf-8"></script>
-  <script src="../lib/linePolygonIntersect.js"></script>
-  <script src="../lib/jquery-extend.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "d3": "https://cdn.jsdelivr.net/npm/d3@7/+esm"
+    }
+  }
+  </script>
   <style type="text/css">
     svg {
       margin: 0px;
@@ -30,10 +34,12 @@
   </style>
 </head>
 <body>
-  <script>
+  <script type="module">
+    import * as d3 from "d3";
+    import { extend } from "../src/jquery-extend.js";
+    import { linePolygonIntersects } from "../src/linePolygonIntersect.js";
+    
     window.onload = function() {
-      var extend = jqueryExtend.extend;
-      var linePolygonIntersects = linePolygonIntersect.linePolygonIntersects;
       var width = 960,
         height = 800,
         xOffset = 0,
@@ -154,7 +160,7 @@
           .classed("slit", true)
       
       function render_slit_blade(above) {
-        var renderer = function(d) {
+        const renderer = function(d) {
           var sign = (above) ? 1 : -1;
           var s = Math.sin(d.angle), 
               c = Math.cos(d.angle),
@@ -164,7 +170,7 @@
               day = -sign*c*d.aperture/2.0,
               dbx =  sign*s*d.blade_width,
               dby = -sign*c*d.blade_width;
-              points = "";
+          let points = "";
           points += (x + dax + (c*d.thickness/2.0)).toFixed() + ",";
           points += (y + day + (s*d.thickness/2.0)).toFixed() + " ";
           
@@ -198,7 +204,7 @@
             y = d.cy + s * d.r,
             dbx = -s*d.width,
             dby =  c*d.width;
-            points = "";
+        let points = "";
         points += (x - dbx/2 + (c*d.thickness/2.0)).toFixed() + ",";
         points += (y - dby/2 + (s*d.thickness/2.0)).toFixed() + " ";
         
@@ -231,9 +237,9 @@
           return {x: x, y: y}
         })  
         
-      function dragmove_detector(d) {
+      function dragmove_detector(event, d) {
         //if (!d3.select(this).classed("draggable")) {return}
-        var new_angle = Math.atan2(d3.event.y - d.cy, d3.event.x - d.cx)
+        var new_angle = Math.atan2(event.y - d.cy, event.x - d.cx)
         if (d.max_angle != null) {
           new_angle = Math.max(-d.max_angle, Math.min(new_angle, d.max_angle));
         } 
@@ -312,9 +318,9 @@
           svg.selectAll("path.rotator").remove();
         }) 
         
-      function dragrotate_sample(d) {
+      function dragrotate_sample(event, d) {
         //if (!d3.select(this).classed("draggable")) {return}
-        var new_angle = Math.atan2(d3.event.y - d.cy, d3.event.x - d.cx);
+        var new_angle = Math.atan2(event.y - d.cy, event.x - d.cx);
         if (d.ref_angle == null) { 
           d.ref_angle = new_angle - d.angle; 
           return 
@@ -351,11 +357,11 @@
           d._translating = false;
         }) 
         
-      function dragtranslate_sample(d) {
+      function dragtranslate_sample(event, d) {
         //if (!d3.select(this).classed("draggable")) {return}
         var s = Math.sin(d.angle), 
             c = Math.cos(d.angle),
-            new_r = s*(d3.event.y - d.cy) + c*(d3.event.x - d.cx);
+            new_r = s*(event.y - d.cy) + c*(event.x - d.cx);
 
         d.r = new_r;
         svg.select("polygon.sample").attr("points", render_detector);

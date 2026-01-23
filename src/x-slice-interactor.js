@@ -1,12 +1,13 @@
+import { dispatch as d3Dispatch, drag, scaleLinear, select } from 'd3';
+
 export {xSliceInteractor, xSliceInteractor as default};
 
-function xSliceInteractor(state, x, y, d3_import = null) {
-  var d3 = (d3_import != null) ? d3_import : window.d3;
+function xSliceInteractor(state, x, y) {
   // dispatch is the d3 event dispatcher: should have event "update" register
   var name = state.name;
-  var dispatcher = d3.dispatch("start", "update", "end");
-  var x = x || d3.scaleLinear();
-  var y = y || d3.scaleLinear();
+  var dispatcher = d3Dispatch("start", "update", "end");
+  var x = x || scaleLinear();
+  var y = y || scaleLinear();
  
   var show_lines = (state.show_lines == null) ? true : state.show_lines;
   var show_range = (state.show_range == null) ? true : state.show_range;
@@ -70,11 +71,11 @@ function xSliceInteractor(state, x, y, d3_import = null) {
     }
   }
     
-  var drag_lines = d3.drag()
+  var drag_lines = drag()
     .on("drag", dragmove_lines)
     .on("end", function() { dispatcher.call("end") })
-    .on("start", function() {
-      d3.event.sourceEvent.stopPropagation();
+    .on("start", function(event) {
+      event.sourceEvent.stopPropagation();
       dispatcher.call("start");
     })
     
@@ -131,9 +132,9 @@ function xSliceInteractor(state, x, y, d3_import = null) {
     }
   }
   
-  function dragmove_lines() {
-    var new_x = x.invert(d3.event.x);
-    if (d3.select(this).classed("x1")) {
+  function dragmove_lines(event) {
+    var new_x = x.invert(event.x);
+    if (select(this).classed("x1")) {
         state.x1 = new_x;
     }
     else {

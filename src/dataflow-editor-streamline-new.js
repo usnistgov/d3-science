@@ -26,20 +26,25 @@
 
 /* requires('d3.js'); */
 
+import {
+  dispatch as d3Dispatch,
+  drag,
+  pointer,
+  select
+} from 'd3';
 import {extend} from './jquery-extend.js';
 import {generateID} from './generate-id.js';
 
 export {editor};
 export default editor;
 
-function editor(data, d3_import = null) {
-  var d3 = (d3_import != null) ? d3_import : window.d3;
+function editor(data) {
   var data = data || [];
   var module_defs = module_defs || {};
   var grid_spacing = 5;
   var wirecurve = 0.67;
   var svg, container;
-  var dispatch = d3.dispatch("update", "draw_wires");
+  var dispatch = d3Dispatch("update", "draw_wires");
   dispatch.on("update", update);
   dispatch.on("draw_wires", draw_wires);
   
@@ -148,14 +153,14 @@ function editor(data, d3_import = null) {
     return terminal_pos;
   }
   
-  function draw_wire() {
-    var connector = d3.select(this);
+  function draw_wire(event) {
+    var connector = select(this);
     var src_pos, tgt_pos, cursor_pos;
     var src = connector.datum().source,
         tgt = connector.datum().target;
     if (src == "cursor" || tgt == "cursor") {
-      var mouse = d3.mouse(svg.node());
-      cursor_pos = {x: mouse[0] - 3, y: mouse[1] - 3}
+      var mousePos = pointer(event, svg.node());
+      cursor_pos = {x: mousePos[0] - 3, y: mousePos[1] - 3}
       src_pos = tgt_pos = cursor_pos;
     }
     if (src != "cursor") {
@@ -174,7 +179,7 @@ function editor(data, d3_import = null) {
             break;
           }
         };
-        dispatch.update();
+        dispatch.call("update");
     }
     else {
       connector.attr("d", makeConnector(src_pos, tgt_pos));
@@ -208,7 +213,7 @@ function editor(data, d3_import = null) {
       .data(function(d) {return d.wires})
       .enter().append(wire)
    
-    dispatch.update();
+    dispatch.call("update");
   }
   
   // wirecurve is usually between 0 and 1
@@ -267,27 +272,27 @@ function editor(data, d3_import = null) {
   editor.update = update;
   editor.draw_wires = draw_wires;
   
-  var wireaction = d3.behavior.drag()
-      .on("dragstart.wire", wirestart)
+  var wireaction = drag()
+      .on("start.wire", wirestart)
       .on("drag.wire", wirepull)
-      .on("dragend.wire", wirestop)
+      .on("end.wire", wirestop)
   
   var active_wire = false,
       new_wiredata = null;
       
-  function wirestart() {
+  function wirestart(event) {
     var module_el = this.parentNode.parentNode;
-    if (!d3.select(module_el).classed("wireable")) {return}
-    d3.event.sourceEvent.stopPropagation();
-    d3.select(this).classed("highlight", true);
-    var terminal_id = d3.select(this).attr("terminal_id");
-    var module_index = d3.select(module_el).attr("index");
+    if (!select(module_el).classed("wireable")) {return}
+    event.sourceEvent.stopPropagation();
+    select(this).classed("highlight", true);
+    var terminal_id = select(this).attr("terminal_id");
+    var module_index = select(module_el).attr("index");
     var address = [parseInt(module_index),  terminal_id];
     new_wiredata = {source: null, target: null}
     var dest_selector = (this.classList.contains("input")) ? ".wireable .output" : ".wireable .input";
     svg.selectAll(dest_selector)
-      .on("mouseenter", function() {d3.select(this).classed("highlight", true)})
-      .on("mouseleave", function() {d3.select(this).classed("highlight", false)})
+      .on("mouseenter", function() {select(this).classed("highlight", true)})
+      .on("mouseleave", function() {select(this).classed("highlight", false)})
     if (this.classList.contains("input")) {
       new_wiredata.target = address;
       new_wiredata.source = "cursor";        
@@ -300,20 +305,20 @@ function editor(data, d3_import = null) {
     update();
   }
     
-    function wirestop() {
-      d3.select(this).classed("highlight", false);
-      var active_data = new_wiredata; // d3.select(active_wire).datum();
+    function wirestop(event) {
+      select(this).classed("highlight", false);
+      var active_data = new_wiredata; // select(active_wire).datum();
       if (this.classList.contains("input")) {
-        var new_src = d3.select(".output.highlight");
+        var new_src = select(".output.highlight");
         if (!new_src.empty()) {
-          var module_index = d3.select(new_src.node().parentNode.parentNode).attr("index");
+          var module_index = select(new_src.node().parentNode.parentNode).attr("index");
           active_data.source = [parseInt(module_index), new_src.attr("terminal_id")];
         }
       } 
       else if (this.classList.contains("output")) {
-        var new_tgt = d3.select(".input.highlight");
+        var new_tgt = select(".input.highlight");
         if (!new_tgt.empty()) {
-          var module_index = d3.select(new_tgt.node().parentNode.parentNode).attr("index");
+          var module_index = select(new_tgt.node().parentNode.parentNode).attr("index");
           active_data.target = [parseInt(module_index), new_tgt.attr("terminal_id")];
         }
       }
@@ -334,9 +339,9 @@ function editor(data, d3_import = null) {
       active_wire = false;
     }
     
-    function wirepull() {
-      d3.event.sourceEvent.stopPropagation();
-      draw_wires();
+    function wirepull(event) {
+      event.sourceEvent.stopPropagation();
+      draw_wires(event);
     }
   
   function module(module_data) {
@@ -356,20 +361,19 @@ function editor(data, d3_import = null) {
     var min_width = 75;
     var active_wire, new_wiredata;
     
-    var drag = d3.behavior.drag()
+    var moduleDrag = drag()
       .on("drag", dragmove)
-      .origin(function(a) { return {x: module_data.x, y: module_data.y} });
       
-    function dragmove() {
-      if (!d3.select(this).classed("draggable")) {return}
-      module_data.x = Math.round(d3.event.x/grid_spacing) * grid_spacing;
-      module_data.y = Math.round(d3.event.y/grid_spacing) * grid_spacing;
+    function dragmove(event) {
+      if (!select(this).classed("draggable")) {return}
+      module_data.x = Math.round(event.x/grid_spacing) * grid_spacing;
+      module_data.y = Math.round(event.y/grid_spacing) * grid_spacing;
       group.attr("transform", "translate(" + module_data.x.toFixed() + "," + module_data.y.toFixed() + ")");
       draw_wires();
     }
     
     // create and append module HTML element:
-    group = d3.select(document.createElementNS("http://www.w3.org/2000/svg", "g"))
+    group = select(document.createElementNS("http://www.w3.org/2000/svg", "g"))
       .datum(module_data)
       .classed("module draggable wireable", true)
       .style("cursor", "move")
@@ -478,13 +482,13 @@ function editor(data, d3_import = null) {
           .style("display", "none")
           .attr("points", "0,0 20," + (height/2).toFixed() + " 0," + height.toFixed())    
       
-      group.call(drag);
+      group.call(moduleDrag);
       return group.node();  
   }
   
   function wire(wire_data) {
     var connector = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    d3.select(connector)
+    select(connector)
       .classed("wire", true)
       .style("cursor", "crosshair")
       .style("fill", "none")

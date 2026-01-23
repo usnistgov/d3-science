@@ -2,21 +2,12 @@
   "name": "d3-science",
   "version": "0.2.18",
   "description": "plotting routines based on d3, for scientific data",
-  "main": "lib/index.js",
   "module": "src/index.js",
-  "directories": {
-    "lib": "lib"
-  },
-  "dependencies": {},
-  "devDependencies": {
-    "@babel/cli": "^7.12.8",
-    "@babel/core": "^7.12.9",
-    "@babel/plugin-proposal-class-properties": "^7.12.1",
-    "@babel/preset-env": "^7.12.7"
+  "peerDependencies": {
+    "d3": "^7.9.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "make"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",

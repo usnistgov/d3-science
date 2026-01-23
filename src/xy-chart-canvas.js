@@ -1,11 +1,27 @@
+import {
+  axisBottom,
+  axisLeft,
+  drag,
+  extent,
+  line,
+  merge,
+  pointer,
+  range,
+  scaleLinear,
+  scaleLog,
+  scalePow,
+  scaleSqrt,
+  select,
+  zoom as d3Zoom,
+  zoomIdentity
+} from 'd3';
 import {extend} from './jquery-extend.js';
 import {generateID} from './generate-id.js';
 
 //var extend = jQuery.extend;
 export {xyChart, xyChart as default};
 
-function xyChart(options_override, d3_import = null) {
-  var d3 = (d3_import != null) ? d3_import : window.d3;
+function xyChart(options_override) {
   var options_defaults = {
     margin: {top: 10, right: 10, bottom: 75, left: 100},
     autoscale: true,
@@ -36,8 +52,6 @@ function xyChart(options_override, d3_import = null) {
     
   var id = generateID();
   var interactors = [];
-  
-  this.options = options;
   var max_y = (options.max_y == null) ? -Infinity : options.max_y;
   var min_y = (options.min_y == null) ? Infinity : options.min_y;
   var max_x = (options.max_x == null) ? -Infinity : options.max_x;
@@ -51,24 +65,24 @@ function xyChart(options_override, d3_import = null) {
   var x = getScale(options.xtransform);
   var y = getScale(options.ytransform);
   var orig_x, orig_y, orig_z;
-  var xAxis = d3.axisBottom(x),
-      yAxis = d3.axisLeft(y),
-      xAxisGrid = d3.axisBottom(x),
-      yAxisGrid = d3.axisLeft(y);
+  var xAxis = axisBottom(x),
+      yAxis = axisLeft(y),
+      xAxisGrid = axisBottom(x),
+      yAxisGrid = axisLeft(y);
   
-  function zoomed() { 
+  function zoomed(event) { 
     is_zoomed = true;
-    if (d3.event && d3.event.transform) {
+    if (event && event.transform) {
       // emulating old zoom behavior:
-      var new_x = d3.event.transform.rescaleX(orig_x),
-          new_y = d3.event.transform.rescaleY(orig_y);
+      var new_x = event.transform.rescaleX(orig_x),
+          new_y = event.transform.rescaleY(orig_y);
       
       x.domain(new_x.domain());
       y.domain(new_y.domain());
     }
     update();
   }
-  var zoom = d3.zoom().on("zoom.xy", zoomed);
+  var zoom = d3Zoom().on("zoom.xy", zoomed);
   var base_zoom_offset = 0.05; // zoom out 5% from min and max by default;
   
   var source_data;
@@ -76,7 +90,7 @@ function xyChart(options_override, d3_import = null) {
   function do_autoscale(axis='both', set_global=true) {
     // axis can be 'both', 'x' or 'y'
     var extents;
-    var merged_data = d3.merge(source_data);
+    var merged_data = merge(source_data);
     if (axis == 'y'){
       let xrange = Array.from(x.domain());
       xrange.sort();
@@ -89,27 +103,27 @@ function xyChart(options_override, d3_import = null) {
     }
     let new_max_x, new_max_y, new_min_x, new_min_y;
     if (options.show_errorbars) {
-      new_max_y = d3.extent(merged_data, function(d) {
+      new_max_y = extent(merged_data, function(d) {
         var yy = (d[2] && d[2].yupper != undefined) ? d[2].yupper : d[1];
         return (isFinite(y(yy))) ? yy : null;
       })[1];
-      new_min_y = d3.extent(merged_data, function(d) {
+      new_min_y = extent(merged_data, function(d) {
         var yy = (d[2] && d[2].ylower != undefined) ? d[2].ylower : d[1];
         return (isFinite(y(yy))) ? yy : null;
       })[0];
-      new_max_x = d3.extent(merged_data, function(d) {
+      new_max_x = extent(merged_data, function(d) {
         var xx = (d[2] && d[2].xupper != undefined) ? d[2].xupper : d[0];
         return (isFinite(x(xx))) ? xx : null;
       })[1];
-      new_min_x = d3.extent(merged_data, function(d) {
+      new_min_x = extent(merged_data, function(d) {
         var xx = (d[2] && d[2].xlower != undefined) ? d[2].xlower : d[0];
         return (isFinite(x(xx))) ? xx : null;
       })[0];
     } else {
-      extents = d3.extent(merged_data, function(d) { return isFinite(y(d[1]))? d[1] : null });
+      extents = extent(merged_data, function(d) { return isFinite(y(d[1]))? d[1] : null });
       new_min_y = extents[0];
       new_max_y = extents[1];
-      extents = d3.extent(merged_data, function(d) { return isFinite(x(d[0]))? d[0] : null });
+      extents = extent(merged_data, function(d) { return isFinite(x(d[0]))? d[0] : null });
       new_min_x = extents[0];
       new_max_x = extents[1];
     }
@@ -177,7 +191,7 @@ function xyChart(options_override, d3_import = null) {
   
   function chart(selection) {
     selection.each(function(data) {
-      var outercontainer = d3.select(this),
+      var outercontainer = select(this),
         innerwidth = outercontainer.node().clientWidth,
         innerheight = outercontainer.node().clientHeight,
         width = innerwidth - options.margin.right - options.margin.left,
@@ -254,16 +268,16 @@ function xyChart(options_override, d3_import = null) {
         .attr("class", "mainview")
         .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");  
       
-      function drag_started() {
+      function drag_started(event) {
         if (!zoomRect) return;
         var e = mainview.node(),
-            origin = d3.mouse(e),
+            origin = pointer(event, e),
             rect = mainview.append("rect").attr("class", "zoom");
             
-        d3.event.on("drag", dragged).on("end", ended);
+        event.on("drag", dragged).on("end", ended);
 
-        function dragged(d) {
-          var m = d3.mouse(e);
+        function dragged(dragEvent) {
+          var m = pointer(dragEvent, e);
           m[0] = Math.max(0, Math.min(width, m[0]));
           m[1] = Math.max(0, Math.min(height, m[1]));
           rect.attr("x", Math.min(origin[0], m[0]))
@@ -272,9 +286,9 @@ function xyChart(options_override, d3_import = null) {
             .attr("height", Math.abs(m[1] - origin[1]));
         }
 
-        function ended() {
-          d3.select("body").classed("noselect", false);
-          var m = d3.mouse(e);
+        function ended(endEvent) {
+          select("body").classed("noselect", false);
+          var m = pointer(endEvent, e);
           m[0] = Math.max(0, Math.min(width, m[0]));
           m[1] = Math.max(0, Math.min(height, m[1]));
           if (m[0] !== origin[0] && m[1] !== origin[1]) {
@@ -295,9 +309,9 @@ function xyChart(options_override, d3_import = null) {
         else {
           zoomRect = _;
           if (zoomRect == true) {
-            var drag = d3.drag();
-            drag.on("start", drag_started);
-            svg.select("g.mainview rect.zoom-box").call(drag);
+            var drag_behavior = drag();
+            drag_behavior.on("start", drag_started);
+            svg.select("g.mainview rect.zoom-box").call(drag_behavior);
           } 
           else {
             svg.on('.drag', null);
@@ -426,12 +440,12 @@ function xyChart(options_override, d3_import = null) {
               .attr("xmlns", "http://www.w3.org/1999/xhtml")
               .style("text-align", "end");
           
-        var follow = function (){
-          var mouse = d3.mouse(mainview.node());
+        var follow = function (event){
+          var mousePos = pointer(event, mainview.node());
           position_cursor.text(
-            x.invert(mouse[0]).toPrecision(5) + 
+            x.invert(mousePos[0]).toPrecision(5) + 
             ", " + 
-            y.invert(mouse[1]).toPrecision(5));
+            y.invert(mousePos[1]).toPrecision(5));
         }
           
         mainview
@@ -450,9 +464,9 @@ function xyChart(options_override, d3_import = null) {
               .attr("stroke", "black")
               .attr("stroke-width", 2);
               
-          var follow_x = function (){  
-              var mouse = d3.mouse(mainview.node());
-              var mousex = mouse[0];
+          var follow_x = function (event){  
+              var mousePos = pointer(event, mainview.node());
+              var mousex = mousePos[0];
               vertical.attr("d", "M " + mousex.toFixed(1) + " 0 L " + mousex.toFixed(1) + " " + height);
           }
                
@@ -470,9 +484,9 @@ function xyChart(options_override, d3_import = null) {
               .attr("stroke", "black")
               .attr("stroke-width", 2);
 
-          var follow_y = function (){  
-              var mouse = d3.mouse(mainview.node());
-              var mousey = mouse[1];
+          var follow_y = function (event){  
+              var mousePos = pointer(event, mainview.node());
+              var mousey = mousePos[1];
               horizontal.attr("d", "M 0 " + mousey.toFixed(1) + " L " + width + " " + mousey.toFixed(1));
           }
           
@@ -484,13 +498,13 @@ function xyChart(options_override, d3_import = null) {
     });
   }
     var legend_offset = {x: 0, y: 0};
-    var drag_legend = d3.drag()
-      .on("drag", function(d,i) {
-        legend_offset.x += d3.event.dx;
-        legend_offset.y += d3.event.dy;
+    var drag_legend = drag()
+      .on("drag", function(event, d) {
+        legend_offset.x += event.dx;
+        legend_offset.y += event.dy;
         chart.draw_legend(source_data);
         })
-      .on("start", function() { d3.event.sourceEvent.stopPropagation(); })
+      .on("start", function(event) { event.sourceEvent.stopPropagation(); })
 
     //************************************************************
     // Create D3 legend
@@ -500,13 +514,13 @@ function xyChart(options_override, d3_import = null) {
       var el = chart.svg.select("g.legend");
       // if there are more options.series defined than datasets, 
       // use the extra series:
-      var ldata = d3.range(Math.max(data.length, (options.series || []).length));
+      var ldata = range(Math.max(data.length, (options.series || []).length));
       var update_sel = el.selectAll('g').data(ldata);
       update_sel
         .enter()
           .append('g')
           .each(function(d, i) {
-            var g = d3.select(this);
+            var g = select(this);
             g.append("rect")
               .attr("x", legend_offset.x)
               .attr("y", i*25 + 10)
@@ -524,10 +538,10 @@ function xyChart(options_override, d3_import = null) {
                   .classed('unhighlight', false);
               })
               .on("click", function() {
-                let hidden = d3.select(this).classed("hidden");
+                let hidden = select(this).classed("hidden");
                 // toggle:
                 hidden = !hidden;
-                d3.select(this).classed('hidden', hidden);
+                select(this).classed('hidden', hidden);
                 let s = options.series[i] = options.series[i] ?? {};
                 s.show_errorbars = s.show_points = s.show_line = (!hidden);
                 update();
@@ -578,11 +592,11 @@ function xyChart(options_override, d3_import = null) {
         .attr("x", 18 + legend_offset.x)
         .attr("y", function(d,i) { return i * 25 + 25 + legend_offset.y})
         .each(function(d, i) {
-          d3.select(this).text((options.series[i] && options.series[i].label != null) ? options.series[i].label : i+1)
+          select(this).text((options.series[i] && options.series[i].label != null) ? options.series[i].label : i+1)
         });
     }
     
-    var line = d3.line()
+    var lineGenerator = line()
       .defined(function(d) { return (d && d[1] != null && isFinite(x(d[0])) && isFinite(y(d[1]))); })
       .x(function(d) { return x(d[0]); })
       .y(function(d) { return y(d[1]); });
@@ -600,7 +614,7 @@ function xyChart(options_override, d3_import = null) {
       update_sel.exit().remove();
       
       chart.g.selectAll('path.line')
-        .attr("d", line)
+        .attr("d", lineGenerator)
         .attr('stroke', get_series_color);
     }      
     
@@ -775,31 +789,31 @@ function xyChart(options_override, d3_import = null) {
       var lname = scalename.toLowerCase();
     
       if (/^lin/.test(lname)) {
-        return d3.scaleLinear();
+        return scaleLinear();
       }
       else if (/^log$/.test(lname)) {
         // base 10
-        return d3.scaleLog();
+        return scaleLog();
       }
       else if (/^ln$/.test(lname)) {
-        return d3.scaleLog().base(Math.E);
+        return scaleLog().base(Math.E);
       }
       else if (/^sqrt$/.test(lname)) {
-        return d3.scaleSqrt();
+        return scaleSqrt();
       }
       else if (/^log([0-9]+)$/.test(lname)) {
         var match = /^log([0-9]+)$/.exec(lname);
         var exponent = parseInt(match[1]);
-        return d3.scaleLog().base(exponent);
+        return scaleLog().base(exponent);
       }
       else if (/^pow\([0-9]*\.?[0-9]+\)/.test(lname)) {
         var match = /^pow\(([0-9]*\.?[0-9]+)\)/.exec(lname);
         var exponent = parseFloat(match[1]);
-        return d3.scalePow().exponent(exponent);
+        return scalePow().exponent(exponent);
       }
       else {
         console.warn("scale: " + scalename + " is not implemented.");
-        return d3.scaleLinear();
+        return scaleLinear();
       }
     
     }
@@ -815,7 +829,7 @@ function xyChart(options_override, d3_import = null) {
         orig_x = x.copy();
         orig_y = y.copy();
         chart.g.select("rect.zoom-box")
-          .call(zoom.transform, d3.zoomIdentity.translate(xoffset, yoffset).scale(1.0 - 2*base_zoom_offset) );
+          .call(zoom.transform, zoomIdentity.translate(xoffset, yoffset).scale(1.0 - 2*base_zoom_offset) );
         is_zoomed = false;
       }
       else if (axis == 'x') {
@@ -828,7 +842,7 @@ function xyChart(options_override, d3_import = null) {
         y.domain([min_y, max_y]);
         chart.update()
       }
-      //zoombox.call(zoom.transform, d3.zoomIdentity);
+      //zoombox.call(zoom.transform, zoomIdentity);
       
     }
     
@@ -973,7 +987,7 @@ function xyChart(options_override, d3_import = null) {
     };
     
     chart.export_svg = function() {
-      var dsvg = d3.select(chart.svg.node().cloneNode(true));
+      var dsvg = select(chart.svg.node().cloneNode(true));
       dsvg.style("font-family", "sans-serif")
         .style("font-size", "14px")
       dsvg.selectAll("line").style("fill", "none");
