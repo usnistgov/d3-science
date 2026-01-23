@@ -1,17 +1,17 @@
+import { drag, dispatch as d3Dispatch, scaleLinear, select } from 'd3';
 import { rectangleSelect } from './rectangle-select.js';
 
 export { rectangleSelectPoints, rectangleSelectPoints as default };
 
-function rectangleSelectPoints(state, x, y, d3_import = null) {
-  var d3 = (d3_import != null) ? d3_import : window.d3;
-  var x = x || d3.scaleLinear();
-  var y = y || d3.scaleLinear();
-  var drag_instance = d3.drag();
-  var dispatch = d3.dispatch("selection");
+function rectangleSelectPoints(state, x, y) {
+  var x = x || scaleLinear();
+  var y = y || scaleLinear();
+  var drag_instance = drag();
+  var dispatch = d3Dispatch("selection");
 
   function interactor(selection) {
     selection.call(drag_instance);
-    var selector = new rectangleSelect(drag_instance, null, null, d3);
+    var selector = new rectangleSelect(drag_instance, null, null);
     interactor.selector = selector;
     selection.call(selector);
 
@@ -23,7 +23,7 @@ function rectangleSelectPoints(state, x, y, d3_import = null) {
           // i is index of 
           let index_list = [];
           indices.push(index_list);
-          var series_select = d3.select(this);
+          var series_select = select(this);
           if (!(series_select.classed("hidden"))) {
             // don't interact with hidden series.
             series_select.selectAll(".dot").each(function (dd, ii) {

@@ -1,24 +1,21 @@
-import { pointer, scaleLinear, select, dispatch as d3Dispatch } from "d3";
+import { drag, pointer, scaleLinear, select, dispatch as d3Dispatch } from "d3";
 export {rectangleSelect, rectangleSelect as default};
 
-function rectangleSelect(drag, x, y) {
+function rectangleSelect(x, y) {
   // x, y are d3.scale objects (linear, log, etc) from parent
   // dispatch is the d3 event dispatcher: should have event "update" register
-  // 
-  // drag is the drag behavior attached to the chart (initialize with this);
   var event_name = "rectangle_select";
   var dispatch = d3Dispatch("update");
   var x = x || scaleLinear();
   var y = y || scaleLinear();
   var selectRect = true;
   var callbacks = [];
+  var dragBehavior = drag();
     
   function interactor(selection) {
-    // selection is chart mainview, need parent svg:
-    //var svg = d3.select(selection.node().parentNode);
-    //svg.call(drag);
+    selection.call(dragBehavior);
       
-    drag.on("start.select", drag_started);
+    dragBehavior.on("start.select", drag_started);
     function drag_started(event) {
       if (!selectRect) return;
       var e = selection.node(),
