@@ -1,4 +1,4 @@
-embedded_template_example = {
+const embedded_template_example = {
   "inputs": [
     {
       "id": "input_0",
@@ -284,3 +284,5 @@ embedded_template_example = {
     }
   ]
 }
+
+export { embedded_template_example };

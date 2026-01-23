@@ -1,5 +1,5 @@
-var instruments = instruments || {};
-instruments["ncnr.refl"] = instruments["ncnr.refl"] || {};
+const instruments = {};
+instruments["ncnr.refl"] = {};
 
 var module_defs_list = 
 [
@@ -1198,3 +1198,5 @@ for (var i=0; i<module_defs_list.length; i++) {
     var m = module_defs_list[i];
     instruments["ncnr.refl"].modules[m.id] = m;
 }
+
+export { instruments };

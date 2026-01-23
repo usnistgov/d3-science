@@ -3,13 +3,12 @@
 <meta charset="utf-8">
 <html>
 <head>
-  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans" />
 <style>
 
 html, body {
   position: relative;
   height: 100%;
-    font-family: 'Open Sans' !important;
+    font-family: Arial, Helvetica, sans-serif !important;
 }
 
 #plot1 {
@@ -117,56 +116,59 @@ rect.zoom {
   fill-opacity: 0.5;
 }
 </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.0.0/d3.min.js" charset="utf-8"></script>
-  <script src="../lib/jquery-extend.js"></script>
-  <script src="../lib/generate-id.js"></script>
-  <script src="../lib/xy-chart.js" charset="utf-8"></script>
-  <script src="../lib/rectangle-interactor.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "d3": "https://cdn.jsdelivr.net/npm/d3@7/+esm"
+    }
+  }
+  </script>
 </head>
 <body>
-<!--<script src="d3.v3.min.js"></script>-->
-<script>
-var rectangle;
-window.onload = function() {
-  chart = xyChart.default({show_line: true, show_errorbars: true, ytransform: 'log'})
-  var opts1 = { 
-      type:'Rectangle', 
-      name:'roi_rectangle',
-      color1: '#ff0000',
-      color2: '#ff0000',
-      fill: "none",
-      showcenter: true,
-      show: false,
-      xmin: 0.022, 
-      ymin: 1.0,
-      xmax: 0.024, 
-      ymax: 6
-  }
-  
-  d3.json("sample_data/pbr_live_data.json", function(error, data) {
-      mydata = data;
-      c = d3.select("#plot1")
-        .data([data[0].data])
-        .call(chart);
-      rectangle = new rectangleInteractor.default(opts1);
-      chart
-        .options(data[0].options)
-        .interactors(rectangle)
-        .zoomRect(true)
 
-  });
-}
-// chart.target_ratio(1).update(); // changes aspect ratio!
-// var new_dims = chart.dims();
-// new_dims.xmax = 256;
-// chart.dims(new_dims).update(); // new dimensions for 2d plot object
-// chart.show_grid(false); // grid off
-
-</script>
 <div id="plot1">
 </div>
 <div id="demos">
 </div>
+<script type="module">
+  import { select } from "d3";
+  import xyChart from "../src/xy-chart.js";
+  import rectangleInteractor from "../src/rectangle-interactor.js";
+
+  const chart = xyChart({show_line: true, show_errorbars: true, ytransform: 'log'});
+  const opts1 = {
+    type:'Rectangle',
+    name:'roi_rectangle',
+    color1: '#ff0000',
+    color2: '#ff0000',
+    fill: "none",
+    showcenter: true,
+    show: false,
+    xmin: 0.022,
+    ymin: 1.0,
+    xmax: 0.024,
+    ymax: 6
+  }
+
+  const response = await fetch("sample_data/pbr_live_data.json");
+  const data = await response.json();
+
+  const mydata = data;
+  const c = select("#plot1")
+    .data([data[0].data])
+    .call(chart);
+  const rectangle = new rectangleInteractor(opts1);
+  chart
+    .options(data[0].options)
+    .interactors(rectangle)
+    .zoomRect(true)
+
+  // chart.target_ratio(1).update(); // changes aspect ratio!
+  // var new_dims = chart.dims();
+  // new_dims.xmax = 256;
+  // chart.dims(new_dims).update(); // new dimensions for 2d plot object
+  // chart.show_grid(false); // grid off
+
+</script>
 </body>
 </html>
-

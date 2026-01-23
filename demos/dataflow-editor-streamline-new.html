@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+<html>
+<head>
 <style>
 html, body {
   height: 100%;
@@ -57,19 +59,23 @@ svg {
     display: none;
 }
 </style>
+<script type="importmap">
+{
+  "imports": {
+    "d3": "https://cdn.jsdelivr.net/npm/d3@7/+esm"
+  }
+}
+</script>
+</head>
 <body>
-<script src="//cdnjs.cloudflare.com/ajax/libs/d3/4.4.0/d3.min.js"></script>
-<script src="../lib/jquery-extend.js"></script>
-<script src="../lib/generate-id.js"></script>
-<!--<script src="dataflow-box-module.js"></script>-->
-<script src="../lib/dataflow-editor.js"></script>
-<script src="ncnr.refl.module_defs.js"></script>
-<script>
-window.onload = function() {
+<script type="module">
+import { select, pointer } from "d3";
+import dataflowEditor from "../src/dataflow-editor.js";
+import { instruments } from "./ncnr.refl.module_defs.js";
 
-current_instrument = 'ncnr.refl';
+const current_instrument = 'ncnr.refl';
 
-var x0 = 150,
+const x0 = 150,
     y0 = 100, 
     dx = 135,
     dy = 40;
@@ -152,7 +158,7 @@ var module_opts = [
     }
 ];
 
-example = {
+const example = {
     //modules: expand_module_defs(module_opts, 'ncnr.refl'),
     modules: module_opts,
     wires: [
@@ -211,39 +217,39 @@ function expand_module_defs(modules, instrument) {
   return output
 }
 
-e = new dataflowEditor.default();
+const e = new dataflowEditor();
 e.module_defs(instruments[current_instrument].modules);
 //e.data([{modules: [], wires: []}]);
-d3.select("#editor_div")
+select("#editor_div")
   .data([{modules: [], wires: []}])
   .call(e);
 
 
 var contextMenuShowing = false;
 
-e.svg().on('contextmenu',function (d,i) {
+e.svg().on('contextmenu', function (event, d) {
     if (contextMenuShowing) {
-        d3.event.preventDefault();
-        d3.select(".popup").remove();
+        event.preventDefault();
+        select(".popup").remove();
         contextMenuShowing = false;
     } else {
-        d3_target = d3.select(d3.event.target);
+        const d3_target = select(event.target);
         if (d3_target.classed("wire")) {
-            d3.event.preventDefault();
+            event.preventDefault();
             contextMenuShowing = true;
 
             // Build the popup            
-            popup = d3.select("#editor_div")
+            const popup = select("#editor_div")
             .append("div")
             .attr("class", "popup")
-            .style("left", d3.event.x + "px")
-            .style("top", d3.event.y + "px")
+            .style("left", event.x + "px")
+            .style("top", event.y + "px")
             .append("ul")
             
             popup.append("li").text("delete").on("click", function() {
                 var active_data = d3_target.datum();
                 var parentNode = d3_target.node().parentNode;
-                var wires = d3.select(parentNode).datum().wires;
+                var wires = select(parentNode).datum().wires;
                 for (var i=0; i<wires.length; i++) {
                     var w = wires[i]; 
                     if (w.source == active_data.source && w.target == active_data.target) {
@@ -252,31 +258,31 @@ e.svg().on('contextmenu',function (d,i) {
                     }
                 };
                 parentNode.update();
-                d3.select(".popup").remove(); 
+                select(".popup").remove(); 
                 contextMenuShowing=false;
                 
             });
             console.log(popup);
         }
         else if (d3_target.classed("title")) {
-            d3.event.preventDefault();
+            event.preventDefault();
             contextMenuShowing = true;
 
             // Build the popup            
-            popup = d3.select("#editor_div")
+            const popup = select("#editor_div")
             .append("div")
             .attr("class", "popup")
-            .style("left", d3.event.x + "px")
-            .style("top", d3.event.y + "px")
+            .style("left", event.x + "px")
+            .style("top", event.y + "px")
             .append("ul")
             
-            popup.append("li").text("configure").on("click", function() {alert("implement configure"); d3.select(".popup").remove(); contextMenuShowing=false;});
+            popup.append("li").text("configure").on("click", function() {alert("implement configure"); select(".popup").remove(); contextMenuShowing=false;});
             popup.append("hr")
             popup.append("li").text("delete").on("click", function() {
                 console.log(d3_target.datum().module_id);
                 var module_id = d3_target.datum().module_id;
                 e.svg().datum().modules = e.svg().datum().modules.filter(function(d) { return d.module_id != module_id});
-                d3.select(".popup").remove(); 
+                select(".popup").remove(); 
                 e.update();
                 contextMenuShowing=false;
             });
@@ -288,12 +294,12 @@ e.svg().on('contextmenu',function (d,i) {
 var module_defs = instruments[current_instrument].modules,
     module_names = (["Add new module:"]).concat(Object.keys(module_defs));
     
-d3.select("#new_module").selectAll("option").data(module_names)
+select("#new_module").selectAll("option").data(module_names)
   .enter().append('option')
   .attr("module", function(d) {return d}) // function(d) {return module_defs[d].module})
   .text(function(d) {return module_defs[d].name})  
   
-d3.select('#new_module').on("change", function(ev) {
+select('#new_module').on("change", function(ev) {
     var title = this.value,
         module = module_names[this.selectedIndex];
     e.svg().datum().modules.push({module: module, title: title});
@@ -301,18 +307,18 @@ d3.select('#new_module').on("change", function(ev) {
     this.selectedIndex=0;
 });
 
-d3.select("#show_value").on("click", function() { 
+select("#show_value").on("click", function() { 
   var win = window.open();
   win.document.write("<pre>" + JSON.stringify(e.export(), null, 2) + "</pre>");
 });
 
-d3.select("#show_example").on("click", function() {
+select("#show_example").on("click", function() {
   e.import(example);
 });
 
 function loadData() {
     var file = document.getElementById('upload_template').files[0]; // only one file allowed
-    datafilename = file.name;
+    var datafilename = file.name;
     var result = null;
     var reader = new FileReader();
     reader.onload = function(ev) {
@@ -322,9 +328,8 @@ function loadData() {
     reader.readAsText(file);
 }
 
-d3.select("#upload_template").on("change", loadData);
+select("#upload_template").on("change", loadData);
 
-}
 </script>
 <div id="controls">
     <select id="new_module">
@@ -337,3 +342,4 @@ d3.select("#upload_template").on("change", loadData);
 <div id="editor_div">
 </div>
 </body>
+</html>
