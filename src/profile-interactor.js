@@ -1,7 +1,8 @@
 import { 
   dispatch as d3Dispatch, 
-  drag, 
-  line as d3Line, 
+  drag,
+  line as d3Line,
+  pointer,
   scaleLinear,
   select,
   curveBasis,
@@ -220,14 +221,14 @@ function profileInteractor(state, x, y) {
               old_row = state.profile_data[old_row_index],
               new_row = extend(true, {}, old_row); 
           if (direction == "h") {
-            var xi = x.invert(d3.pointer(event, this)[0]),
+            var xi = x.invert(pointer(event, this)[0]),
                 thickness_below = xi - d[ii][0][0],
                 thickness_above = d[ii][1][0] - xi;
             new_row.thickness = thickness_below;
             old_row.thickness = thickness_above;
           }
           else if (direction == "v") {
-            var yi = y.invert(d3.pointer(event, this)[1]),
+            var yi = y.invert(pointer(event, this)[1]),
                 col = state.series[i].id;
             new_row.thickness = 0;
             new_row[col] = yi;
