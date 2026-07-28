@@ -424,7 +424,7 @@ function heatChartMultiMasked(options_override) {
         
       zAxis
         .scale(z)
-        .ticks(options.numberOfTicks)
+        .ticks(options.numberOfTicks, ".3~g")
         .tickPadding(10);
      
       chart.colorbar.resetzoom = cb_resetzoom;

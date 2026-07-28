@@ -236,12 +236,12 @@ function xyChart(options_override) {
         
       xAxis
         .scale(x)
-        .ticks(options.numberOfTicks)
+        .ticks(options.numberOfTicks, ".3~g")
         .tickPadding(10);
       
       yAxis
         .scale(y)
-        .ticks(options.numberOfTicks)
+        .ticks(options.numberOfTicks, ".3~g")
         .tickPadding(10);
             
       //zoom.x(x).y(y);
